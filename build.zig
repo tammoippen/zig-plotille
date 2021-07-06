@@ -25,11 +25,14 @@ pub fn build(b: *std.build.Builder) void {
 
     var main_tests = b.addTest("src/main.zig");
     main_tests.setBuildMode(mode);
+    var dots_tests = b.addTest("src/dots.zig");
+    dots_tests.setBuildMode(mode);
 
     const test_step = b.step("test", "Run library tests");
     test_step.dependOn(&main_tests.step);
+    test_step.dependOn(&dots_tests.step);
 
-    var main_fmt = b.addFmt(&[_][]const u8{"src/main.zig"});
+    var main_fmt = b.addFmt(&[_][]const u8{ "build.zig", "src/main.zig", "src/dots.zig" });
     const fmt_step = b.step("fmt", "Format the library.");
     fmt_step.dependOn(&main_fmt.step);
 }
