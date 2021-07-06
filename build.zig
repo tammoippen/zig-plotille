@@ -14,11 +14,13 @@ pub fn build(b: *std.build.Builder) void {
     const lib = b.addStaticLibrary("zig-plotille", "src/main.zig");
     lib.setTarget(target);
     lib.setBuildMode(mode);
+    // lib.emit_h = true;
     lib.install();
 
     const shared_lib = b.addSharedLibrary("zig-plotille", "src/main.zig", b.version(1, 0, 0));
     shared_lib.setTarget(target);
     shared_lib.setBuildMode(mode);
+    // shared_lib.emit_h = true;
     shared_lib.install();
 
     var main_tests = b.addTest("src/main.zig");
