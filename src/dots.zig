@@ -1,6 +1,22 @@
 const std = @import("std");
+const assert = std.debug.assert;
+const unicode = std.unicode;
 
-// I plot upside down, hence the different order
+// Dot ordering: \u2800 '⠀' - \u28FF '⣿' Coding according to ISO/TR 11548-1
+//
+// Hence, each dot on or off is 8bit, i.e. 256 posibilities. With dot number
+// one being the msb and 8 is lsb:
+//
+//   idx:  0 1 2 3 4 5 6 7
+//   bits: 0 0 0 0 0 0 0 0
+//
+//   Ordering of dots:
+//
+//   0  3
+//   1  4
+//   2  5
+//   6  7
+
 const xy2dot = [4][2]u3{
     [2]u3{ 6, 7 },
     [2]u3{ 2, 5 },
@@ -17,19 +33,24 @@ const Dots = struct {
         };
     }
 
-    pub fn str(self: Dots, buf: []u8) ![]const u8 {
-        return try std.fmt.bufPrint(buf, "0x{x:2}", .{self.dots});
+    pub fn str(self: Dots, buf: []u8) !u3 {
+        assert(buf.len >= 3);
+        var v: u21 = 0x2800;
+        v += self.dots;
+        return try unicode.utf8Encode(v, buf);
     }
 
     pub fn fill(self: *Dots) void {
         self.dots = 0xff;
     }
+
     pub fn clear(self: *Dots) void {
         self.dots = 0;
     }
+
     pub fn set(self: *Dots, x: u8, y: u8) void {
         const one: u8 = 1;
-        self.dots |= one << xy2dot[x][y];
+        self.dots |= one << xy2dot[y][x];
     }
 };
 
@@ -37,69 +58,65 @@ const testing = std.testing;
 const expect = testing.expect;
 const mem = std.mem;
 
-// test "print the struct" {
-//     const d = Dots.init();
-
-//     std.debug.print("d: {}\n", .{d});
-// }
-
 test "test clear and full char" {
     var d = Dots.init();
     var buff: [20]u8 = undefined;
 
-    var s = try d.str(&buff);
-    try expect(mem.eql(u8, "0x 0", s));
+    var len = try d.str(&buff);
+    try expect(mem.eql(u8, "⠀", buff[0..len]));
 
     d.fill();
-    s = try d.str(&buff);
-    try expect(mem.eql(u8, "0xff", s));
+    len = try d.str(&buff);
+    try expect(mem.eql(u8, "⣿", buff[0..len]));
 
     d.clear();
-    s = try d.str(&buff);
-    try expect(mem.eql(u8, "0x 0", s));
+    len = try d.str(&buff);
+    try expect(mem.eql(u8, "⠀", buff[0..len]));
 }
 
 test "set individual vals" {
     var buff: [20]u8 = undefined;
     var d = Dots.init();
 
+    var len = try d.str(&buff);
+    try expect(mem.eql(u8, "⠀", buff[0..len]));
+
     d.set(0, 0);
-    var s = try d.str(&buff);
-    try expect(mem.eql(u8, "0x40", s));
+    len = try d.str(&buff);
+    try expect(mem.eql(u8, "⡀", buff[0..len]));
 
     d.clear();
     d.set(0, 1);
-    s = try d.str(&buff);
-    try expect(mem.eql(u8, "0x80", s));
+    len = try d.str(&buff);
+    try expect(mem.eql(u8, "⠄", buff[0..len]));
+
+    d.clear();
+    d.set(0, 2);
+    len = try d.str(&buff);
+    try expect(mem.eql(u8, "⠂", buff[0..len]));
+
+    d.clear();
+    d.set(0, 3);
+    len = try d.str(&buff);
+    try expect(mem.eql(u8, "⠁", buff[0..len]));
 
     d.clear();
     d.set(1, 0);
-    s = try d.str(&buff);
-    try expect(mem.eql(u8, "0x 4", s));
+    len = try d.str(&buff);
+    try expect(mem.eql(u8, "⢀", buff[0..len]));
 
     d.clear();
     d.set(1, 1);
-    s = try d.str(&buff);
-    try expect(mem.eql(u8, "0x20", s));
+    len = try d.str(&buff);
+    try expect(mem.eql(u8, "⠠", buff[0..len]));
 
     d.clear();
-    d.set(2, 0);
-    s = try d.str(&buff);
-    try expect(mem.eql(u8, "0x 2", s));
+    d.set(1, 2);
+    len = try d.str(&buff);
+    try expect(mem.eql(u8, "⠐", buff[0..len]));
 
     d.clear();
-    d.set(2, 1);
-    s = try d.str(&buff);
-    try expect(mem.eql(u8, "0x10", s));
-
-    d.clear();
-    d.set(3, 0);
-    s = try d.str(&buff);
-    try expect(mem.eql(u8, "0x 1", s));
-
-    d.clear();
-    d.set(3, 1);
-    s = try d.str(&buff);
-    try expect(mem.eql(u8, "0x 8", s));
-
+    d.set(1, 3);
+    len = try d.str(&buff);
+    try expect(mem.eql(u8, "⠈", buff[0..len]));
 }
