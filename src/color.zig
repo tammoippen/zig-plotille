@@ -1,49 +1,12 @@
 const std = @import("std");
 const ascii = std.ascii;
+const assert = std.debug.assert;
 const mem = std.mem;
 
 const ColorMode = enum {
     names,
     bytes,
     rgb,
-};
-
-const FGColorName = enum(u8) {
-    black = 30,
-    red = 31,
-    green = 32,
-    yellow = 33,
-    blue = 34,
-    magenta = 35,
-    cyan = 36,
-    white = 37,
-    // bright_black = 1;30,
-    // bright_red = 1;31,
-    // bright_green = 1;32,
-    // bright_yellow = 1;33,
-    // bright_blue = 1;34,
-    // bright_magenta = 1;35,
-    // bright_cyan = 1;36,
-    // bright_white = 1;37,
-};
-
-const BGColorName = enum(u8) {
-    black = 40,
-    red = 41,
-    green = 42,
-    yellow = 43,
-    blue = 44,
-    magenta = 45,
-    cyan = 46,
-    white = 47,
-    bright_black = 100,
-    bright_red = 101,
-    bright_green = 102,
-    bright_yellow = 103,
-    bright_blue = 104,
-    bright_magenta = 105,
-    bright_cyan = 106,
-    bright_white = 107,
 };
 
 // Surround `text` with control characters for coloring
@@ -106,6 +69,57 @@ pub fn color(text: []const u8, out: []u8, fg: []const u8, bg: []const u8, mode: 
         mem.copy(u8, text, out);
         return text.len;
     }
+
+    if (mode == ColorMode.names) {
+        const start_len = names(fg, bg, out);
+        return start_len;
+    }
     mem.copy(u8, text, out);
     return text.len;
+}
+
+const FGColorName = enum(u8) {
+    black = 30,
+    red = 31,
+    green = 32,
+    yellow = 33,
+    blue = 34,
+    magenta = 35,
+    cyan = 36,
+    white = 37,
+    // bright_black = 1;30,
+    // bright_red = 1;31,
+    // bright_green = 1;32,
+    // bright_yellow = 1;33,
+    // bright_blue = 1;34,
+    // bright_magenta = 1;35,
+    // bright_cyan = 1;36,
+    // bright_white = 1;37,
+};
+
+const BGColorName = enum(u8) {
+    black = 40,
+    red = 41,
+    green = 42,
+    yellow = 43,
+    blue = 44,
+    magenta = 45,
+    cyan = 46,
+    white = 47,
+    bright_black = 100,
+    bright_red = 101,
+    bright_green = 102,
+    bright_yellow = 103,
+    bright_blue = 104,
+    bright_magenta = 105,
+    bright_cyan = 106,
+    bright_white = 107,
+};
+
+fn names(fg: []const u8, bg: []const u8, out: []u8) usize {
+    assert(fg.len <= 1);
+    assert(bg.len <= 1);
+    assert(bg.len + fg.len >= 1);
+
+    return 0;
 }
