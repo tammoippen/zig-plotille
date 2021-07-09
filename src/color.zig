@@ -3,6 +3,9 @@ const ascii = std.ascii;
 const assert = std.debug.assert;
 const mem = std.mem;
 
+const testing = std.testing;
+const expect = testing.expect;
+
 const ColorMode = enum {
     names,
     bytes,
@@ -61,65 +64,171 @@ const ColorMode = enum {
 //     str: `text` enclosed with corresponding coloring controls
 pub fn color(text: []const u8, out: []u8, fg: []const u8, bg: []const u8, mode: ColorMode, no_color: bool) usize {
     if (fg.len == 0 and bg.len == 0) {
-        mem.copy(u8, text, out);
+        mem.copy(u8, out, text);
         return text.len;
     }
 
     if (no_color) { // or os.environ.get('NO_COLOR'))
-        mem.copy(u8, text, out);
+        mem.copy(u8, out, text);
         return text.len;
     }
 
+    var idx: usize = 0;
+
     if (mode == ColorMode.names) {
-        const start_len = names(fg, bg, out);
-        return start_len;
+        if (fg.len == 1 and bg.len == 1) {
+            idx = names(@intToEnum(ColorName, fg[0]), @intToEnum(ColorName, bg[0]), out);
+        } else if (fg.len == 1) {
+            idx = names(@intToEnum(ColorName, fg[0]), null, out);
+        } else if (bg.len == 1) {
+            idx = names(null, @intToEnum(ColorName, bg[0]), out);
+        } else {
+            unreachable;
+        }
     }
-    mem.copy(u8, text, out);
-    return text.len;
+    mem.copy(u8, out[idx..], text);
+    idx += text.len;
+    out[idx] = ESC;
+    out[idx + 1] = '[';
+    out[idx + 2] = '0';
+    out[idx + 3] = 'm';
+    idx += 4;
+
+    return idx;
 }
 
-const FGColorName = enum(u8) {
-    black = 30,
-    red = 31,
-    green = 32,
-    yellow = 33,
-    blue = 34,
-    magenta = 35,
-    cyan = 36,
-    white = 37,
-    // bright_black = 1;30,
-    // bright_red = 1;31,
-    // bright_green = 1;32,
-    // bright_yellow = 1;33,
-    // bright_blue = 1;34,
-    // bright_magenta = 1;35,
-    // bright_cyan = 1;36,
-    // bright_white = 1;37,
+pub fn color_names(text: []const u8, out: []u8, fg: ?ColorName, bg: ?ColorName, no_color: bool) usize {
+    if (fg != null and bg != null) {
+        return color(text, out, &[_]u8{@enumToInt(fg.?)}, &[_]u8{@enumToInt(bg.?)}, ColorMode.names, no_color);
+    } else if (fg) |true_fg| {
+        return color(text, out, &[_]u8{@enumToInt(true_fg)}, &[0]u8{}, ColorMode.names, no_color);
+    } else if (bg) |true_bg| {
+        return color(text, out, &[0]u8{}, &[_]u8{@enumToInt(true_bg)}, ColorMode.names, no_color);
+    } else {
+        unreachable;
+    }
+}
+
+const ESC = ascii.control_code.ESC;
+const ColorName = enum(u8) {
+    black = 0,
+    red,
+    green,
+    yellow,
+    blue,
+    magenta,
+    cyan,
+    white,
+    bright_black,
+    bright_red,
+    bright_green,
+    bright_yellow,
+    bright_blue,
+    bright_magenta,
+    bright_cyan,
+    bright_white,
+};
+// Foreground color codes
+const FGColors = [_][]const u8{
+    "30", // black
+    "31", // red
+    "32", // green
+    "33", // yellow
+    "34", // blue
+    "35", // magenta
+    "36", // cyan
+    "37", // white
+    "1;30", // bright_black
+    "1;31", // bright_red
+    "1;32", // bright_green
+    "1;33", // bright_yellow
+    "1;34", // bright_blue
+    "1;35", // bright_magenta
+    "1;36", // bright_cyan
+    "1;37", // bright_white
 };
 
-const BGColorName = enum(u8) {
-    black = 40,
-    red = 41,
-    green = 42,
-    yellow = 43,
-    blue = 44,
-    magenta = 45,
-    cyan = 46,
-    white = 47,
-    bright_black = 100,
-    bright_red = 101,
-    bright_green = 102,
-    bright_yellow = 103,
-    bright_blue = 104,
-    bright_magenta = 105,
-    bright_cyan = 106,
-    bright_white = 107,
+// Background color codes
+const BGColors = [_][]const u8{
+    "40", // black
+    "41", // red
+    "42", // green
+    "43", // yellow
+    "44", // blue
+    "45", // magenta
+    "46", // cyan
+    "47", // white
+    "100", // bright_black
+    "101", // bright_red
+    "102", // bright_green
+    "103", // bright_yellow
+    "104", // bright_blue
+    "105", // bright_magenta
+    "106", // bright_cyan
+    "107", // bright_white
 };
 
-fn names(fg: []const u8, bg: []const u8, out: []u8) usize {
-    assert(fg.len <= 1);
-    assert(bg.len <= 1);
-    assert(bg.len + fg.len >= 1);
+fn names(optional_fg: ?ColorName, optional_bg: ?ColorName, out: []u8) usize {
+    assert(optional_fg != null or optional_bg != null);
 
-    return 0;
+    var idx: usize = 0;
+    out[idx] = ESC;
+    out[idx + 1] = '[';
+    idx += 2;
+
+    if (optional_fg) |fg| {
+        const fg_code = FGColors[@enumToInt(fg)];
+        mem.copy(u8, out[idx..], fg_code);
+        idx += fg_code.len;
+    }
+
+    if (optional_bg) |bg| {
+        if (optional_fg != null) {
+            out[idx] = ';';
+            idx += 1;
+        }
+        const bg_code = BGColors[@enumToInt(bg)];
+        mem.copy(u8, out[idx..], bg_code);
+        idx += bg_code.len;
+    }
+
+    out[idx] = 'm';
+    idx += 1;
+    return idx;
+}
+
+test "names with optional fg, bg" {
+    var buff: [10]u8 = undefined;
+
+    var len = names(ColorName.red, null, &buff);
+    try expect(len == 5);
+    try expect(mem.eql(u8, "\x1b[31m", buff[0..len]));
+
+    len = names(null, ColorName.red, &buff);
+    try expect(len == 5);
+    try expect(mem.eql(u8, "\x1b[41m", buff[0..len]));
+
+    len = names(ColorName.bright_green, ColorName.red, &buff);
+    try expect(len == 10);
+    try expect(mem.eql(u8, "\x1b[1;32;41m", buff[0..len]));
+}
+
+test "color in names mode" {
+    var buff: [30]u8 = undefined;
+
+    var len = color("Some text", &buff, &[_]u8{@enumToInt(ColorName.red)}, &[0]u8{}, ColorMode.names, false);
+    try expect(len == 18);
+    try expect(mem.eql(u8, "\x1b[31mSome text\x1b[0m", buff[0..len]));
+
+    len = color_names("Some text", &buff, ColorName.red, null, false);
+    try expect(len == 18);
+    try expect(mem.eql(u8, "\x1b[31mSome text\x1b[0m", buff[0..len]));
+
+    len = color_names("Some text", &buff, null, ColorName.red, false);
+    try expect(len == 18);
+    try expect(mem.eql(u8, "\x1b[41mSome text\x1b[0m", buff[0..len]));
+
+    len = color_names("Some text", &buff, ColorName.bright_magenta, ColorName.red, false);
+    try expect(len == 23);
+    try expect(mem.eql(u8, "\x1b[1;35;41mSome text\x1b[0m", buff[0..len]));
 }
