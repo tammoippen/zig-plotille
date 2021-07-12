@@ -201,18 +201,27 @@ test "color by hsl black" {
 //     no_color: bool   Remove color optionally. default=False
 // Returns:
 //     str: `text` enclosed with corresponding coloring controls
-pub fn color(text: []const u8, out: []u8, fg: []const u8, bg: []const u8, mode: ColorMode, no_color: bool) usize {
-    if (fg.len == 0 and bg.len == 0) {
-        mem.copy(u8, out, text);
-        return text.len;
-    }
-
+pub fn color(text: []const u8, out: []u8, fg: ?Color, bg: ?Color, no_color: bool) !usize {
     if (no_color) { // or os.environ.get('NO_COLOR'))
         mem.copy(u8, out, text);
         return text.len;
     }
 
+    if (fg == null and bg == null) {
+        mem.copy(u8, out, text);
+        return text.len;
+    }
+
+    // assert both fg and bg use same color_mode
+    try expect(fg == null or bg == null or fg.?.mode == bg.?.mode);
+
     var idx: usize = 0;
+
+    if (fg) |true_fg| {
+        if (true_fg.mode == ColorMode.names) {
+            idx = names(true_fg.name, out);
+        }
+    }
 
     if (mode == ColorMode.names) {
         if (fg.len == 1 and bg.len == 1) {
@@ -234,18 +243,6 @@ pub fn color(text: []const u8, out: []u8, fg: []const u8, bg: []const u8, mode: 
     idx += 4;
 
     return idx;
-}
-
-pub fn color_names(text: []const u8, out: []u8, fg: ?ColorName, bg: ?ColorName, no_color: bool) usize {
-    if (fg != null and bg != null) {
-        return color(text, out, &[_]u8{@enumToInt(fg.?)}, &[_]u8{@enumToInt(bg.?)}, ColorMode.names, no_color);
-    } else if (fg) |true_fg| {
-        return color(text, out, &[_]u8{@enumToInt(true_fg)}, &[0]u8{}, ColorMode.names, no_color);
-    } else if (bg) |true_bg| {
-        return color(text, out, &[0]u8{}, &[_]u8{@enumToInt(true_bg)}, ColorMode.names, no_color);
-    } else {
-        unreachable;
-    }
 }
 
 const ESC = ascii.control_code.ESC;
