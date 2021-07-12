@@ -2,6 +2,10 @@ const std = @import("std");
 const assert = std.debug.assert;
 const unicode = std.unicode;
 
+const testing = std.testing;
+const expect = testing.expect;
+const mem = std.mem;
+
 // Dot ordering: \u2800 '⠀' - \u28FF '⣿' Coding according to ISO/TR 11548-1
 //
 // Hence, each dot on or off is 8bit, i.e. 256 posibilities. With dot number
@@ -24,7 +28,7 @@ const xy2dot = [_][2]u8{
     [_]u8{ 1 << 0, 1 << 3 },
 };
 
-const Dots = struct {
+pub const Dots = struct {
     dots: u8,
 
     pub fn init() Dots {
@@ -56,10 +60,6 @@ const Dots = struct {
         self.dots &= ~xy2dot[y][x];
     }
 };
-
-const testing = std.testing;
-const expect = testing.expect;
-const mem = std.mem;
 
 test "test clear and full char" {
     var d = Dots.init();

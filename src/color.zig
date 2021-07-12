@@ -6,13 +6,13 @@ const mem = std.mem;
 const testing = std.testing;
 const expect = testing.expect;
 
-const ColorMode = enum {
+pub const ColorMode = enum(c_uint) {
     names,
     lookup,
     rgb,
 };
 
-const Color = struct {
+pub const Color = struct {
     mode: ColorMode,
     name: ?ColorName,
     lookup: ?u8,
@@ -201,7 +201,7 @@ test "color by hsl black" {
 //     no_color: bool   Remove color optionally. default=False
 // Returns:
 //     str: `text` enclosed with corresponding coloring controls
-pub fn color(text: []const u8, out: []u8, fg: ?Color, bg: ?Color, no_color: bool) !usize {
+pub fn color(text: []const u8, out: []u8, fg: ?Color, bg: ?Color, no_color: bool) usize {
     if (no_color) { // or os.environ.get('NO_COLOR'))
         mem.copy(u8, out, text);
         return text.len;
@@ -213,27 +213,17 @@ pub fn color(text: []const u8, out: []u8, fg: ?Color, bg: ?Color, no_color: bool
     }
 
     // assert both fg and bg use same color_mode
-    try expect(fg == null or bg == null or fg.?.mode == bg.?.mode);
+    assert(fg == null or bg == null or fg.?.mode == bg.?.mode);
+    const mode = if (fg != null) fg.?.mode else bg.?.mode;
 
     var idx: usize = 0;
 
-    if (fg) |true_fg| {
-        if (true_fg.mode == ColorMode.names) {
-            idx = names(true_fg.name, out);
-        }
+    if (mode == ColorMode.names) {
+        const fg_name = if (fg) |true_fg| true_fg.name else null;
+        const bg_name = if (bg) |true_bg| true_bg.name else null;
+        idx = names(fg_name, bg_name, out);
     }
 
-    if (mode == ColorMode.names) {
-        if (fg.len == 1 and bg.len == 1) {
-            idx = names(@intToEnum(ColorName, fg[0]), @intToEnum(ColorName, bg[0]), out);
-        } else if (fg.len == 1) {
-            idx = names(@intToEnum(ColorName, fg[0]), null, out);
-        } else if (bg.len == 1) {
-            idx = names(null, @intToEnum(ColorName, bg[0]), out);
-        } else {
-            unreachable;
-        }
-    }
     mem.copy(u8, out[idx..], text);
     idx += text.len;
     out[idx] = ESC;
@@ -245,8 +235,8 @@ pub fn color(text: []const u8, out: []u8, fg: ?Color, bg: ?Color, no_color: bool
     return idx;
 }
 
-const ESC = ascii.control_code.ESC;
-const ColorName = enum(u8) {
+export const ESC = ascii.control_code.ESC;
+pub const ColorName = enum(c_uint) {
     black = 0,
     red,
     green,
@@ -376,19 +366,19 @@ test "names with optional fg, bg" {
 test "color in names mode" {
     var buff: [30]u8 = undefined;
 
-    var len = color("Some text", &buff, &[_]u8{@enumToInt(ColorName.red)}, &[0]u8{}, ColorMode.names, false);
+    var len = color("Some text", &buff, Color.by_name(ColorName.red), null, false);
     try expect(len == 18);
     try expect(mem.eql(u8, "\x1b[31mSome text\x1b[0m", buff[0..len]));
 
-    len = color_names("Some text", &buff, ColorName.red, null, false);
+    len = color("Some text", &buff, Color.by_name(ColorName.red), null, false);
     try expect(len == 18);
     try expect(mem.eql(u8, "\x1b[31mSome text\x1b[0m", buff[0..len]));
 
-    len = color_names("Some text", &buff, null, ColorName.red, false);
+    len = color("Some text", &buff, null, Color.by_name(ColorName.red), false);
     try expect(len == 18);
     try expect(mem.eql(u8, "\x1b[41mSome text\x1b[0m", buff[0..len]));
 
-    len = color_names("Some text", &buff, ColorName.bright_magenta, ColorName.red, false);
+    len = color("Some text", &buff, Color.by_name(ColorName.bright_magenta), Color.by_name(ColorName.red), false);
     try expect(len == 21);
     try expect(mem.eql(u8, "\x1b[95;41mSome text\x1b[0m", buff[0..len]));
 }
