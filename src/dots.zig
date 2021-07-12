@@ -28,7 +28,7 @@ const xy2dot = [_][2]u8{
     [_]u8{ 1 << 0, 1 << 3 },
 };
 
-pub const Dots = struct {
+pub const Dots = extern struct {
     dots: u8,
 
     pub fn init() Dots {
@@ -37,11 +37,11 @@ pub const Dots = struct {
         };
     }
 
-    pub fn str(self: Dots, buf: []u8) !u3 {
+    pub fn str(self: Dots, buf: []u8) u3 {
         assert(buf.len >= 3);
         var v: u21 = 0x2800;
         v += self.dots;
-        return try unicode.utf8Encode(v, buf);
+        return unicode.utf8Encode(v, buf) catch unreachable;
     }
 
     pub fn fill(self: *Dots) void {
