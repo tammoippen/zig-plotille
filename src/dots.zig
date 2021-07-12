@@ -65,15 +65,15 @@ test "test clear and full char" {
     var d = Dots.init();
     var buff: [20]u8 = undefined;
 
-    var len = try d.str(&buff);
+    var len = d.str(&buff);
     try expect(mem.eql(u8, "⠀", buff[0..len]));
 
     d.fill();
-    len = try d.str(&buff);
+    len = d.str(&buff);
     try expect(mem.eql(u8, "⣿", buff[0..len]));
 
     d.clear();
-    len = try d.str(&buff);
+    len = d.str(&buff);
     try expect(mem.eql(u8, "⠀", buff[0..len]));
 }
 
@@ -81,63 +81,63 @@ test "set and unset individual vals" {
     var buff: [20]u8 = undefined;
     var d = Dots.init();
 
-    var len = try d.str(&buff);
+    var len = d.str(&buff);
     try expect(mem.eql(u8, "⠀", buff[0..len]));
 
     d.set(0, 0);
-    len = try d.str(&buff);
+    len = d.str(&buff);
     try expect(mem.eql(u8, "⡀", buff[0..len]));
     d.unset(0, 0);
-    len = try d.str(&buff);
+    len = d.str(&buff);
     try expect(mem.eql(u8, "⠀", buff[0..len]));
 
     d.set(0, 1);
-    len = try d.str(&buff);
+    len = d.str(&buff);
     try expect(mem.eql(u8, "⠄", buff[0..len]));
     d.unset(0, 1);
-    len = try d.str(&buff);
+    len = d.str(&buff);
     try expect(mem.eql(u8, "⠀", buff[0..len]));
 
     d.set(0, 2);
-    len = try d.str(&buff);
+    len = d.str(&buff);
     try expect(mem.eql(u8, "⠂", buff[0..len]));
     d.unset(0, 2);
-    len = try d.str(&buff);
+    len = d.str(&buff);
     try expect(mem.eql(u8, "⠀", buff[0..len]));
 
     d.set(0, 3);
-    len = try d.str(&buff);
+    len = d.str(&buff);
     try expect(mem.eql(u8, "⠁", buff[0..len]));
     d.unset(0, 3);
-    len = try d.str(&buff);
+    len = d.str(&buff);
     try expect(mem.eql(u8, "⠀", buff[0..len]));
 
     d.set(1, 0);
-    len = try d.str(&buff);
+    len = d.str(&buff);
     try expect(mem.eql(u8, "⢀", buff[0..len]));
     d.unset(1, 0);
-    len = try d.str(&buff);
+    len = d.str(&buff);
     try expect(mem.eql(u8, "⠀", buff[0..len]));
 
     d.set(1, 1);
-    len = try d.str(&buff);
+    len = d.str(&buff);
     try expect(mem.eql(u8, "⠠", buff[0..len]));
     d.unset(1, 1);
-    len = try d.str(&buff);
+    len = d.str(&buff);
     try expect(mem.eql(u8, "⠀", buff[0..len]));
 
     d.set(1, 2);
-    len = try d.str(&buff);
+    len = d.str(&buff);
     try expect(mem.eql(u8, "⠐", buff[0..len]));
     d.unset(1, 2);
-    len = try d.str(&buff);
+    len = d.str(&buff);
     try expect(mem.eql(u8, "⠀", buff[0..len]));
 
     d.set(1, 3);
-    len = try d.str(&buff);
+    len = d.str(&buff);
     try expect(mem.eql(u8, "⠈", buff[0..len]));
     d.unset(1, 3);
-    len = try d.str(&buff);
+    len = d.str(&buff);
     try expect(mem.eql(u8, "⠀", buff[0..len]));
 }
 

@@ -12,19 +12,19 @@ pub const ColorMode = enum(c_uint) {
     rgb,
 };
 
-pub const Color = struct {
+pub const Color = extern struct {
     mode: ColorMode,
-    name: ?ColorName,
-    lookup: ?u8,
-    rgb: ?[3]u8,
+    name: ColorName,
+    lookup: u8,
+    rgb: [3]u8,
 
     pub fn by_name(name: ColorName) Color {
         // https://en.wikipedia.org/wiki/ANSI_escape_code#3-bit_and_4-bit
         return Color{
             .mode = ColorMode.names,
             .name = name,
-            .lookup = null,
-            .rgb = null,
+            .lookup = 0,
+            .rgb = [3]u8{ 0, 0, 0 },
         };
     }
     pub fn by_lookup(idx: u8) Color {
@@ -35,9 +35,9 @@ pub const Color = struct {
         // 232-255:  grayscale from black to white in 24 steps
         return Color{
             .mode = ColorMode.lookup,
-            .name = null,
+            .name = ColorName.invalid,
             .lookup = idx,
-            .rgb = null,
+            .rgb = [3]u8{ 0, 0, 0 },
         };
     }
     pub fn by_rgb(r: u8, g: u8, b: u8) Color {
@@ -45,8 +45,8 @@ pub const Color = struct {
         //
         return Color{
             .mode = ColorMode.rgb,
-            .name = null,
-            .lookup = null,
+            .name = ColorName.invalid,
+            .lookup = 0,
             .rgb = [_]u8{ r, g, b },
         };
     }
@@ -72,8 +72,8 @@ pub const Color = struct {
 
         return Color{
             .mode = ColorMode.rgb,
-            .name = null,
-            .lookup = null,
+            .name = ColorName.invalid,
+            .lookup = 0,
             .rgb = [_]u8{ @floatToInt(u8, r * 255), @floatToInt(u8, g * 255), @floatToInt(u8, b * 255) },
         };
     }
@@ -99,6 +99,10 @@ pub const Color = struct {
     }
 };
 
+export fn color_by_name(name: ColorName) Color {
+    return Color.by_name(name);
+}
+
 test "color by name" {
     const c = Color.by_name(ColorName.bright_blue);
 
@@ -110,51 +114,51 @@ test "color by index" {
     const c = Color.by_lookup(123);
 
     try expect(c.mode == ColorMode.lookup);
-    try expect(c.lookup.? == 123);
+    try expect(c.lookup == 123);
 }
 
 test "color by rgb" {
     const c = Color.by_rgb(255, 0, 0);
 
     try expect(c.mode == ColorMode.rgb);
-    try expect(mem.eql(u8, c.rgb.?[0..], ([3]u8{ 255, 0, 0 })[0..]));
+    try expect(mem.eql(u8, c.rgb[0..], ([3]u8{ 255, 0, 0 })[0..]));
 }
 
 test "color by hsl red" {
     const c = Color.by_hsl(0, 1, 0.5);
 
     try expect(c.mode == ColorMode.rgb);
-    try expect(mem.eql(u8, c.rgb.?[0..], ([3]u8{ 255, 0, 0 })[0..]));
+    try expect(mem.eql(u8, c.rgb[0..], ([3]u8{ 255, 0, 0 })[0..]));
 }
 test "color by hsl green" {
     const c = Color.by_hsl(120.0, 1.0, 0.5);
 
     try expect(c.mode == ColorMode.rgb);
-    try expect(mem.eql(u8, c.rgb.?[0..], ([3]u8{ 0, 255, 0 })[0..]));
+    try expect(mem.eql(u8, c.rgb[0..], ([3]u8{ 0, 255, 0 })[0..]));
 }
 test "color by hsl blue" {
     const c = Color.by_hsl(240.0, 1.0, 0.5);
 
     try expect(c.mode == ColorMode.rgb);
-    try expect(mem.eql(u8, c.rgb.?[0..], ([3]u8{ 0, 0, 255 })[0..]));
+    try expect(mem.eql(u8, c.rgb[0..], ([3]u8{ 0, 0, 255 })[0..]));
 }
 test "color by hsl white" {
     const c = Color.by_hsl(0, 0, 1);
 
     try expect(c.mode == ColorMode.rgb);
-    try expect(mem.eql(u8, c.rgb.?[0..], ([3]u8{ 255, 255, 255 })[0..]));
+    try expect(mem.eql(u8, c.rgb[0..], ([3]u8{ 255, 255, 255 })[0..]));
 }
 test "color by hsl black" {
     const c = Color.by_hsl(0, 0, 0);
 
     try expect(c.mode == ColorMode.rgb);
-    try expect(mem.eql(u8, c.rgb.?[0..], ([3]u8{ 0, 0, 0 })[0..]));
+    try expect(mem.eql(u8, c.rgb[0..], ([3]u8{ 0, 0, 0 })[0..]));
 }
 test "color by hsl other" {
     const c = Color.by_hsl(123, 0.8, 0.5);
 
     try expect(c.mode == ColorMode.rgb);
-    try expect(mem.eql(u8, c.rgb.?[0..], ([3]u8{ 25, 229, 35 })[0..]));
+    try expect(mem.eql(u8, c.rgb[0..], ([3]u8{ 25, 229, 35 })[0..]));
 }
 
 // Surround `text` with control characters for coloring
@@ -279,6 +283,7 @@ pub const ColorName = enum(c_uint) {
     bright_magenta_old,
     bright_cyan_old,
     bright_white_old,
+    invalid,
 };
 // Foreground color codes
 const FGColors = [_][]const u8{
