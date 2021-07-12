@@ -50,12 +50,12 @@ pub const Color = struct {
             .rgb = [_]u8{ r, g, b },
         };
     }
-    pub fn by_hsl(h: f64, s: f64, l: f64) !Color {
+    pub fn by_hsl(h: f64, s: f64, l: f64) Color {
         // https://en.wikipedia.org/wiki/ANSI_escape_code#24-bit
         // converts hsl values into rgb values.
-        try expect(h >= 0 and h <= 360);
-        try expect(s >= 0 and s <= 1);
-        try expect(l >= 0 and l <= 1);
+        assert(h >= 0 and h <= 360);
+        assert(s >= 0 and s <= 1);
+        assert(l >= 0 and l <= 1);
         var r: f64 = l;
         var g: f64 = l;
         var b: f64 = l;
@@ -121,34 +121,40 @@ test "color by rgb" {
 }
 
 test "color by hsl red" {
-    const c = try Color.by_hsl(0, 1, 0.5);
+    const c = Color.by_hsl(0, 1, 0.5);
 
     try expect(c.mode == ColorMode.rgb);
     try expect(mem.eql(u8, c.rgb.?[0..], ([3]u8{ 255, 0, 0 })[0..]));
 }
 test "color by hsl green" {
-    const c = try Color.by_hsl(120.0, 1.0, 0.5);
+    const c = Color.by_hsl(120.0, 1.0, 0.5);
 
     try expect(c.mode == ColorMode.rgb);
     try expect(mem.eql(u8, c.rgb.?[0..], ([3]u8{ 0, 255, 0 })[0..]));
 }
 test "color by hsl blue" {
-    const c = try Color.by_hsl(240.0, 1.0, 0.5);
+    const c = Color.by_hsl(240.0, 1.0, 0.5);
 
     try expect(c.mode == ColorMode.rgb);
     try expect(mem.eql(u8, c.rgb.?[0..], ([3]u8{ 0, 0, 255 })[0..]));
 }
 test "color by hsl white" {
-    const c = try Color.by_hsl(0, 0, 1);
+    const c = Color.by_hsl(0, 0, 1);
 
     try expect(c.mode == ColorMode.rgb);
     try expect(mem.eql(u8, c.rgb.?[0..], ([3]u8{ 255, 255, 255 })[0..]));
 }
 test "color by hsl black" {
-    const c = try Color.by_hsl(0, 0, 0);
+    const c = Color.by_hsl(0, 0, 0);
 
     try expect(c.mode == ColorMode.rgb);
     try expect(mem.eql(u8, c.rgb.?[0..], ([3]u8{ 0, 0, 0 })[0..]));
+}
+test "color by hsl other" {
+    const c = Color.by_hsl(123, 0.8, 0.5);
+
+    try expect(c.mode == ColorMode.rgb);
+    try expect(mem.eql(u8, c.rgb.?[0..], ([3]u8{ 25, 229, 35 })[0..]));
 }
 
 // Surround `text` with control characters for coloring
@@ -218,14 +224,22 @@ pub fn color(text: []const u8, out: []u8, fg: ?Color, bg: ?Color, no_color: bool
 
     var idx: usize = 0;
 
-    if (mode == ColorMode.names) {
-        const fg_name = if (fg) |true_fg| true_fg.name else null;
-        const bg_name = if (bg) |true_bg| true_bg.name else null;
-        idx = names(fg_name, bg_name, out);
-    } else if (mode == ColorMode.lookup) {
-        const fg_lookup = if (fg) |true_fg| true_fg.lookup else null;
-        const bg_lookup = if (bg) |true_bg| true_bg.lookup else null;
-        idx = try lookups(fg_lookup, bg_lookup, out);
+    switch (mode) {
+        .names => {
+            const fg_name = if (fg) |true_fg| true_fg.name else null;
+            const bg_name = if (bg) |true_bg| true_bg.name else null;
+            idx = names(fg_name, bg_name, out);
+        },
+        .lookup => {
+            const fg_lookup = if (fg) |true_fg| true_fg.lookup else null;
+            const bg_lookup = if (bg) |true_bg| true_bg.lookup else null;
+            idx = try lookups(fg_lookup, bg_lookup, out);
+        },
+        .rgb => {
+            const fg_rgb = if (fg) |true_fg| true_fg.rgb else null;
+            const bg_rgb = if (bg) |true_bg| true_bg.rgb else null;
+            idx = try rgbs(fg_rgb, bg_rgb, out);
+        },
     }
 
     mem.copy(u8, out[idx..], text);
@@ -446,4 +460,69 @@ test "color in lookup mode" {
     len = try color("Some text", &buff, Color.by_lookup(123), Color.by_lookup(76), false);
     try expect(len == 32);
     try expect(mem.eql(u8, "\x1b[38;5;123;48;5;76mSome text\x1b[0m", buff[0..len]));
+}
+
+const FG_RGB_NUM = "38;2;";
+const BG_RGB_NUM = "48;2;";
+
+fn rgbs(optional_fg: ?[3]u8, optional_bg: ?[3]u8, out: []u8) !usize {
+    assert(optional_fg != null or optional_bg != null);
+
+    var idx: usize = 0;
+    out[idx] = ESC;
+    out[idx + 1] = '[';
+    idx += 2;
+
+    if (optional_fg) |fg| {
+        mem.copy(u8, out[idx..], FG_RGB_NUM);
+        idx += FG_RGB_NUM.len;
+        const res = try std.fmt.bufPrint(out[idx..], "{};{};{}", .{ fg[0], fg[1], fg[2] });
+        idx += res.len;
+    }
+    if (optional_bg) |bg| {
+        if (optional_fg != null) {
+            out[idx] = ';';
+            idx += 1;
+        }
+        mem.copy(u8, out[idx..], BG_RGB_NUM);
+        idx += BG_RGB_NUM.len;
+        const res = try std.fmt.bufPrint(out[idx..], "{};{};{}", .{ bg[0], bg[1], bg[2] });
+        idx += res.len;
+    }
+
+    out[idx] = 'm';
+    idx += 1;
+    return idx;
+}
+
+test "rgbs with optional fg, bg" {
+    var buff: [30]u8 = undefined;
+
+    var len = try rgbs([3]u8{ 255, 0, 0 }, null, &buff);
+    try expect(len == 15);
+    try expect(mem.eql(u8, "\x1b[38;2;255;0;0m", buff[0..len]));
+
+    len = try rgbs(null, [_]u8{ 34, 25, 100 }, &buff);
+    try expect(len == 17);
+    try expect(mem.eql(u8, "\x1b[48;2;34;25;100m", buff[0..len]));
+
+    len = try rgbs([_]u8{ 1, 2, 3 }, [_]u8{ 100, 200, 50 }, &buff);
+    try expect(len == 29);
+    try expect(mem.eql(u8, "\x1b[38;2;1;2;3;48;2;100;200;50m", buff[0..len]));
+}
+
+test "color in rgb mode" {
+    var buff: [45]u8 = undefined;
+
+    var len = try color("Some text", &buff, Color.by_rgb(44, 22, 11), null, false);
+    try expect(len == 29);
+    try expect(mem.eql(u8, "\x1b[38;2;44;22;11mSome text\x1b[0m", buff[0..len]));
+
+    len = try color("Some text", &buff, null, Color.by_rgb(5, 66, 100), false);
+    try expect(len == 29);
+    try expect(mem.eql(u8, "\x1b[48;2;5;66;100mSome text\x1b[0m", buff[0..len]));
+
+    len = try color("Some text", &buff, Color.by_hsl(123, 0.8, 0.5), Color.by_rgb(76, 89, 9), false);
+    try expect(len == 43);
+    try expect(mem.eql(u8, "\x1b[38;2;25;229;35;48;2;76;89;9mSome text\x1b[0m", buff[0..len]));
 }
