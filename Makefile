@@ -1,10 +1,10 @@
-.PHONY: clean gen-headers samples/dots
+.PHONY: clean gen-headers samples/dots.exe
 
 clean:
 	rm -rf zig-cache zig-out
 
-samples/dots: samples/dots.c
-	$(CC) -lzig-plotille -L$(PWD)/zig-out/lib samples/dots.c -o samples/dots
+samples/dots.exe: samples/dots.c
+	$(CC) -lzig-plotille -L$(PWD)/zig-out/lib samples/dots.c -o samples/dots.exe
 
 gen-headers:
 	# do not forget to uncomment the `lib.emit_h = true;` part
