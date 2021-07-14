@@ -301,54 +301,16 @@ test "color by hsl other" {
     try expect(mem.eql(u8, c.rgb[0..], ([3]u8{ 25, 229, 35 })[0..]));
 }
 
-pub fn color(text: []const u8, out: []u8, fg: ?Color, bg: ?Color, no_color: bool) !usize {
+pub fn color(text: []const u8, out: []u8, optional_fg: ?Color, optional_bg: ?Color, no_color: bool) !usize {
     if (no_color) { // or os.environ.get('NO_COLOR'))
         mem.copy(u8, out, text);
         return text.len;
     }
 
-    if (fg == null and bg == null) {
+    if (optional_fg == null and optional_bg == null) {
         mem.copy(u8, out, text);
         return text.len;
     }
-
-    // assert both fg and bg use same color_mode
-    assert(fg == null or bg == null or fg.?.mode == bg.?.mode);
-    const mode = if (fg != null) fg.?.mode else bg.?.mode;
-
-    var idx: usize = 0;
-
-    switch (mode) {
-        .names => {
-            const fg_name = if (fg) |true_fg| true_fg.name else null;
-            const bg_name = if (bg) |true_bg| true_bg.name else null;
-            idx = names(fg_name, bg_name, out);
-        },
-        .lookup => {
-            const fg_lookup = if (fg) |true_fg| true_fg.lookup else null;
-            const bg_lookup = if (bg) |true_bg| true_bg.lookup else null;
-            idx = try lookups(fg_lookup, bg_lookup, out);
-        },
-        .rgb => {
-            const fg_rgb = if (fg) |true_fg| true_fg.rgb else null;
-            const bg_rgb = if (bg) |true_bg| true_bg.rgb else null;
-            idx = try rgbs(fg_rgb, bg_rgb, out);
-        },
-    }
-
-    mem.copy(u8, out[idx..], text);
-    idx += text.len;
-    out[idx] = ESC;
-    out[idx + 1] = '[';
-    out[idx + 2] = '0';
-    out[idx + 3] = 'm';
-    idx += 4;
-
-    return idx;
-}
-
-fn names(optional_fg: ?ColorName, optional_bg: ?ColorName, out: []u8) usize {
-    assert(optional_fg != null or optional_bg != null);
 
     var idx: usize = 0;
     out[idx] = ESC;
@@ -356,9 +318,17 @@ fn names(optional_fg: ?ColorName, optional_bg: ?ColorName, out: []u8) usize {
     idx += 2;
 
     if (optional_fg) |fg| {
-        const fg_code = FGColors[@enumToInt(fg)];
-        mem.copy(u8, out[idx..], fg_code);
-        idx += fg_code.len;
+        switch (fg.mode) {
+            .names => {
+                idx += names(fg.name, true, out[idx..]);
+            },
+            .lookup => {
+                idx += try lookups(fg.lookup, true, out[idx..]);
+            },
+            .rgb => {
+                idx += try rgbs(fg.rgb, true, out[idx..]);
+            },
+        }
     }
 
     if (optional_bg) |bg| {
@@ -366,174 +336,195 @@ fn names(optional_fg: ?ColorName, optional_bg: ?ColorName, out: []u8) usize {
             out[idx] = ';';
             idx += 1;
         }
-        const bg_code = BGColors[@enumToInt(bg)];
-        mem.copy(u8, out[idx..], bg_code);
-        idx += bg_code.len;
+        switch (bg.mode) {
+            .names => {
+                idx += names(bg.name, false, out[idx..]);
+            },
+            .lookup => {
+                idx += try lookups(bg.lookup, false, out[idx..]);
+            },
+            .rgb => {
+                idx += try rgbs(bg.rgb, false, out[idx..]);
+            },
+        }
     }
 
     out[idx] = 'm';
     idx += 1;
+    // copy actual text
+    mem.copy(u8, out[idx..], text);
+    idx += text.len;
+
+    if (true) {
+        // reset colors to default
+        out[idx] = ESC;
+        mem.copy(u8, out[idx + 1 ..], "[39;49m");
+        idx += 8;
+    } else {
+        // maybe have option later for switching
+        // reset all attributes
+        out[idx] = ESC;
+        mem.copy(u8, out[idx + 1 ..], "[0m");
+        idx += 4;
+    }
+
     return idx;
+}
+
+fn names(color_name: ColorName, is_fg: bool, out: []u8) usize {
+    if (is_fg) {
+        const fg_code = FGColors[@enumToInt(color_name)];
+        mem.copy(u8, out, fg_code);
+        return fg_code.len;
+    } else {
+        const bg_code = BGColors[@enumToInt(color_name)];
+        mem.copy(u8, out, bg_code);
+        return bg_code.len;
+    }
 }
 
 test "names with optional fg, bg" {
     var buff: [10]u8 = undefined;
 
-    var len = names(ColorName.red, null, &buff);
-    try expect(len == 5);
-    try expect(mem.eql(u8, "\x1b[31m", buff[0..len]));
+    var len = names(ColorName.red, true, &buff);
+    try expect(len == 2);
+    try expect(mem.eql(u8, "31", buff[0..len]));
 
-    len = names(null, ColorName.red, &buff);
-    try expect(len == 5);
-    try expect(mem.eql(u8, "\x1b[41m", buff[0..len]));
+    len = names(ColorName.red, false, &buff);
+    try expect(len == 2);
+    try expect(mem.eql(u8, "41", buff[0..len]));
 
-    len = names(ColorName.bright_green, ColorName.red, &buff);
-    try expect(len == 8);
-    try expect(mem.eql(u8, "\x1b[92;41m", buff[0..len]));
+    len = names(ColorName.bright_green, true, &buff);
+    try expect(len == 2);
+    try expect(mem.eql(u8, "92", buff[0..len]));
+
+    len = names(ColorName.bright_green, false, &buff);
+    try expect(len == 3);
+    try expect(mem.eql(u8, "102", buff[0..len]));
+
+    len = names(ColorName.bright_magenta_old, true, &buff);
+    try expect(len == 4);
+    try expect(mem.eql(u8, "1;35", buff[0..len]));
+
+    len = names(ColorName.bright_magenta_old, false, &buff);
+    try expect(len == 4);
+    try expect(mem.eql(u8, "1;45", buff[0..len]));
 }
 
 test "color in names mode" {
     var buff: [30]u8 = undefined;
 
     var len = try color("Some text", &buff, Color.by_name(ColorName.red), null, false);
-    try expect(len == 18);
-    try expect(mem.eql(u8, "\x1b[31mSome text\x1b[0m", buff[0..len]));
+    try expect(len == 22);
+    try expect(mem.eql(u8, "\x1b[31mSome text\x1b[39;49m", buff[0..len]));
 
     len = try color("Some text", &buff, null, Color.by_name(ColorName.red), false);
-    try expect(len == 18);
-    try expect(mem.eql(u8, "\x1b[41mSome text\x1b[0m", buff[0..len]));
+    try expect(len == 22);
+    try expect(mem.eql(u8, "\x1b[41mSome text\x1b[39;49m", buff[0..len]));
 
     len = try color("Some text", &buff, Color.by_name(ColorName.bright_magenta), Color.by_name(ColorName.red), false);
-    try expect(len == 21);
-    try expect(mem.eql(u8, "\x1b[95;41mSome text\x1b[0m", buff[0..len]));
+    try expect(len == 25);
+    try expect(mem.eql(u8, "\x1b[95;41mSome text\x1b[39;49m", buff[0..len]));
 }
 
 const FG_LOOKUP_NUM = "38;5;";
 const BG_LOOKUP_NUM = "48;5;";
 
-fn lookups(optional_fg: ?u8, optional_bg: ?u8, out: []u8) !usize {
-    assert(optional_fg != null or optional_bg != null);
-
-    var idx: usize = 0;
-    out[idx] = ESC;
-    out[idx + 1] = '[';
-    idx += 2;
-
-    if (optional_fg) |fg| {
-        mem.copy(u8, out[idx..], FG_LOOKUP_NUM);
-        idx += FG_LOOKUP_NUM.len;
-        const res = try std.fmt.bufPrint(out[idx..], "{}", .{fg});
-        idx += res.len;
+fn lookups(color_lookup: ?u8, is_fg: bool, out: []u8) !usize {
+    if (is_fg) {
+        const res = try std.fmt.bufPrint(out, "{s}{}", .{ FG_LOOKUP_NUM, color_lookup });
+        return res.len;
+    } else {
+        const res = try std.fmt.bufPrint(out, "{s}{}", .{ BG_LOOKUP_NUM, color_lookup });
+        return res.len;
     }
-    if (optional_bg) |bg| {
-        if (optional_fg != null) {
-            out[idx] = ';';
-            idx += 1;
-        }
-        mem.copy(u8, out[idx..], BG_LOOKUP_NUM);
-        idx += BG_LOOKUP_NUM.len;
-        const res = try std.fmt.bufPrint(out[idx..], "{}", .{bg});
-        idx += res.len;
-    }
-
-    out[idx] = 'm';
-    idx += 1;
-    return idx;
 }
 
 test "lookups with optional fg, bg" {
     var buff: [20]u8 = undefined;
 
-    var len = try lookups(3, null, &buff);
-    try expect(len == 9);
-    try expect(mem.eql(u8, "\x1b[38;5;3m", buff[0..len]));
+    var len = try lookups(3, true, &buff);
+    try expect(len == 6);
+    try expect(mem.eql(u8, "38;5;3", buff[0..len]));
 
-    len = try lookups(null, 25, &buff);
-    try expect(len == 10);
-    try expect(mem.eql(u8, "\x1b[48;5;25m", buff[0..len]));
+    len = try lookups(25, false, &buff);
+    try expect(len == 7);
+    try expect(mem.eql(u8, "48;5;25", buff[0..len]));
 
-    len = try lookups(33, 245, &buff);
-    try expect(len == 19);
-    try expect(mem.eql(u8, "\x1b[38;5;33;48;5;245m", buff[0..len]));
+    len = try lookups(33, true, &buff);
+    try expect(len == 7);
+    try expect(mem.eql(u8, "38;5;33", buff[0..len]));
+
+    len = try lookups(245, false, &buff);
+    try expect(len == 8);
+    try expect(mem.eql(u8, "48;5;245", buff[0..len]));
 }
 
 test "color in lookup mode" {
-    var buff: [35]u8 = undefined;
+    var buff: [40]u8 = undefined;
 
     var len = try color("Some text", &buff, Color.by_lookup(44), null, false);
-    try expect(len == 23);
-    try expect(mem.eql(u8, "\x1b[38;5;44mSome text\x1b[0m", buff[0..len]));
+    try expect(len == 27);
+    try expect(mem.eql(u8, "\x1b[38;5;44mSome text\x1b[39;49m", buff[0..len]));
 
     len = try color("Some text", &buff, null, Color.by_lookup(5), false);
-    try expect(len == 22);
-    try expect(mem.eql(u8, "\x1b[48;5;5mSome text\x1b[0m", buff[0..len]));
+    try expect(len == 26);
+    try expect(mem.eql(u8, "\x1b[48;5;5mSome text\x1b[39;49m", buff[0..len]));
 
     len = try color("Some text", &buff, Color.by_lookup(123), Color.by_lookup(76), false);
-    try expect(len == 32);
-    try expect(mem.eql(u8, "\x1b[38;5;123;48;5;76mSome text\x1b[0m", buff[0..len]));
+    try expect(len == 36);
+    try expect(mem.eql(u8, "\x1b[38;5;123;48;5;76mSome text\x1b[39;49m", buff[0..len]));
 }
 
 const FG_RGB_NUM = "38;2;";
 const BG_RGB_NUM = "48;2;";
 
-fn rgbs(optional_fg: ?[3]u8, optional_bg: ?[3]u8, out: []u8) !usize {
-    assert(optional_fg != null or optional_bg != null);
-
-    var idx: usize = 0;
-    out[idx] = ESC;
-    out[idx + 1] = '[';
-    idx += 2;
-
-    if (optional_fg) |fg| {
-        mem.copy(u8, out[idx..], FG_RGB_NUM);
-        idx += FG_RGB_NUM.len;
-        const res = try std.fmt.bufPrint(out[idx..], "{};{};{}", .{ fg[0], fg[1], fg[2] });
-        idx += res.len;
+fn rgbs(color_rgb: [3]u8, is_fg: bool, out: []u8) !usize {
+    if (is_fg) {
+        const res = try std.fmt.bufPrint(out, "{s}{};{};{}", .{
+            FG_RGB_NUM, color_rgb[0], color_rgb[1], color_rgb[2]
+        });
+        return res.len;
+    } else {
+        const res = try std.fmt.bufPrint(out, "{s}{};{};{}", .{
+            BG_RGB_NUM, color_rgb[0], color_rgb[1], color_rgb[2]
+        });
+        return res.len;
     }
-    if (optional_bg) |bg| {
-        if (optional_fg != null) {
-            out[idx] = ';';
-            idx += 1;
-        }
-        mem.copy(u8, out[idx..], BG_RGB_NUM);
-        idx += BG_RGB_NUM.len;
-        const res = try std.fmt.bufPrint(out[idx..], "{};{};{}", .{ bg[0], bg[1], bg[2] });
-        idx += res.len;
-    }
-
-    out[idx] = 'm';
-    idx += 1;
-    return idx;
 }
 
 test "rgbs with optional fg, bg" {
-    var buff: [30]u8 = undefined;
+    var buff: [15]u8 = undefined;
 
-    var len = try rgbs([3]u8{ 255, 0, 0 }, null, &buff);
+    var len = try rgbs([3]u8{ 255, 0, 0 }, true, &buff);
+    try expect(len == 12);
+    try expect(mem.eql(u8, "38;2;255;0;0", buff[0..len]));
+
+    len = try rgbs([_]u8{ 34, 25, 100 }, false, &buff);
+    try expect(len == 14);
+    try expect(mem.eql(u8, "48;2;34;25;100", buff[0..len]));
+
+    len = try rgbs([_]u8{ 1, 2, 3 }, true, &buff);
+    try expect(len == 10);
+    try expect(mem.eql(u8, "38;2;1;2;3", buff[0..len]));
+
+    len = try rgbs([_]u8{ 100, 200, 50 }, false, &buff);
     try expect(len == 15);
-    try expect(mem.eql(u8, "\x1b[38;2;255;0;0m", buff[0..len]));
-
-    len = try rgbs(null, [_]u8{ 34, 25, 100 }, &buff);
-    try expect(len == 17);
-    try expect(mem.eql(u8, "\x1b[48;2;34;25;100m", buff[0..len]));
-
-    len = try rgbs([_]u8{ 1, 2, 3 }, [_]u8{ 100, 200, 50 }, &buff);
-    try expect(len == 29);
-    try expect(mem.eql(u8, "\x1b[38;2;1;2;3;48;2;100;200;50m", buff[0..len]));
+    try expect(mem.eql(u8, "48;2;100;200;50", buff[0..len]));
 }
 
 test "color in rgb mode" {
-    var buff: [45]u8 = undefined;
+    var buff: [50]u8 = undefined;
 
     var len = try color("Some text", &buff, Color.by_rgb(44, 22, 11), null, false);
-    try expect(len == 29);
-    try expect(mem.eql(u8, "\x1b[38;2;44;22;11mSome text\x1b[0m", buff[0..len]));
+    try expect(len == 33);
+    try expect(mem.eql(u8, "\x1b[38;2;44;22;11mSome text\x1b[39;49m", buff[0..len]));
 
     len = try color("Some text", &buff, null, Color.by_rgb(5, 66, 100), false);
-    try expect(len == 29);
-    try expect(mem.eql(u8, "\x1b[48;2;5;66;100mSome text\x1b[0m", buff[0..len]));
+    try expect(len == 33);
+    try expect(mem.eql(u8, "\x1b[48;2;5;66;100mSome text\x1b[39;49m", buff[0..len]));
 
     len = try color("Some text", &buff, Color.by_hsl(123, 0.8, 0.5), Color.by_rgb(76, 89, 9), false);
-    try expect(len == 43);
-    try expect(mem.eql(u8, "\x1b[38;2;25;229;35;48;2;76;89;9mSome text\x1b[0m", buff[0..len]));
+    try expect(len == 47);
+    try expect(mem.eql(u8, "\x1b[38;2;25;229;35;48;2;76;89;9mSome text\x1b[39;49m", buff[0..len]));
 }
