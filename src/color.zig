@@ -1,15 +1,150 @@
 const std = @import("std");
-const ascii = std.ascii;
-const assert = std.debug.assert;
 const mem = std.mem;
 
 const testing = std.testing;
+const assert = std.debug.assert;
 const expect = testing.expect;
+
+// Surround `text` with control characters for coloring
+//
+// c.f. http://en.wikipedia.org/wiki/ANSI_escape_code
+//
+// There are 3 color modes possible:
+//     - `names`:  corresponds to 3/4 bit encoding; provide colors as lower case
+//                 with underscore names, e.g. 'red', 'bright_green'
+//     - `byte`: corresponds to 8-bit encoding; provide colors as int ∈ [0, 255];
+//                 compare 256-color lookup table
+//     - `rgb`: corresponds to 24-bit encoding; provide colors either in 3- or 6-character
+//                 hex encoding or provide as a list / tuple with three ints (∈ [0, 255] each)
+//
+// With `fg` you can specify the foreground, i.e. text color, and with `bg` you
+// specify the background color. The resulting `text` also gets the `RESET` signal
+// at the end, s.t. no coloring swaps over to following text!
+//
+// Make sure to set the colors corresponding to the `mode`, otherwise you get
+// `ValueErrors`.
+//
+// If you do not want a foreground or background color, leave the corresponding
+// paramter `None`. If both are `None`, you get `text` directly.
+//
+// When you stick to mode `names` and only use the none `bright_` versions,
+// the color control characters conform to ISO 6429 and the ANSI Escape sequences
+//
+// Color names for mode `names` are:
+//     black red green yellow blue magenta cyan white     <- ISO 6429
+//     bright_black bright_red bright_green bright_yellow
+//     bright_blue bright_magenta bright_cyan bright_white
+//
+// (trying other names will raise ValueError)
+// If you want to use colorama (https://pypi.python.org/pypi/colorama), you should
+// also stick to the ISO 6429 colors.
+//
+// The environment variables `NO_COLOR` (https://no-color.org/) and `FORCE_COLOR`
+// (only toggle; see https://nodejs.org/api/tty.html#tty_writestream_getcolordepth_env)
+// have some influence on color output.
+//
+// If you do not run in a TTY, e.g. pipe to some other program or redirect output
+// into a file, color codes are stripped as well.
+//
+// Parameters:
+//     text: str        Some text to surround.
+//     fg: multiple     Specify the foreground / text color.
+//     bg: multiple     Specify the background color.
+//     color_mode: str  Specify color input mode; 'names' (default), 'byte' or 'rgb'
+//     no_color: bool   Remove color optionally. default=False
+// Returns:
+//     str: `text` enclosed with corresponding coloring controls
 
 pub const ColorMode = enum(c_uint) {
     names,
     lookup,
     rgb,
+};
+
+export const ESC = '\x1b';
+
+pub const ColorName = enum(c_uint) {
+    black = 0,
+    red,
+    green,
+    yellow,
+    blue,
+    magenta,
+    cyan,
+    white,
+    bright_black,
+    bright_red,
+    bright_green,
+    bright_yellow,
+    bright_blue,
+    bright_magenta,
+    bright_cyan,
+    bright_white,
+    bright_black_old,
+    bright_red_old,
+    bright_green_old,
+    bright_yellow_old,
+    bright_blue_old,
+    bright_magenta_old,
+    bright_cyan_old,
+    bright_white_old,
+    invalid,
+};
+
+// Foreground color codes
+const FGColors = [_][]const u8{
+    "30", // black
+    "31", // red
+    "32", // green
+    "33", // yellow
+    "34", // blue
+    "35", // magenta
+    "36", // cyan
+    "37", // white
+    "90", // bright_black
+    "91", // bright_red
+    "92", // bright_green
+    "93", // bright_yellow
+    "94", // bright_blue
+    "95", // bright_magenta
+    "96", // bright_cyan
+    "97", // bright_white
+    "1;30", // bright_black, old variant
+    "1;31", // bright_red, old variant
+    "1;32", // bright_green, old variant
+    "1;33", // bright_yellow, old variant
+    "1;34", // bright_blue, old variant
+    "1;35", // bright_magenta, old variant
+    "1;36", // bright_cyan, old variant
+    "1;37", // bright_white, old variant
+};
+
+// Background color codes
+const BGColors = [_][]const u8{
+    "40", // black
+    "41", // red
+    "42", // green
+    "43", // yellow
+    "44", // blue
+    "45", // magenta
+    "46", // cyan
+    "47", // white
+    "100", // bright_black
+    "101", // bright_red
+    "102", // bright_green
+    "103", // bright_yellow
+    "104", // bright_blue
+    "105", // bright_magenta
+    "106", // bright_cyan
+    "107", // bright_white
+    "1;40", // bright_black, old variant
+    "1;41", // bright_red, old variant
+    "1;42", // bright_green, old variant
+    "1;43", // bright_yellow, old variant
+    "1;44", // bright_blue, old variant
+    "1;45", // bright_magenta, old variant
+    "1;46", // bright_cyan, old variant
+    "1;47", // bright_white, old variant
 };
 
 pub const Color = extern struct {
@@ -130,30 +265,35 @@ test "color by hsl red" {
     try expect(c.mode == ColorMode.rgb);
     try expect(mem.eql(u8, c.rgb[0..], ([3]u8{ 255, 0, 0 })[0..]));
 }
+
 test "color by hsl green" {
     const c = Color.by_hsl(120.0, 1.0, 0.5);
 
     try expect(c.mode == ColorMode.rgb);
     try expect(mem.eql(u8, c.rgb[0..], ([3]u8{ 0, 255, 0 })[0..]));
 }
+
 test "color by hsl blue" {
     const c = Color.by_hsl(240.0, 1.0, 0.5);
 
     try expect(c.mode == ColorMode.rgb);
     try expect(mem.eql(u8, c.rgb[0..], ([3]u8{ 0, 0, 255 })[0..]));
 }
+
 test "color by hsl white" {
     const c = Color.by_hsl(0, 0, 1);
 
     try expect(c.mode == ColorMode.rgb);
     try expect(mem.eql(u8, c.rgb[0..], ([3]u8{ 255, 255, 255 })[0..]));
 }
+
 test "color by hsl black" {
     const c = Color.by_hsl(0, 0, 0);
 
     try expect(c.mode == ColorMode.rgb);
     try expect(mem.eql(u8, c.rgb[0..], ([3]u8{ 0, 0, 0 })[0..]));
 }
+
 test "color by hsl other" {
     const c = Color.by_hsl(123, 0.8, 0.5);
 
@@ -161,56 +301,6 @@ test "color by hsl other" {
     try expect(mem.eql(u8, c.rgb[0..], ([3]u8{ 25, 229, 35 })[0..]));
 }
 
-// Surround `text` with control characters for coloring
-//
-// c.f. http://en.wikipedia.org/wiki/ANSI_escape_code
-//
-// There are 3 color modes possible:
-//     - `names`:  corresponds to 3/4 bit encoding; provide colors as lower case
-//                 with underscore names, e.g. 'red', 'bright_green'
-//     - `byte`: corresponds to 8-bit encoding; provide colors as int ∈ [0, 255];
-//                 compare 256-color lookup table
-//     - `rgb`: corresponds to 24-bit encoding; provide colors either in 3- or 6-character
-//                 hex encoding or provide as a list / tuple with three ints (∈ [0, 255] each)
-//
-// With `fg` you can specify the foreground, i.e. text color, and with `bg` you
-// specify the background color. The resulting `text` also gets the `RESET` signal
-// at the end, s.t. no coloring swaps over to following text!
-//
-// Make sure to set the colors corresponding to the `mode`, otherwise you get
-// `ValueErrors`.
-//
-// If you do not want a foreground or background color, leave the corresponding
-// paramter `None`. If both are `None`, you get `text` directly.
-//
-// When you stick to mode `names` and only use the none `bright_` versions,
-// the color control characters conform to ISO 6429 and the ANSI Escape sequences
-// as defined in http://ascii-table.com/ansi-escape-sequences.php.
-//
-// Color names for mode `names` are:
-//     black red green yellow blue magenta cyan white     <- ISO 6429
-//     bright_black bright_red bright_green bright_yellow
-//     bright_blue bright_magenta bright_cyan bright_white
-//
-// (trying other names will raise ValueError)
-// If you want to use colorama (https://pypi.python.org/pypi/colorama), you should
-// also stick to the ISO 6429 colors.
-//
-// The environment variables `NO_COLOR` (https://no-color.org/) and `FORCE_COLOR`
-// (only toggle; see https://nodejs.org/api/tty.html#tty_writestream_getcolordepth_env)
-// have some influence on color output.
-//
-// If you do not run in a TTY, e.g. pipe to some other program or redirect output
-// into a file, color codes are stripped as well.
-//
-// Parameters:
-//     text: str        Some text to surround.
-//     fg: multiple     Specify the foreground / text color.
-//     bg: multiple     Specify the background color.
-//     color_mode: str  Specify color input mode; 'names' (default), 'byte' or 'rgb'
-//     no_color: bool   Remove color optionally. default=False
-// Returns:
-//     str: `text` enclosed with corresponding coloring controls
 pub fn color(text: []const u8, out: []u8, fg: ?Color, bg: ?Color, no_color: bool) !usize {
     if (no_color) { // or os.environ.get('NO_COLOR'))
         mem.copy(u8, out, text);
@@ -256,90 +346,6 @@ pub fn color(text: []const u8, out: []u8, fg: ?Color, bg: ?Color, no_color: bool
 
     return idx;
 }
-
-export const ESC = '\x1b';
-pub const ColorName = enum(c_uint) {
-    black = 0,
-    red,
-    green,
-    yellow,
-    blue,
-    magenta,
-    cyan,
-    white,
-    bright_black,
-    bright_red,
-    bright_green,
-    bright_yellow,
-    bright_blue,
-    bright_magenta,
-    bright_cyan,
-    bright_white,
-    bright_black_old,
-    bright_red_old,
-    bright_green_old,
-    bright_yellow_old,
-    bright_blue_old,
-    bright_magenta_old,
-    bright_cyan_old,
-    bright_white_old,
-    invalid,
-};
-// Foreground color codes
-const FGColors = [_][]const u8{
-    "30", // black
-    "31", // red
-    "32", // green
-    "33", // yellow
-    "34", // blue
-    "35", // magenta
-    "36", // cyan
-    "37", // white
-    "90", // bright_black
-    "91", // bright_red
-    "92", // bright_green
-    "93", // bright_yellow
-    "94", // bright_blue
-    "95", // bright_magenta
-    "96", // bright_cyan
-    "97", // bright_white
-    "1;30", // bright_black, old variant
-    "1;31", // bright_red, old variant
-    "1;32", // bright_green, old variant
-    "1;33", // bright_yellow, old variant
-    "1;34", // bright_blue, old variant
-    "1;35", // bright_magenta, old variant
-    "1;36", // bright_cyan, old variant
-    "1;37", // bright_white, old variant
-};
-
-// Background color codes
-const BGColors = [_][]const u8{
-    "40", // black
-    "41", // red
-    "42", // green
-    "43", // yellow
-    "44", // blue
-    "45", // magenta
-    "46", // cyan
-    "47", // white
-    "100", // bright_black
-    "101", // bright_red
-    "102", // bright_green
-    "103", // bright_yellow
-    "104", // bright_blue
-    "105", // bright_magenta
-    "106", // bright_cyan
-    "107", // bright_white
-    "1;40", // bright_black, old variant
-    "1;41", // bright_red, old variant
-    "1;42", // bright_green, old variant
-    "1;43", // bright_yellow, old variant
-    "1;44", // bright_blue, old variant
-    "1;45", // bright_magenta, old variant
-    "1;46", // bright_cyan, old variant
-    "1;47", // bright_white, old variant
-};
 
 fn names(optional_fg: ?ColorName, optional_bg: ?ColorName, out: []u8) usize {
     assert(optional_fg != null or optional_bg != null);
