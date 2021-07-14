@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#include "../zig-plotille.h"
+#include "zig-plotille.h"
 
-// clang -lzig-plotille -L$PWD/zig-out/lib samples/dots.c -o samples/dots
+// clang-12 $PWD/zig-out/lib/libzig-plotille.a samples/dots.c -I. -o samples/dots
 
 
 int main(int argc, char const *argv[])

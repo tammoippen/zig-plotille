@@ -4,7 +4,7 @@ clean:
 	rm -rf zig-cache zig-out
 
 samples/dots.exe: samples/dots.c
-	$(CC) -lzig-plotille -L$(PWD)/zig-out/lib samples/dots.c -o samples/dots.exe
+	$(CC) $(PWD)/zig-out/lib/libzig-plotille.a samples/dots.c -I. -o samples/dots.exe
 
 gen-headers:
 	# do not forget to uncomment the `lib.emit_h = true;` part
