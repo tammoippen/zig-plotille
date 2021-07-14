@@ -99,8 +99,8 @@ pub const Color = extern struct {
     }
 };
 
-export fn color_by_name(name: ColorName) Color {
-    return Color.by_name(name);
+export fn color_by_name(name: c_uint) Color {
+    return Color.by_name(@intToEnum(ColorName, name));
 }
 
 test "color by name" {
@@ -257,7 +257,7 @@ pub fn color(text: []const u8, out: []u8, fg: ?Color, bg: ?Color, no_color: bool
     return idx;
 }
 
-export const ESC = ascii.control_code.ESC;
+export const ESC = '\x1b';
 pub const ColorName = enum(c_uint) {
     black = 0,
     red,

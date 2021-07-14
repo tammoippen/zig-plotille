@@ -6,6 +6,8 @@ const testing = std.testing;
 const expect = testing.expect;
 const mem = std.mem;
 
+const color = @import("./color.zig");
+
 // Dot ordering: \u2800 '⠀' - \u28FF '⣿' Coding according to ISO/TR 11548-1
 //
 // Hence, each dot on or off is 8bit, i.e. 256 posibilities. With dot number
@@ -30,18 +32,27 @@ const xy2dot = [_][2]u8{
 
 pub const Dots = extern struct {
     dots: u8,
+    // color: ?color.Color,
 
     pub fn init() Dots {
         return Dots{
             .dots = 0,
+            // .fg_color = null,
+            // .bg_color = null,
         };
     }
 
     pub fn str(self: Dots, buf: []u8) u3 {
         assert(buf.len >= 3);
+        var local_buffer: [3]u8 = undefined;
         var v: u21 = 0x2800;
         v += self.dots;
-        return unicode.utf8Encode(v, buf) catch unreachable;
+        const len = unicode.utf8Encode(v, &local_buffer) catch unreachable;
+        // if (self.color) (
+        //     color.color(local_buffer, buff, )
+        // )
+        mem.copy(u8, buf, &local_buffer);
+        return len;
     }
 
     pub fn fill(self: *Dots) void {
