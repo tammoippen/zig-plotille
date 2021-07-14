@@ -481,14 +481,10 @@ const BG_RGB_NUM = "48;2;";
 
 fn rgbs(color_rgb: [3]u8, is_fg: bool, out: []u8) !usize {
     if (is_fg) {
-        const res = try std.fmt.bufPrint(out, "{s}{};{};{}", .{
-            FG_RGB_NUM, color_rgb[0], color_rgb[1], color_rgb[2]
-        });
+        const res = try std.fmt.bufPrint(out, "{s}{};{};{}", .{ FG_RGB_NUM, color_rgb[0], color_rgb[1], color_rgb[2] });
         return res.len;
     } else {
-        const res = try std.fmt.bufPrint(out, "{s}{};{};{}", .{
-            BG_RGB_NUM, color_rgb[0], color_rgb[1], color_rgb[2]
-        });
+        const res = try std.fmt.bufPrint(out, "{s}{};{};{}", .{ BG_RGB_NUM, color_rgb[0], color_rgb[1], color_rgb[2] });
         return res.len;
     }
 }
@@ -527,4 +523,20 @@ test "color in rgb mode" {
     len = try color("Some text", &buff, Color.by_hsl(123, 0.8, 0.5), Color.by_rgb(76, 89, 9), false);
     try expect(len == 47);
     try expect(mem.eql(u8, "\x1b[38;2;25;229;35;48;2;76;89;9mSome text\x1b[39;49m", buff[0..len]));
+}
+
+test "color in mixed modes" {
+    var buff: [50]u8 = undefined;
+
+    var len = try color("Some text", &buff, Color.by_rgb(44, 22, 11), Color.by_name(ColorName.yellow), false);
+    try expect(len == 36);
+    try expect(mem.eql(u8, "\x1b[38;2;44;22;11;43mSome text\x1b[39;49m", buff[0..len]));
+
+    len = try color("Some text", &buff, Color.by_lookup(155), Color.by_rgb(5, 66, 100), false);
+    try expect(len == 42);
+    try expect(mem.eql(u8, "\x1b[38;5;155;48;2;5;66;100mSome text\x1b[39;49m", buff[0..len]));
+
+    len = try color("Some text", &buff, Color.by_name(ColorName.bright_cyan_old), Color.by_lookup(254), false);
+    try expect(len == 33);
+    try expect(mem.eql(u8, "\x1b[1;36;48;5;254mSome text\x1b[39;49m", buff[0..len]));
 }
