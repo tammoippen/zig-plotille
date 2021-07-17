@@ -11,7 +11,7 @@ pub fn build(b: *std.build.Builder) void {
     // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall.
     const mode = b.standardReleaseOptions();
 
-    const source_files = [_][]const u8{ "build.zig", "src/color.zig", "src/dots.zig", "src/main.zig" };
+    const source_files = [_][]const u8{ "build.zig", "src/color.zig", "src/dots.zig", "src/main.zig", "src/example.zig" };
 
     const lib = b.addStaticLibrary("zig-plotille", "src/main.zig");
     lib.setTarget(target);
@@ -24,6 +24,11 @@ pub fn build(b: *std.build.Builder) void {
     shared_lib.setBuildMode(mode);
     // shared_lib.emit_h = true;
     shared_lib.install();
+
+    const exe = b.addExecutable("example", "src/example.zig");
+    exe.setTarget(target);
+    exe.setBuildMode(mode);
+    exe.install();
 
     const test_step = b.step("test", "Run library tests");
     for (source_files) |source| {
