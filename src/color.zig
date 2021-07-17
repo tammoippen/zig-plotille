@@ -56,6 +56,7 @@ const expect = testing.expect;
 //     str: `text` enclosed with corresponding coloring controls
 
 pub const ColorMode = enum(c_uint) {
+    none,
     names,
     lookup,
     rgb,
@@ -153,6 +154,15 @@ pub const Color = extern struct {
     lookup: u8,
     rgb: [3]u8,
 
+    pub fn no_color() Color {
+        // https://en.wikipedia.org/wiki/ANSI_escape_code#3-bit_and_4-bit
+        return Color{
+            .mode = ColorMode.none,
+            .name = ColorName.invalid,
+            .lookup = 0,
+            .rgb = [3]u8{ 0, 0, 0 },
+        };
+    }
     pub fn by_name(name: ColorName) Color {
         // https://en.wikipedia.org/wiki/ANSI_escape_code#3-bit_and_4-bit
         return Color{
@@ -212,7 +222,6 @@ pub const Color = extern struct {
             .rgb = [_]u8{ @floatToInt(u8, r * 255), @floatToInt(u8, g * 255), @floatToInt(u8, b * 255) },
         };
     }
-
     fn hue_to_rgb(p: f64, q: f64, t: f64) f64 {
         var t_ = t;
         if (t < 0) {
@@ -317,7 +326,8 @@ pub fn color(text: []const u8, out: []u8, optional_fg: ?Color, optional_bg: ?Col
     out[idx + 1] = '[';
     idx += 2;
 
-    if (optional_fg) |fg| {
+    if (optional_fg != null and optional_fg.?.mode != ColorMode.none) {
+        const fg = optional_fg.?;
         switch (fg.mode) {
             .names => {
                 idx += names(fg.name, true, out[idx..]);
@@ -328,10 +338,12 @@ pub fn color(text: []const u8, out: []u8, optional_fg: ?Color, optional_bg: ?Col
             .rgb => {
                 idx += try rgbs(fg.rgb, true, out[idx..]);
             },
+            .none => unreachable,
         }
     }
 
-    if (optional_bg) |bg| {
+    if (optional_bg != null and optional_bg.?.mode != ColorMode.none) {
+        const bg = optional_bg.?;
         if (optional_fg != null) {
             out[idx] = ';';
             idx += 1;
@@ -346,6 +358,7 @@ pub fn color(text: []const u8, out: []u8, optional_fg: ?Color, optional_bg: ?Col
             .rgb => {
                 idx += try rgbs(bg.rgb, false, out[idx..]);
             },
+            .none => unreachable,
         }
     }
 

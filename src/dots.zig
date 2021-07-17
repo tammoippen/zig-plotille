@@ -30,29 +30,40 @@ const xy2dot = [_][2]u8{
     [_]u8{ 1 << 0, 1 << 3 },
 };
 
+const MIN_BUFF_LEN_COLOR_DOTS = 3 // utf8 braille dots
++ 2 * 16 // rgb uses most chars, e.g. 38;2;123;123;123
++ 3 // ansi-code start marker ESC[ .. m
++ 8; // ansi-code end marker ESC[39;49m
+
 pub const Dots = extern struct {
     dots: u8,
-    // color: ?color.Color,
+    fg_color: color.Color,
+    bg_color: color.Color,
 
     pub fn init() Dots {
         return Dots{
             .dots = 0,
-            // .fg_color = null,
-            // .bg_color = null,
+            .fg_color = color.Color.no_color(),
+            .bg_color = color.Color.no_color(),
         };
     }
 
-    pub fn str(self: Dots, buf: []u8) u3 {
+    pub fn str(self: Dots, buf: []u8) !usize {
         assert(buf.len >= 3);
         var local_buffer: [3]u8 = undefined;
         var v: u21 = 0x2800;
         v += self.dots;
-        const len = unicode.utf8Encode(v, &local_buffer) catch unreachable;
-        // if (self.color) (
-        //     color.color(local_buffer, buff, )
-        // )
-        mem.copy(u8, buf, &local_buffer);
-        return len;
+        var len = unicode.utf8Encode(v, &local_buffer) catch unreachable;
+        assert(len == 3);
+
+        if (self.fg_color.mode != color.ColorMode.none or self.bg_color.mode != color.ColorMode.none) {
+            assert(buf.len >= MIN_BUFF_LEN_COLOR_DOTS);
+            // no_color argument always false?
+            return try color.color(local_buffer[0..], buf, self.fg_color, self.bg_color, false);
+        } else {
+            mem.copy(u8, buf, &local_buffer);
+            return len;
+        }
     }
 
     pub fn fill(self: *Dots) void {
@@ -76,15 +87,15 @@ test "test clear and full char" {
     var d = Dots.init();
     var buff: [20]u8 = undefined;
 
-    var len = d.str(&buff);
+    var len = try d.str(&buff);
     try expect(mem.eql(u8, "⠀", buff[0..len]));
 
     d.fill();
-    len = d.str(&buff);
+    len = try d.str(&buff);
     try expect(mem.eql(u8, "⣿", buff[0..len]));
 
     d.clear();
-    len = d.str(&buff);
+    len = try d.str(&buff);
     try expect(mem.eql(u8, "⠀", buff[0..len]));
 }
 
@@ -92,72 +103,98 @@ test "set and unset individual vals" {
     var buff: [20]u8 = undefined;
     var d = Dots.init();
 
-    var len = d.str(&buff);
+    var len = try d.str(&buff);
     try expect(mem.eql(u8, "⠀", buff[0..len]));
 
     d.set(0, 0);
-    len = d.str(&buff);
+    len = try d.str(&buff);
     try expect(mem.eql(u8, "⡀", buff[0..len]));
     d.unset(0, 0);
-    len = d.str(&buff);
+    len = try d.str(&buff);
     try expect(mem.eql(u8, "⠀", buff[0..len]));
 
     d.set(0, 1);
-    len = d.str(&buff);
+    len = try d.str(&buff);
     try expect(mem.eql(u8, "⠄", buff[0..len]));
     d.unset(0, 1);
-    len = d.str(&buff);
+    len = try d.str(&buff);
     try expect(mem.eql(u8, "⠀", buff[0..len]));
 
     d.set(0, 2);
-    len = d.str(&buff);
+    len = try d.str(&buff);
     try expect(mem.eql(u8, "⠂", buff[0..len]));
     d.unset(0, 2);
-    len = d.str(&buff);
+    len = try d.str(&buff);
     try expect(mem.eql(u8, "⠀", buff[0..len]));
 
     d.set(0, 3);
-    len = d.str(&buff);
+    len = try d.str(&buff);
     try expect(mem.eql(u8, "⠁", buff[0..len]));
     d.unset(0, 3);
-    len = d.str(&buff);
+    len = try d.str(&buff);
     try expect(mem.eql(u8, "⠀", buff[0..len]));
 
     d.set(1, 0);
-    len = d.str(&buff);
+    len = try d.str(&buff);
     try expect(mem.eql(u8, "⢀", buff[0..len]));
     d.unset(1, 0);
-    len = d.str(&buff);
+    len = try d.str(&buff);
     try expect(mem.eql(u8, "⠀", buff[0..len]));
 
     d.set(1, 1);
-    len = d.str(&buff);
+    len = try d.str(&buff);
     try expect(mem.eql(u8, "⠠", buff[0..len]));
     d.unset(1, 1);
-    len = d.str(&buff);
+    len = try d.str(&buff);
     try expect(mem.eql(u8, "⠀", buff[0..len]));
 
     d.set(1, 2);
-    len = d.str(&buff);
+    len = try d.str(&buff);
     try expect(mem.eql(u8, "⠐", buff[0..len]));
     d.unset(1, 2);
-    len = d.str(&buff);
+    len = try d.str(&buff);
     try expect(mem.eql(u8, "⠀", buff[0..len]));
 
     d.set(1, 3);
-    len = d.str(&buff);
+    len = try d.str(&buff);
     try expect(mem.eql(u8, "⠈", buff[0..len]));
     d.unset(1, 3);
-    len = d.str(&buff);
+    len = try d.str(&buff);
     try expect(mem.eql(u8, "⠀", buff[0..len]));
+}
+
+test "colored dots" {
+    var buff: [MIN_BUFF_LEN_COLOR_DOTS]u8 = undefined;
+    var d = Dots.init();
+    d.set(0, 0);
+
+    var len = try d.str(&buff);
+    try expect(mem.eql(u8, "⡀", buff[0..len]));
+
+    d.fg_color = color.Color.by_name(color.ColorName.red);
+    len = try d.str(&buff);
+    try expect(len == 16);
+    try expect(mem.eql(u8, "\x1b[31m⡀\x1b[39;49m", buff[0..len]));
+
+    d.bg_color = color.Color.by_lookup(123);
+    len = try d.str(&buff);
+    try expect(len == 25);
+    try expect(mem.eql(u8, "\x1b[31;48;5;123m⡀\x1b[39;49m", buff[0..len]));
+
+    d.fg_color = color.Color.by_rgb(1, 22, 133);
+    len = try d.str(&buff);
+    try expect(len == 36);
+    try expect(mem.eql(u8, "\x1b[38;2;1;22;133;48;5;123m⡀\x1b[39;49m", buff[0..len]));
 }
 
 // C API
 export fn dots_init() Dots {
     return Dots.init();
 }
-export fn dots_str(self: Dots, buf: [*]u8, len: usize) u8 {
-    return self.str(buf[0..len]);
+export fn dots_str(self: Dots, buf: [*]u8, len: usize) usize {
+    return self.str(buf[0..len]) catch |err| switch (err) {
+        error.NoSpaceLeft => return 0,
+    };
 }
 export fn dots_fill(self: *Dots) void {
     return self.fill();
