@@ -1,6 +1,10 @@
 const std = @import("std");
 
-pub fn build(b: *std.build.Builder) void {
+pub fn build(b: *std.build.Builder) !void {
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+
+    const allocator = &arena.allocator;
     // Standard target options allows the person running `zig build` to choose
     // what target to build for. Here we do not override the defaults, which
     // means any target is allowed, and the default is native. Other options
@@ -11,7 +15,9 @@ pub fn build(b: *std.build.Builder) void {
     // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall.
     const mode = b.standardReleaseOptions();
 
-    const source_files = [_][]const u8{ "build.zig", "src/color.zig", "src/dots.zig", "src/main.zig", "src/example.zig" };
+    const build_files = [_][]const u8{"build.zig"};
+    const source_files = [_][]const u8{ "src/color.zig", "src/dots.zig", "src/main.zig" };
+    const example_files = [_][]const u8{ "src/names_example.zig", "src/lookup_example.zig" };
 
     const lib = b.addStaticLibrary("zig-plotille", "src/main.zig");
     lib.setTarget(target);
@@ -25,10 +31,18 @@ pub fn build(b: *std.build.Builder) void {
     // shared_lib.emit_h = true;
     shared_lib.install();
 
-    const exe = b.addExecutable("example", "src/example.zig");
-    exe.setTarget(target);
-    exe.setBuildMode(mode);
-    exe.install();
+    const example_step = b.step("examples", "Build example exe's.");
+    for (example_files) |example| {
+        var al = std.ArrayList(u8).init(allocator);
+        defer al.deinit();
+
+        try std.fmt.format(al.writer(), "{s}.exe", .{std.fs.path.basename(example)});
+        const exe = b.addExecutable(al.items, example);
+        exe.setTarget(target);
+        exe.setBuildMode(mode);
+        exe.setOutputDir("zig-out/examples");
+        example_step.dependOn(&exe.step);
+    }
 
     const test_step = b.step("test", "Run library tests");
     for (source_files) |source| {
@@ -37,7 +51,11 @@ pub fn build(b: *std.build.Builder) void {
         test_step.dependOn(&tests.step);
     }
 
-    var main_fmt = b.addFmt(&source_files);
     const fmt_step = b.step("fmt", "Format the library.");
+    var build_fmt = b.addFmt(&build_files);
+    var main_fmt = b.addFmt(&source_files);
+    var example_fmt = b.addFmt(&example_files);
+    fmt_step.dependOn(&build_fmt.step);
     fmt_step.dependOn(&main_fmt.step);
+    fmt_step.dependOn(&example_fmt.step);
 }
