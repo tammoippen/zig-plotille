@@ -17,7 +17,7 @@ pub fn build(b: *std.build.Builder) !void {
 
     const build_files = [_][]const u8{"build.zig"};
     const source_files = [_][]const u8{ "src/color.zig", "src/dots.zig", "src/main.zig" };
-    const example_files = [_][]const u8{ "src/names_example.zig", "src/lookup_example.zig" };
+    const example_files = [_][]const u8{ "src/names_example.zig", "src/lookup_example.zig", "src/hsl_example.zig" };
 
     const lib = b.addStaticLibrary("zig-plotille", "src/main.zig");
     lib.setTarget(target);
