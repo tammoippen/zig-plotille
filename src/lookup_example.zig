@@ -10,7 +10,7 @@ pub fn main() !void {
 
     std.debug.print("Colors by lookup:\n", .{});
 
-    std.debug.print("- Standard colors:\n    ", .{});
+    std.debug.print("- Standard colors (can be modified in terminal):\n    ", .{});
     var idx: u16 = 0;
     while (idx <= 7) : (idx += 1) {
         const bg = color.Color.by_lookup(@truncate(u8, idx));
@@ -20,7 +20,7 @@ pub fn main() !void {
     }
     std.debug.print("\n", .{});
 
-    std.debug.print("- High-intensity colors:\n    ", .{});
+    std.debug.print("- High-intensity colors (can be modified in terminal):\n    ", .{});
     while (idx <= 15) : (idx += 1) {
         const bg = color.Color.by_lookup(@truncate(u8, idx));
         const int_str = try std.fmt.bufPrint(int_buff[0..], "{:4}", .{idx});

@@ -30,4 +30,5 @@ pub fn main() !void {
         }
         std.debug.print("\n", .{});
     }
+    std.debug.print("\nThis is basically the terminal color scheme.\n", .{});
 }
