@@ -1,10 +1,6 @@
 const std = @import("std");
 
 pub fn build(b: *std.build.Builder) !void {
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    defer arena.deinit();
-
-    const allocator = &arena.allocator;
     // Standard target options allows the person running `zig build` to choose
     // what target to build for. Here we do not override the defaults, which
     // means any target is allowed, and the default is native. Other options
@@ -33,11 +29,8 @@ pub fn build(b: *std.build.Builder) !void {
 
     const example_step = b.step("examples", "Build example exe's.");
     for (example_files) |example| {
-        var al = std.ArrayList(u8).init(allocator);
-        defer al.deinit();
-
-        try std.fmt.format(al.writer(), "{s}.exe", .{std.fs.path.basename(example)});
-        const exe = b.addExecutable(al.items, example);
+        var iter = std.mem.split(std.fs.path.basename(example), ".");
+        const exe = b.addExecutable(iter.next().?, example);
         exe.setTarget(target);
         exe.setBuildMode(mode);
         exe.setOutputDir("zig-out/examples");
