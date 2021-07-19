@@ -23,6 +23,7 @@ fn usage() void {
 
 const max_col: f64 = 40;
 const max_rows: f64 = 20;
+const space = "                                        ";
 
 pub fn main() !void {
     var buff: [100]u8 = undefined;
@@ -48,6 +49,7 @@ pub fn main() !void {
             usage();
             return;
         }
+        std.debug.print("  Hue {s} RGB\n", .{space});
     }
 
     for (args[start..]) |arg| {
@@ -59,8 +61,8 @@ pub fn main() !void {
 
         if (short) {
             const bg = color.Color.by_hsl(hue, 1.0, 0.5);
-            const len = try color.color("                                        ", buff[0..], null, bg, false);
-            std.debug.print("{s:>5} {s}\n", .{ arg, buff[0..len] });
+            const len = try color.color(space, buff[0..], null, bg, false);
+            std.debug.print("{s:>5} {s} {x:0<2}{x:0<2}{x:0<2}\n", .{ arg[0..std.math.min(arg.len, 5)], buff[0..len], bg.rgb[0], bg.rgb[1], bg.rgb[2] });
             continue;
         }
 
