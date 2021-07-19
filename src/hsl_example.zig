@@ -64,7 +64,8 @@ pub fn main() !void {
             continue;
         }
 
-        std.debug.print("Saturation and luminance for hue = {s} :\n  ", .{arg});
+        std.debug.print("Saturation and lightness for hue {s} :\n", .{arg});
+        std.debug.print("  Saturation left to right 0.0 to 1.0\n  ", .{});
         var lum: f64 = max_rows;
         while (lum >= 0) : (lum -= 1.0) {
             var sat: f64 = 0.0;
@@ -72,6 +73,9 @@ pub fn main() !void {
                 const bg = color.Color.by_hsl(hue, sat / max_col, lum / max_rows);
                 const len = try color.color(" ", buff[0..], null, bg, false);
                 std.debug.print("{s}", .{buff[0..len]});
+            }
+            if (lum == max_rows / 2) {
+                std.debug.print("  Lightness top down 1.0 to 0.0; max color at 0.5", .{});
             }
             std.debug.print("\n  ", .{});
         }
