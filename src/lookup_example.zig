@@ -4,6 +4,8 @@ const color = @import("./color.zig");
 
 pub fn main() !void {
     var buff: [100]u8 = undefined;
+    var fbs = std.io.fixedBufferStream(&buff);
+
     var int_buff: [4]u8 = undefined;
     const fg_black = color.Color.by_lookup(232);
     const fg_white = color.Color.by_lookup(231);
@@ -15,8 +17,9 @@ pub fn main() !void {
     while (idx <= 7) : (idx += 1) {
         const bg = color.Color.by_lookup(@truncate(u8, idx));
         const int_str = try std.fmt.bufPrint(int_buff[0..], "{:4}", .{idx});
-        const len = try color.color(int_str, buff[0..], fg_white, bg, false);
-        std.debug.print("{s}", .{buff[0..len]});
+        try color.color(int_str, fbs.writer(), fg_white, bg, false);
+        std.debug.print("{s}", .{fbs.getWritten()});
+        fbs.reset();
     }
     std.debug.print("\n", .{});
 
@@ -24,8 +27,9 @@ pub fn main() !void {
     while (idx <= 15) : (idx += 1) {
         const bg = color.Color.by_lookup(@truncate(u8, idx));
         const int_str = try std.fmt.bufPrint(int_buff[0..], "{:4}", .{idx});
-        const len = try color.color(int_str, buff[0..], fg_black, bg, false);
-        std.debug.print("{s}", .{buff[0..len]});
+        try color.color(int_str, fbs.writer(), fg_black, bg, false);
+        std.debug.print("{s}", .{fbs.getWritten()});
+        fbs.reset();
     }
     std.debug.print("\n", .{});
 
@@ -37,11 +41,13 @@ pub fn main() !void {
         const bg = color.Color.by_lookup(@truncate(u8, idx));
         const int_str = try std.fmt.bufPrint(int_buff[0..], "{:4}", .{idx});
         if ((idx - 16) % 36 >= 18) {
-            const len = try color.color(int_str, buff[0..], fg_black, bg, false);
-            std.debug.print("{s}", .{buff[0..len]});
+            try color.color(int_str, fbs.writer(), fg_black, bg, false);
+            std.debug.print("{s}", .{fbs.getWritten()});
+            fbs.reset();
         } else {
-            const len = try color.color(int_str, buff[0..], fg_white, bg, false);
-            std.debug.print("{s}", .{buff[0..len]});
+            try color.color(int_str, fbs.writer(), fg_white, bg, false);
+            std.debug.print("{s}", .{fbs.getWritten()});
+            fbs.reset();
         }
     }
     std.debug.print("\n", .{});
@@ -51,11 +57,13 @@ pub fn main() !void {
         const bg = color.Color.by_lookup(@truncate(u8, idx));
         const int_str = try std.fmt.bufPrint(int_buff[0..], "{:4}", .{idx});
         if (idx < 244) {
-            const len = try color.color(int_str, buff[0..], fg_white, bg, false);
-            std.debug.print("{s}", .{buff[0..len]});
+            try color.color(int_str, fbs.writer(), fg_white, bg, false);
+            std.debug.print("{s}", .{fbs.getWritten()});
+            fbs.reset();
         } else {
-            const len = try color.color(int_str, buff[0..], fg_black, bg, false);
-            std.debug.print("{s}", .{buff[0..len]});
+            try color.color(int_str, fbs.writer(), fg_black, bg, false);
+            std.debug.print("{s}", .{fbs.getWritten()});
+            fbs.reset();
         }
     }
     std.debug.print("\n", .{});

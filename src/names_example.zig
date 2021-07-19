@@ -4,6 +4,7 @@ const color = @import("./color.zig");
 
 pub fn main() !void {
     var buff: [100]u8 = undefined;
+    var fbs = std.io.fixedBufferStream(&buff);
 
     std.debug.print("Colors by name:       ", .{});
     for (std.enums.values(color.ColorName)) |color_value| {
@@ -25,8 +26,9 @@ pub fn main() !void {
                 continue;
             }
             const fg = color.Color.by_name(fg_value);
-            const len = try color.color("Text ", buff[0..], fg, bg, false);
-            std.debug.print("{s}", .{buff[0..len]});
+            try color.color("Text ", fbs.writer(), fg, bg, false);
+            std.debug.print("{s}", .{fbs.getWritten()});
+            fbs.reset();
         }
         std.debug.print("\n", .{});
     }

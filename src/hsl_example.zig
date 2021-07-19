@@ -26,11 +26,12 @@ const max_rows: f64 = 20;
 const space = "                                        ";
 
 pub fn main() !void {
-    var buff: [100]u8 = undefined;
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
 
     const allocator = &arena.allocator;
+    var list = std.ArrayList(u8).init(allocator);
+    defer list.deinit();
 
     const args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);
@@ -61,8 +62,9 @@ pub fn main() !void {
 
         if (short) {
             const bg = color.Color.by_hsl(hue, 1.0, 0.5);
-            const len = try color.color(space, buff[0..], null, bg, false);
-            std.debug.print("{s:>5} {s} {x:0<2}{x:0<2}{x:0<2}\n", .{ arg[0..std.math.min(arg.len, 5)], buff[0..len], bg.rgb[0], bg.rgb[1], bg.rgb[2] });
+            try color.color(space, list.writer(), null, bg, false);
+            std.debug.print("{s:>5} {s} {x:0<2}{x:0<2}{x:0<2}\n", .{ arg[0..std.math.min(arg.len, 5)], list.items, bg.rgb[0], bg.rgb[1], bg.rgb[2] });
+            list.clearRetainingCapacity();
             continue;
         }
 
@@ -73,8 +75,9 @@ pub fn main() !void {
             var sat: f64 = 0.0;
             while (sat < max_col) : (sat += 1.0) {
                 const bg = color.Color.by_hsl(hue, sat / max_col, lum / max_rows);
-                const len = try color.color(" ", buff[0..], null, bg, false);
-                std.debug.print("{s}", .{buff[0..len]});
+                try color.color(" ", list.writer(), null, bg, false);
+                std.debug.print("{s}", .{list.items});
+                list.clearRetainingCapacity();
             }
             if (lum == max_rows / 2) {
                 std.debug.print("  Lightness top down 1.0 to 0.0; max color at 0.5", .{});
