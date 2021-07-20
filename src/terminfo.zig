@@ -19,6 +19,15 @@ pub const TermInfo = struct {
         info = terminfo;
     }
 
+    pub fn testing() void {
+        // set, such that colors will always be printed
+        info = TermInfo{
+            .no_color = false,
+            .force_color = true,
+            .stdout_interactive = true,
+        };
+    }
+
     pub fn detect(allocator: *std.mem.Allocator) !void {
         const stdout_tty = std.io.getStdOut().isTty();
 

@@ -246,7 +246,6 @@ pub const Color = extern struct {
 };
 
 pub const ColorOptions = extern struct {
-    no_color: bool = false,
     reset_all: bool = false,
     fg: Color = Color.no_color(),
     bg: Color = Color.no_color(),
@@ -328,7 +327,7 @@ pub fn colorPrint(writer: anytype, comptime fmt: []const u8, args: anytype, opti
     const info = terminfo.TermInfo.get();
 
     // no color on no_color, NO_COLOR, FORCE_COLOR=0|false|none
-    if (options.no_color or info.no_color or (info.force_color != null and !info.force_color.?)) {
+    if (info.no_color or (info.force_color != null and !info.force_color.?)) {
         try writer.print(fmt, args);
         return;
     }
@@ -417,6 +416,7 @@ test "names with optional fg, bg" {
 }
 
 test "color in names mode" {
+    terminfo.TermInfo.testing();
     var buff: [100]u8 = undefined;
     var fbs = std.io.fixedBufferStream(&buff);
 
@@ -473,6 +473,7 @@ test "lookups with optional fg, bg" {
 }
 
 test "color in lookup mode" {
+    terminfo.TermInfo.testing();
     var buff: [100]u8 = undefined;
     var fbs = std.io.fixedBufferStream(&buff);
 
@@ -529,6 +530,7 @@ test "rgbs with optional fg, bg" {
 }
 
 test "color in rgb mode" {
+    terminfo.TermInfo.testing();
     var buff: [100]u8 = undefined;
     var fbs = std.io.fixedBufferStream(&buff);
 
@@ -549,6 +551,7 @@ test "color in rgb mode" {
 }
 
 test "color in mixed modes" {
+    terminfo.TermInfo.testing();
     var buff: [100]u8 = undefined;
     var fbs = std.io.fixedBufferStream(&buff);
 

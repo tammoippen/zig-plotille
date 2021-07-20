@@ -7,6 +7,7 @@ const expect = testing.expect;
 const mem = std.mem;
 
 const color = @import("./color.zig");
+const terminfo = @import("./terminfo.zig");
 
 // Dot ordering: \u2800 '⠀' - \u28FF '⣿' Coding according to ISO/TR 11548-1
 //
@@ -184,6 +185,7 @@ test "set and unset individual vals" {
 }
 
 test "colored dots" {
+    terminfo.TermInfo.testing();
     var buff: [100]u8 = undefined;
     var fbs = std.io.fixedBufferStream(&buff);
 
