@@ -1,6 +1,7 @@
 const std = @import("std");
 
 const color = @import("./color.zig");
+const terminfo = @import("./terminfo.zig");
 
 fn usage() void {
     std.debug.print(
@@ -28,8 +29,10 @@ const space = "                                        ";
 pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
-
     const allocator = &arena.allocator;
+
+    // detect terminal information
+    try terminfo.TermInfo.detect(allocator);
 
     const writer = std.io.getStdOut().writer();
 

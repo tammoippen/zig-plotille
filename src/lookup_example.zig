@@ -1,8 +1,16 @@
 const std = @import("std");
 
 const color = @import("./color.zig");
+const terminfo = @import("./terminfo.zig");
 
 pub fn main() !void {
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    const allocator = &arena.allocator;
+
+    // detect terminal information
+    try terminfo.TermInfo.detect(allocator);
+
     var int_buff: [4]u8 = undefined;
     const fg_black = color.Color.by_lookup(16);
     const fg_white = color.Color.by_lookup(231);
