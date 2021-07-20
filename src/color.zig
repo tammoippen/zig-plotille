@@ -243,6 +243,11 @@ pub const Color = extern struct {
     }
 };
 
+pub const ColorOptions = extern struct {
+    no_color: bool = false,
+    reset_all: bool = false,
+};
+
 export fn color_by_name(name: c_uint) Color {
     return Color.by_name(@intToEnum(ColorName, name));
 }
@@ -310,8 +315,8 @@ test "color by hsl other" {
     try expect(mem.eql(u8, c.rgb[0..], ([3]u8{ 25, 229, 35 })[0..]));
 }
 
-pub fn colorPrint(writer: anytype, comptime fmt: []const u8, args: anytype, optional_fg: ?Color, optional_bg: ?Color, no_color: bool) !void {
-    if (no_color) { // or os.environ.get('NO_COLOR'))
+pub fn colorPrint(writer: anytype, comptime fmt: []const u8, args: anytype, optional_fg: ?Color, optional_bg: ?Color, options: ColorOptions) !void {
+    if (options.no_color) { // or os.environ.get('NO_COLOR'))
         try writer.print(fmt, args);
         return;
     }
@@ -348,12 +353,11 @@ pub fn colorPrint(writer: anytype, comptime fmt: []const u8, args: anytype, opti
 
     try writer.writeAll("m");
     try writer.print(fmt, args);
-    try writer.print("{c}[39;49m", .{ ESC });
-    // try writer.print("{c}[0m", .{ ESC});
-}
-
-pub fn color(text: []const u8, writer: anytype, optional_fg: ?Color, optional_bg: ?Color, no_color: bool) !void {
-    try colorPrint(writer, "{s}", .{text}, optional_fg, optional_bg, no_color);
+    if (options.reset_all) {
+        try writer.print("{c}[0m", .{ESC});
+    } else {
+        try writer.print("{c}[39;49m", .{ESC});
+    }
 }
 
 fn names(color_name: ColorName, is_fg: bool, writer: anytype) !void {
@@ -405,17 +409,17 @@ test "color in names mode" {
     var buff: [100]u8 = undefined;
     var fbs = std.io.fixedBufferStream(&buff);
 
-    try color("Some text", fbs.writer(), Color.by_name(ColorName.red), null, false);
+    try colorPrint(fbs.writer(), "Some text", .{}, Color.by_name(ColorName.red), null, .{});
     try expect(fbs.pos == 22);
     try expect(mem.eql(u8, "\x1b[31mSome text\x1b[39;49m", fbs.getWritten()));
     fbs.reset();
 
-    try color("Some text", fbs.writer(), null, Color.by_name(ColorName.red), false);
+    try colorPrint(fbs.writer(), "Some text", .{}, null, Color.by_name(ColorName.red), .{});
     try expect(fbs.pos == 22);
     try expect(mem.eql(u8, "\x1b[41mSome text\x1b[39;49m", fbs.getWritten()));
     fbs.reset();
 
-    try color("Some text", fbs.writer(), Color.by_name(ColorName.bright_magenta), Color.by_name(ColorName.red), false);
+    try colorPrint(fbs.writer(), "Some text", .{}, Color.by_name(ColorName.bright_magenta), Color.by_name(ColorName.red), .{});
     try expect(fbs.pos == 25);
     try expect(mem.eql(u8, "\x1b[95;41mSome text\x1b[39;49m", fbs.getWritten()));
     fbs.reset();
@@ -461,17 +465,17 @@ test "color in lookup mode" {
     var buff: [100]u8 = undefined;
     var fbs = std.io.fixedBufferStream(&buff);
 
-    try color("Some text", fbs.writer(), Color.by_lookup(44), null, false);
+    try colorPrint(fbs.writer(), "Some text", .{}, Color.by_lookup(44), null, .{});
     try expect(fbs.pos == 27);
     try expect(mem.eql(u8, "\x1b[38;5;44mSome text\x1b[39;49m", fbs.getWritten()));
     fbs.reset();
 
-    try color("Some text", fbs.writer(), null, Color.by_lookup(5), false);
+    try colorPrint(fbs.writer(), "Some text", .{}, null, Color.by_lookup(5), .{});
     try expect(fbs.pos == 26);
     try expect(mem.eql(u8, "\x1b[48;5;5mSome text\x1b[39;49m", fbs.getWritten()));
     fbs.reset();
 
-    try color("Some text", fbs.writer(), Color.by_lookup(123), Color.by_lookup(76), false);
+    try colorPrint(fbs.writer(), "Some text", .{}, Color.by_lookup(123), Color.by_lookup(76), .{});
     try expect(fbs.pos == 36);
     try expect(mem.eql(u8, "\x1b[38;5;123;48;5;76mSome text\x1b[39;49m", fbs.getWritten()));
     fbs.reset();
@@ -517,17 +521,17 @@ test "color in rgb mode" {
     var buff: [100]u8 = undefined;
     var fbs = std.io.fixedBufferStream(&buff);
 
-    try color("Some text", fbs.writer(), Color.by_rgb(44, 22, 11), null, false);
+    try colorPrint(fbs.writer(), "Some text", .{}, Color.by_rgb(44, 22, 11), null, .{});
     try expect(fbs.pos == 33);
     try expect(mem.eql(u8, "\x1b[38;2;44;22;11mSome text\x1b[39;49m", fbs.getWritten()));
     fbs.reset();
 
-    try color("Some text", fbs.writer(), null, Color.by_rgb(5, 66, 100), false);
+    try colorPrint(fbs.writer(), "Some text", .{}, null, Color.by_rgb(5, 66, 100), .{});
     try expect(fbs.pos == 33);
     try expect(mem.eql(u8, "\x1b[48;2;5;66;100mSome text\x1b[39;49m", fbs.getWritten()));
     fbs.reset();
 
-    try color("Some text", fbs.writer(), Color.by_hsl(123, 0.8, 0.5), Color.by_rgb(76, 89, 9), false);
+    try colorPrint(fbs.writer(), "Some text", .{}, Color.by_hsl(123, 0.8, 0.5), Color.by_rgb(76, 89, 9), .{});
     try expect(fbs.pos == 47);
     try expect(mem.eql(u8, "\x1b[38;2;25;229;35;48;2;76;89;9mSome text\x1b[39;49m", fbs.getWritten()));
     fbs.reset();
@@ -537,17 +541,17 @@ test "color in mixed modes" {
     var buff: [100]u8 = undefined;
     var fbs = std.io.fixedBufferStream(&buff);
 
-    try color("Some text", fbs.writer(), Color.by_rgb(44, 22, 11), Color.by_name(ColorName.yellow), false);
+    try colorPrint(fbs.writer(), "Some text", .{}, Color.by_rgb(44, 22, 11), Color.by_name(ColorName.yellow), .{});
     try expect(fbs.pos == 36);
     try expect(mem.eql(u8, "\x1b[38;2;44;22;11;43mSome text\x1b[39;49m", fbs.getWritten()));
     fbs.reset();
 
-    try color("Some text", fbs.writer(), Color.by_lookup(155), Color.by_rgb(5, 66, 100), false);
+    try colorPrint(fbs.writer(), "Some text", .{}, Color.by_lookup(155), Color.by_rgb(5, 66, 100), .{});
     try expect(fbs.pos == 42);
     try expect(mem.eql(u8, "\x1b[38;5;155;48;2;5;66;100mSome text\x1b[39;49m", fbs.getWritten()));
     fbs.reset();
 
-    try color("Some text", fbs.writer(), Color.by_name(ColorName.bright_cyan_old), Color.by_lookup(254), false);
+    try colorPrint(fbs.writer(), "Some text", .{}, Color.by_name(ColorName.bright_cyan_old), Color.by_lookup(254), .{});
     try expect(fbs.pos == 33);
     try expect(mem.eql(u8, "\x1b[1;36;48;5;254mSome text\x1b[39;49m", fbs.getWritten()));
     fbs.reset();

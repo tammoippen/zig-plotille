@@ -62,8 +62,8 @@ pub fn main() !void {
 
         if (short) {
             const bg = color.Color.by_hsl(hue, 1.0, 0.5);
-            try writer.print("{s:>5} ", .{ arg[0..std.math.min(arg.len, 5)] });
-            try color.colorPrint(writer, "{s}", .{space}, null, bg, false);
+            try writer.print("{s:>5} ", .{arg[0..std.math.min(arg.len, 5)]});
+            try color.colorPrint(writer, "{s}", .{space}, null, bg, .{});
             try writer.print(" {x:0<2}{x:0<2}{x:0<2}\n", .{ bg.rgb[0], bg.rgb[1], bg.rgb[2] });
             continue;
         }
@@ -75,7 +75,7 @@ pub fn main() !void {
             var sat: f64 = 0.0;
             while (sat < max_col) : (sat += 1.0) {
                 const bg = color.Color.by_hsl(hue, sat / max_col, lum / max_rows);
-                try color.colorPrint(writer, " ", .{}, null, bg, false);
+                try color.colorPrint(writer, " ", .{}, null, bg, .{});
             }
             if (lum == max_rows / 2) {
                 try writer.print("  Lightness top down 1.0 to 0.0; max color at 0.5", .{});

@@ -66,7 +66,7 @@ pub const Dots = extern struct {
 
         if (self.fg_color.mode != color.ColorMode.none or self.bg_color.mode != color.ColorMode.none) {
             // no_color argument always false?
-            try color.color(buff[0..], writer, self.fg_color, self.bg_color, false);
+            try color.colorPrint(writer, "{s}", .{buff[0..]}, self.fg_color, self.bg_color, .{});
         } else {
             try writer.writeAll(buff[0..]);
         }

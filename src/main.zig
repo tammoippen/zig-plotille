@@ -2,7 +2,6 @@ const std = @import("std");
 const color = @import("./color.zig");
 const dots = @import("./dots.zig");
 
-
 // C API
 
 // Dots

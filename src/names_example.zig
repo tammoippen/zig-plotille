@@ -25,7 +25,7 @@ pub fn main() !void {
                 continue;
             }
             const fg = color.Color.by_name(fg_value);
-            try color.colorPrint(writer, "Text ", .{}, fg, bg, false);
+            try color.colorPrint(writer, "Text ", .{}, fg, bg, .{});
         }
         try writer.print("\n", .{});
     }
