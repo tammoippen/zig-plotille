@@ -10,6 +10,7 @@ gen-headers:
 	# do not forget to uncomment the `lib.emit_h = true;` part
 	$(MAKE) clean
 	docker run -it --rm -v $(PWD):/app \
+				--workdir /app \
 				--platform linux/amd64 \
 				euantorano/zig:0.6.0 build
 	cp zig-cache/include/* .
