@@ -194,7 +194,7 @@ test "colored dots" {
     try expect(mem.eql(u8, "⡀", fbs.getWritten()));
     fbs.reset();
 
-    d.color.fg = color.Color.by_name(color.ColorName.red);
+    d.color.fg = color.Color.by_name(.red);
     try std.fmt.format(fbs.writer(), "{s}", .{d});
     try expect(fbs.pos == 16);
     try expect(mem.eql(u8, "\x1b[31m⡀\x1b[39;49m", fbs.getWritten()));

@@ -157,8 +157,8 @@ pub const Color = extern struct {
     pub fn no_color() Color {
         // https://en.wikipedia.org/wiki/ANSI_escape_code#3-bit_and_4-bit
         return Color{
-            .mode = ColorMode.none,
-            .name = ColorName.invalid,
+            .mode = .none,
+            .name = .invalid,
             .lookup = 0,
             .rgb = [3]u8{ 0, 0, 0 },
         };
@@ -166,7 +166,7 @@ pub const Color = extern struct {
     pub fn by_name(name: ColorName) Color {
         // https://en.wikipedia.org/wiki/ANSI_escape_code#3-bit_and_4-bit
         return Color{
-            .mode = ColorMode.names,
+            .mode = .names,
             .name = name,
             .lookup = 0,
             .rgb = [3]u8{ 0, 0, 0 },
@@ -179,8 +179,8 @@ pub const Color = extern struct {
         // 16-231:  6 × 6 × 6 cube (216 colors): 16 + 36 × r + 6 × g + b (0 ≤ r, g, b ≤ 5)
         // 232-255:  grayscale from black to white in 24 steps
         return Color{
-            .mode = ColorMode.lookup,
-            .name = ColorName.invalid,
+            .mode = .lookup,
+            .name = .invalid,
             .lookup = idx,
             .rgb = [3]u8{ 0, 0, 0 },
         };
@@ -189,8 +189,8 @@ pub const Color = extern struct {
         // https://en.wikipedia.org/wiki/ANSI_escape_code#24-bit
         //
         return Color{
-            .mode = ColorMode.rgb,
-            .name = ColorName.invalid,
+            .mode = .rgb,
+            .name = .invalid,
             .lookup = 0,
             .rgb = [_]u8{ r, g, b },
         };
@@ -216,8 +216,8 @@ pub const Color = extern struct {
         }
 
         return Color{
-            .mode = ColorMode.rgb,
-            .name = ColorName.invalid,
+            .mode = .rgb,
+            .name = .invalid,
             .lookup = 0,
             .rgb = [_]u8{ @floatToInt(u8, r * 255), @floatToInt(u8, g * 255), @floatToInt(u8, b * 255) },
         };
@@ -254,70 +254,66 @@ pub const ColorOptions = extern struct {
     }
 };
 
-export fn color_by_name(name: c_uint) Color {
-    return Color.by_name(@intToEnum(ColorName, name));
-}
-
 test "color by name" {
-    const c = Color.by_name(ColorName.bright_blue);
+    const c = Color.by_name(.bright_blue);
 
-    try expect(c.mode == ColorMode.names);
-    try expect(c.name == ColorName.bright_blue);
+    try expect(c.mode == .names);
+    try expect(c.name == .bright_blue);
 }
 
 test "color by index" {
     const c = Color.by_lookup(123);
 
-    try expect(c.mode == ColorMode.lookup);
+    try expect(c.mode == .lookup);
     try expect(c.lookup == 123);
 }
 
 test "color by rgb" {
     const c = Color.by_rgb(255, 0, 0);
 
-    try expect(c.mode == ColorMode.rgb);
+    try expect(c.mode == .rgb);
     try expect(mem.eql(u8, c.rgb[0..], ([3]u8{ 255, 0, 0 })[0..]));
 }
 
 test "color by hsl red" {
     const c = Color.by_hsl(0, 1, 0.5);
 
-    try expect(c.mode == ColorMode.rgb);
+    try expect(c.mode == .rgb);
     try expect(mem.eql(u8, c.rgb[0..], ([3]u8{ 255, 0, 0 })[0..]));
 }
 
 test "color by hsl green" {
     const c = Color.by_hsl(120.0, 1.0, 0.5);
 
-    try expect(c.mode == ColorMode.rgb);
+    try expect(c.mode == .rgb);
     try expect(mem.eql(u8, c.rgb[0..], ([3]u8{ 0, 255, 0 })[0..]));
 }
 
 test "color by hsl blue" {
     const c = Color.by_hsl(240.0, 1.0, 0.5);
 
-    try expect(c.mode == ColorMode.rgb);
+    try expect(c.mode == .rgb);
     try expect(mem.eql(u8, c.rgb[0..], ([3]u8{ 0, 0, 255 })[0..]));
 }
 
 test "color by hsl white" {
     const c = Color.by_hsl(0, 0, 1);
 
-    try expect(c.mode == ColorMode.rgb);
+    try expect(c.mode == .rgb);
     try expect(mem.eql(u8, c.rgb[0..], ([3]u8{ 255, 255, 255 })[0..]));
 }
 
 test "color by hsl black" {
     const c = Color.by_hsl(0, 0, 0);
 
-    try expect(c.mode == ColorMode.rgb);
+    try expect(c.mode == .rgb);
     try expect(mem.eql(u8, c.rgb[0..], ([3]u8{ 0, 0, 0 })[0..]));
 }
 
 test "color by hsl other" {
     const c = Color.by_hsl(123, 0.8, 0.5);
 
-    try expect(c.mode == ColorMode.rgb);
+    try expect(c.mode == .rgb);
     try expect(mem.eql(u8, c.rgb[0..], ([3]u8{ 25, 229, 35 })[0..]));
 }
 
@@ -378,32 +374,32 @@ test "names with optional fg, bg" {
     var buff: [100]u8 = undefined;
     var fbs = std.io.fixedBufferStream(&buff);
 
-    try names(ColorName.red, true, fbs.writer());
+    try names(.red, true, fbs.writer());
     try expect(fbs.pos == 2);
     try expect(mem.eql(u8, "31", fbs.getWritten()));
     fbs.reset();
 
-    try names(ColorName.red, false, fbs.writer());
+    try names(.red, false, fbs.writer());
     try expect(fbs.pos == 2);
     try expect(mem.eql(u8, "41", fbs.getWritten()));
     fbs.reset();
 
-    try names(ColorName.bright_green, true, fbs.writer());
+    try names(.bright_green, true, fbs.writer());
     try expect(fbs.pos == 2);
     try expect(mem.eql(u8, "92", fbs.getWritten()));
     fbs.reset();
 
-    try names(ColorName.bright_green, false, fbs.writer());
+    try names(.bright_green, false, fbs.writer());
     try expect(fbs.pos == 3);
     try expect(mem.eql(u8, "102", fbs.getWritten()));
     fbs.reset();
 
-    try names(ColorName.bright_magenta_old, true, fbs.writer());
+    try names(.bright_magenta_old, true, fbs.writer());
     try expect(fbs.pos == 4);
     try expect(mem.eql(u8, "1;35", fbs.getWritten()));
     fbs.reset();
 
-    try names(ColorName.bright_magenta_old, false, fbs.writer());
+    try names(.bright_magenta_old, false, fbs.writer());
     try expect(fbs.pos == 4);
     try expect(mem.eql(u8, "1;45", fbs.getWritten()));
     fbs.reset();
@@ -423,7 +419,7 @@ test "color in names mode" {
     try expect(mem.eql(u8, "\x1b[41mSome text\x1b[39;49m", fbs.getWritten()));
     fbs.reset();
 
-    try colorPrint(fbs.writer(), "Some text", .{}, .{ .fg = Color.by_name(ColorName.bright_magenta), .bg = Color.by_name(ColorName.red) });
+    try colorPrint(fbs.writer(), "Some text", .{}, .{ .fg = Color.by_name(.bright_magenta), .bg = Color.by_name(.red) });
     try expect(fbs.pos == 25);
     try expect(mem.eql(u8, "\x1b[95;41mSome text\x1b[39;49m", fbs.getWritten()));
     fbs.reset();
@@ -545,7 +541,7 @@ test "color in mixed modes" {
     var buff: [100]u8 = undefined;
     var fbs = std.io.fixedBufferStream(&buff);
 
-    try colorPrint(fbs.writer(), "Some text", .{}, .{ .fg = Color.by_rgb(44, 22, 11), .bg = Color.by_name(ColorName.yellow) });
+    try colorPrint(fbs.writer(), "Some text", .{}, .{ .fg = Color.by_rgb(44, 22, 11), .bg = Color.by_name(.yellow) });
     try expect(fbs.pos == 36);
     try expect(mem.eql(u8, "\x1b[38;2;44;22;11;43mSome text\x1b[39;49m", fbs.getWritten()));
     fbs.reset();
@@ -555,7 +551,7 @@ test "color in mixed modes" {
     try expect(mem.eql(u8, "\x1b[38;5;155;48;2;5;66;100mSome text\x1b[39;49m", fbs.getWritten()));
     fbs.reset();
 
-    try colorPrint(fbs.writer(), "Some text", .{}, .{ .fg = Color.by_name(ColorName.bright_cyan_old), .bg = Color.by_lookup(254) });
+    try colorPrint(fbs.writer(), "Some text", .{}, .{ .fg = Color.by_name(.bright_cyan_old), .bg = Color.by_lookup(254) });
     try expect(fbs.pos == 33);
     try expect(mem.eql(u8, "\x1b[1;36;48;5;254mSome text\x1b[39;49m", fbs.getWritten()));
     fbs.reset();

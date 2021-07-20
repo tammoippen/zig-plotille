@@ -30,3 +30,7 @@ export fn dots_unset(self: *dots.Dots, x: u8, y: u8) void {
 }
 
 // Color
+
+export fn color_by_name(name: c_uint) color.Color {
+    return color.Color.by_name(@intToEnum(color.ColorName, name));
+}
