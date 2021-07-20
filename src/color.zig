@@ -5,6 +5,8 @@ const testing = std.testing;
 const assert = std.debug.assert;
 const expect = testing.expect;
 
+const terminfo = @import("./terminfo.zig");
+
 // Surround `text` with control characters for coloring
 //
 // c.f. http://en.wikipedia.org/wiki/ANSI_escape_code
@@ -318,15 +320,24 @@ test "color by hsl other" {
 }
 
 pub fn colorPrint(writer: anytype, comptime fmt: []const u8, args: anytype, options: ColorOptions) !void {
-    if (options.no_color) { // or os.environ.get('NO_COLOR'))
-        try writer.print(fmt, args);
-        return;
-    }
-
     if (!options.hasColor()) {
         try writer.print(fmt, args);
         return;
     }
+
+    // const info = terminfo.TermInfo.get();
+
+    // // no color on no_color, NO_COLOR, FORCE_COLOR=0|false|none
+    // if (options.no_color or info.no_color or (info.force_color != null and !info.force_color.?)) {
+    //     try writer.print(fmt, args);
+    //     return;
+    // }
+
+    // // no color on not stdout tty (except FORCE_COLOR as something valid set)
+    // if (!(info.stdout_interactive or (info.force_color != null and info.force_color.?))) {
+    //     try writer.print(fmt, args);
+    //     return;
+    // }
 
     try writer.print("{c}[", .{ESC});
 
