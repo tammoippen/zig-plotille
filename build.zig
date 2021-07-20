@@ -35,6 +35,9 @@ pub fn build(b: *std.build.Builder) !void {
         exe.setBuildMode(mode);
         exe.setOutputDir("zig-out/examples");
         example_step.dependOn(&exe.step);
+
+        const exe_run = exe.run();
+        example_step.dependOn(&exe_run.step);
     }
 
     const test_step = b.step("test", "Run library tests");

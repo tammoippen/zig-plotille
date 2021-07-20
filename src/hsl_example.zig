@@ -30,8 +30,8 @@ pub fn main() !void {
     defer arena.deinit();
 
     const allocator = &arena.allocator;
-    var list = std.ArrayList(u8).init(allocator);
-    defer list.deinit();
+
+    const writer = std.io.getStdOut().writer();
 
     const args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);
@@ -50,7 +50,7 @@ pub fn main() !void {
             usage();
             return;
         }
-        std.debug.print("  Hue {s} RGB\n", .{space});
+        try writer.print("  Hue {s} RGB\n", .{space});
     }
 
     for (args[start..]) |arg| {
@@ -62,28 +62,26 @@ pub fn main() !void {
 
         if (short) {
             const bg = color.Color.by_hsl(hue, 1.0, 0.5);
-            try color.color(space, list.writer(), null, bg, false);
-            std.debug.print("{s:>5} {s} {x:0<2}{x:0<2}{x:0<2}\n", .{ arg[0..std.math.min(arg.len, 5)], list.items, bg.rgb[0], bg.rgb[1], bg.rgb[2] });
-            list.clearRetainingCapacity();
+            try writer.print("{s:>5} ", .{ arg[0..std.math.min(arg.len, 5)] });
+            try color.colorPrint(writer, "{s}", .{space}, null, bg, false);
+            try writer.print(" {x:0<2}{x:0<2}{x:0<2}\n", .{ bg.rgb[0], bg.rgb[1], bg.rgb[2] });
             continue;
         }
 
-        std.debug.print("Saturation and lightness for hue {s} :\n", .{arg});
-        std.debug.print("  Saturation left to right 0.0 to 1.0\n  ", .{});
+        try writer.print("Saturation and lightness for hue {s} :\n", .{arg});
+        try writer.print("  Saturation left to right 0.0 to 1.0\n  ", .{});
         var lum: f64 = max_rows;
         while (lum >= 0) : (lum -= 1.0) {
             var sat: f64 = 0.0;
             while (sat < max_col) : (sat += 1.0) {
                 const bg = color.Color.by_hsl(hue, sat / max_col, lum / max_rows);
-                try color.color(" ", list.writer(), null, bg, false);
-                std.debug.print("{s}", .{list.items});
-                list.clearRetainingCapacity();
+                try color.colorPrint(writer, " ", .{}, null, bg, false);
             }
             if (lum == max_rows / 2) {
-                std.debug.print("  Lightness top down 1.0 to 0.0; max color at 0.5", .{});
+                try writer.print("  Lightness top down 1.0 to 0.0; max color at 0.5", .{});
             }
-            std.debug.print("\n  ", .{});
+            try writer.print("\n  ", .{});
         }
-        std.debug.print("\n", .{});
+        try writer.print("\n", .{});
     }
 }

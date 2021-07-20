@@ -222,27 +222,3 @@ test "colored dots" {
     try expect(mem.eql(u8, "\x1b[38;2;1;22;133;48;5;123m⡀\x1b[39;49m", fbs.getWritten()));
     fbs.reset();
 }
-
-// C API
-export fn dots_init() Dots {
-    return Dots.init();
-}
-export fn dots_str(self: Dots, buf: [*]u8, len: usize) usize {
-    var fbs = std.io.fixedBufferStream(buf[0..len]);
-    std.fmt.format(fbs.writer(), "{s}", .{self}) catch |err| switch (err) {
-        error.NoSpaceLeft => return 0,
-    };
-    return fbs.pos;
-}
-export fn dots_fill(self: *Dots) void {
-    return self.fill();
-}
-export fn dots_clear(self: *Dots) void {
-    return self.clear();
-}
-export fn dots_set(self: *Dots, x: u8, y: u8) void {
-    return self.set(x, y);
-}
-export fn dots_unset(self: *Dots, x: u8, y: u8) void {
-    return self.unset(x, y);
-}

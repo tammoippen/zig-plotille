@@ -310,14 +310,14 @@ test "color by hsl other" {
     try expect(mem.eql(u8, c.rgb[0..], ([3]u8{ 25, 229, 35 })[0..]));
 }
 
-pub fn color(text: []const u8, writer: anytype, optional_fg: ?Color, optional_bg: ?Color, no_color: bool) !void {
+pub fn colorPrint(writer: anytype, comptime fmt: []const u8, args: anytype, optional_fg: ?Color, optional_bg: ?Color, no_color: bool) !void {
     if (no_color) { // or os.environ.get('NO_COLOR'))
-        try writer.writeAll(text);
+        try writer.print(fmt, args);
         return;
     }
 
     if (optional_fg == null and optional_bg == null) {
-        try writer.writeAll(text);
+        try writer.print(fmt, args);
         return;
     }
 
@@ -346,8 +346,14 @@ pub fn color(text: []const u8, writer: anytype, optional_fg: ?Color, optional_bg
         }
     }
 
-    try writer.print("m{s}{c}[39;49m", .{ text, ESC });
-    // try writer.print("m{}{}[0m", .{text, ESC});
+    try writer.writeAll("m");
+    try writer.print(fmt, args);
+    try writer.print("{c}[39;49m", .{ ESC });
+    // try writer.print("{c}[0m", .{ ESC});
+}
+
+pub fn color(text: []const u8, writer: anytype, optional_fg: ?Color, optional_bg: ?Color, no_color: bool) !void {
+    try colorPrint(writer, "{s}", .{text}, optional_fg, optional_bg, no_color);
 }
 
 fn names(color_name: ColorName, is_fg: bool, writer: anytype) !void {
