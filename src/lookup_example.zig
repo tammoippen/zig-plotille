@@ -14,7 +14,7 @@ pub fn main() !void {
     while (idx <= 7) : (idx += 1) {
         const bg = color.Color.by_lookup(@truncate(u8, idx));
         const int_str = try std.fmt.bufPrint(int_buff[0..], "{:4}", .{idx});
-        try color.colorPrint(std.io.getStdOut().writer(), "{s}", .{int_str}, fg_white, bg, .{});
+        try color.colorPrint(std.io.getStdOut().writer(), "{s}", .{int_str}, .{ .fg = fg_white, .bg = bg });
     }
     std.debug.print("\n", .{});
 
@@ -22,7 +22,7 @@ pub fn main() !void {
     while (idx <= 15) : (idx += 1) {
         const bg = color.Color.by_lookup(@truncate(u8, idx));
         const int_str = try std.fmt.bufPrint(int_buff[0..], "{:4}", .{idx});
-        try color.colorPrint(std.io.getStdOut().writer(), "{s}", .{int_str}, fg_black, bg, .{});
+        try color.colorPrint(std.io.getStdOut().writer(), "{s}", .{int_str}, .{ .fg = fg_black, .bg = bg });
     }
     std.debug.print("\n", .{});
 
@@ -41,9 +41,9 @@ pub fn main() !void {
         const bg = color.Color.by_lookup(@truncate(u8, idx));
         const int_str = try std.fmt.bufPrint(int_buff[0..], "{:4}", .{idx});
         if ((idx - 16) % 36 >= 18) {
-            try color.colorPrint(std.io.getStdOut().writer(), "{s}", .{int_str}, fg_black, bg, .{});
+            try color.colorPrint(std.io.getStdOut().writer(), "{s}", .{int_str}, .{ .fg = fg_black, .bg = bg });
         } else {
-            try color.colorPrint(std.io.getStdOut().writer(), "{s}", .{int_str}, fg_white, bg, .{});
+            try color.colorPrint(std.io.getStdOut().writer(), "{s}", .{int_str}, .{ .fg = fg_white, .bg = bg });
         }
     }
     std.debug.print("\n", .{});
@@ -53,9 +53,9 @@ pub fn main() !void {
         const bg = color.Color.by_lookup(@truncate(u8, idx));
         const int_str = try std.fmt.bufPrint(int_buff[0..], "{:4}", .{idx});
         if (idx < 244) {
-            try color.colorPrint(std.io.getStdOut().writer(), "{s}", .{int_str}, fg_white, bg, .{});
+            try color.colorPrint(std.io.getStdOut().writer(), "{s}", .{int_str}, .{ .fg = fg_white, .bg = bg });
         } else {
-            try color.colorPrint(std.io.getStdOut().writer(), "{s}", .{int_str}, fg_black, bg, .{});
+            try color.colorPrint(std.io.getStdOut().writer(), "{s}", .{int_str}, .{ .fg = fg_black, .bg = bg });
         }
     }
     std.debug.print("\n", .{});

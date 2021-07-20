@@ -36,17 +36,8 @@ const MIN_BUFF_LEN_COLOR_DOTS = 3 // utf8 braille dots
 + 8; // ansi-code end marker ESC[39;49m
 
 pub const Dots = extern struct {
-    dots: u8,
-    fg_color: color.Color,
-    bg_color: color.Color,
-
-    pub fn init() Dots {
-        return Dots{
-            .dots = 0,
-            .fg_color = color.Color.no_color(),
-            .bg_color = color.Color.no_color(),
-        };
-    }
+    dots: u8 = 0,
+    color: color.ColorOptions = .{},
 
     pub fn format(
         self: Dots,
@@ -64,9 +55,8 @@ pub const Dots = extern struct {
         var len = unicode.utf8Encode(v, &buff) catch unreachable;
         assert(len == 3);
 
-        if (self.fg_color.mode != color.ColorMode.none or self.bg_color.mode != color.ColorMode.none) {
-            // no_color argument always false?
-            try color.colorPrint(writer, "{s}", .{buff[0..]}, self.fg_color, self.bg_color, .{});
+        if (self.color.hasColor()) {
+            try color.colorPrint(writer, "{s}", .{buff[0..]}, self.color);
         } else {
             try writer.writeAll(buff[0..]);
         }
@@ -93,7 +83,7 @@ test "test clear and full char" {
     var buff: [100]u8 = undefined;
     var fbs = std.io.fixedBufferStream(&buff);
 
-    var d = Dots.init();
+    var d = Dots{};
 
     try std.fmt.format(fbs.writer(), "{s}", .{d});
     try expect(mem.eql(u8, "⠀", fbs.getWritten()));
@@ -114,7 +104,7 @@ test "set and unset individual vals" {
     var buff: [100]u8 = undefined;
     var fbs = std.io.fixedBufferStream(&buff);
 
-    var d = Dots.init();
+    var d = Dots{};
 
     try std.fmt.format(fbs.writer(), "{s}", .{d});
     try expect(mem.eql(u8, "⠀", fbs.getWritten()));
@@ -197,26 +187,26 @@ test "colored dots" {
     var buff: [100]u8 = undefined;
     var fbs = std.io.fixedBufferStream(&buff);
 
-    var d = Dots.init();
+    var d = Dots{};
     d.set(0, 0);
 
     try std.fmt.format(fbs.writer(), "{s}", .{d});
     try expect(mem.eql(u8, "⡀", fbs.getWritten()));
     fbs.reset();
 
-    d.fg_color = color.Color.by_name(color.ColorName.red);
+    d.color.fg = color.Color.by_name(color.ColorName.red);
     try std.fmt.format(fbs.writer(), "{s}", .{d});
     try expect(fbs.pos == 16);
     try expect(mem.eql(u8, "\x1b[31m⡀\x1b[39;49m", fbs.getWritten()));
     fbs.reset();
 
-    d.bg_color = color.Color.by_lookup(123);
+    d.color.bg = color.Color.by_lookup(123);
     try std.fmt.format(fbs.writer(), "{s}", .{d});
     try expect(fbs.pos == 25);
     try expect(mem.eql(u8, "\x1b[31;48;5;123m⡀\x1b[39;49m", fbs.getWritten()));
     fbs.reset();
 
-    d.fg_color = color.Color.by_rgb(1, 22, 133);
+    d.color.fg = color.Color.by_rgb(1, 22, 133);
     try std.fmt.format(fbs.writer(), "{s}", .{d});
     try expect(fbs.pos == 36);
     try expect(mem.eql(u8, "\x1b[38;2;1;22;133;48;5;123m⡀\x1b[39;49m", fbs.getWritten()));

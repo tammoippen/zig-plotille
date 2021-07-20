@@ -7,7 +7,7 @@ const dots = @import("./dots.zig");
 // Dots
 
 export fn dots_init() dots.Dots {
-    return dots.Dots.init();
+    return dots.Dots{};
 }
 export fn dots_str(self: dots.Dots, buf: [*]u8, len: usize) usize {
     var fbs = std.io.fixedBufferStream(buf[0..len]);
