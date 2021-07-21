@@ -20,7 +20,7 @@ const rgb_term = [_][]const u8{
     "alacritty"
 };
 const lookup_term = [_][]const u8{
-    // TODO: on win 10 supports .rgb
+    // TODO: on win 10, cygwin supports .rgb
     "cygwin"
 };
 const names_term = [_][]const u8{
@@ -49,13 +49,13 @@ pub const TermInfo = struct {
         info = terminfo;
     }
 
+    /// set, such that colors will always be printed
     pub fn testing() void {
-        // set, such that colors will always be printed
         info = TermInfo{
             .no_color = false,
             .force_color = true,
             .stdout_tty = true,
-            .suggested_color_mode = .none,
+            .suggested_color_mode = .rgb,
         };
     }
 
@@ -97,9 +97,9 @@ pub const TermInfo = struct {
         }
         return force_color;
     }
+    /// free on its own
     fn getColorMode(allocator: *std.mem.Allocator) !color.ColorMode {
         if (isWindowsTerminal(allocator) or isDomTerm(allocator) or isKittyTerm(allocator)) {
-            std.debug.print("win/dom/kitty term\n", .{});
             return .rgb;
         }
 
@@ -119,13 +119,11 @@ pub const TermInfo = struct {
             defer allocator.free(termprogram);
             for (rgb_termprogs) |name| {
                 if (std.mem.eql(u8, name, termprogram)) {
-                    std.debug.print("term rgb: {s}\n", .{termprogram});
                     return .rgb;
                 }
             }
             for (lookup_termprogs) |name| {
                 if (std.mem.eql(u8, name, termprogram)) {
-                    std.debug.print("term lookup: {s}\n", .{termprogram});
                     return .lookup;
                 }
             }
@@ -152,6 +150,7 @@ pub const TermInfo = struct {
                     }
                 }
             }
+
             if (opt_term_part) |term_part| {
                 for (rgb_term) |rgb_t| {
                     if (std.mem.eql(u8, term_part, rgb_t)) {
@@ -202,6 +201,7 @@ pub const TermInfo = struct {
         return std.process.hasEnvVar(allocator, "KITTY_WINDOW_ID") catch unreachable;
     }
     /// free returned string
+    /// Get optional and lowercase string.
     fn getEnvVar(allocator: *std.mem.Allocator, name: []const u8) !?[]const u8 {
         const opt_value = std.process.getEnvVarOwned(allocator, name) catch |err| switch(err) {
             error.EnvironmentVariableNotFound => null,
