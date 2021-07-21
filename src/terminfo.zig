@@ -34,9 +34,25 @@ pub const TermInfo = struct {
     pub fn detect(allocator: *std.mem.Allocator) !void {
         const stdout_tty = std.io.getStdOut().isTty();
 
+        const no_color = TermInfo.isNoColorSet(allocator);
+
+        const force_color = try TermInfo.forceColors(allocator);
+
+        info = TermInfo{
+            .stdout_tty = stdout_tty,
+            .no_color = no_color,
+            .force_color = force_color,
+        };
+    }
+
+    fn isNoColorSet(allocator: *std.mem.Allocator) bool {
         // on windows needs allocator to put key into utf16
         // free on its own
-        const no_color = std.process.hasEnvVar(allocator, "NO_COLOR") catch unreachable;
+        return std.process.hasEnvVar(allocator, "NO_COLOR") catch unreachable;
+    }
+
+    fn forceColors(allocator: *std.mem.Allocator) !?bool {
+        var force_color: ?bool = null;
 
         // on issues, ignore force_color
         const opt_force_color_str = std.process.getEnvVarOwned(allocator, "FORCE_COLOR") catch |err| switch(err) {
@@ -44,17 +60,11 @@ pub const TermInfo = struct {
             else => return err,
         };
 
-        var force_color: ?bool = null;
         if (opt_force_color_str) |force_color_str| {
             defer allocator.free(force_color_str);
             const fc_lower = try std.ascii.allocLowerString(allocator, force_color_str);
             force_color = !(std.mem.eql(u8, fc_lower, "0") or std.mem.eql(u8, fc_lower, "false") or std.mem.eql(u8, fc_lower, "none"));
         }
-
-        info = TermInfo{
-            .stdout_tty = stdout_tty,
-            .no_color = no_color,
-            .force_color = force_color,
-        };
+        return force_color;
     }
 };
