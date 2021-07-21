@@ -1,3 +1,6 @@
+// Kudos to ajalt/mordant for the initial research!
+// https://github.com/ajalt/mordant/blob/master/mordant/src/commonMain/kotlin/com/github/ajalt/mordant/terminal/TerminalDetection.kt
+
 const std = @import("std");
 const color = @import("./color.zig");
 
@@ -41,15 +44,17 @@ pub const TermInfo = struct {
     force_color: ?bool,
     suggested_color_mode: color.ColorMode,
 
+    /// Get the 'cached' TermInfo. Set via `set(...)` or `detect(...)` beforehand.
     pub fn get() TermInfo {
-        return info orelse @panic("You have to initialize the TermInfo with either `set` or `detect`") ;
+        return info orelse @panic("You have to initialize the TermInfo with either `set(...)` or `detect(...)`") ;
     }
 
+    /// Set your own TermInfo for testing, forcing color on / off.
     pub fn set(terminfo: TermInfo) void {
         info = terminfo;
     }
 
-    /// set, such that colors will always be printed
+    /// Shorthand set-call, such that colors will always be printed.
     pub fn testing() void {
         info = TermInfo{
             .no_color = false,
