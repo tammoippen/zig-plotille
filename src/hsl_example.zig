@@ -35,6 +35,7 @@ pub fn main() !void {
     try terminfo.TermInfo.detect(allocator);
 
     const writer = std.io.getStdOut().writer();
+    try writer.print("{any}\n", .{terminfo.TermInfo.get()});
 
     const args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);
