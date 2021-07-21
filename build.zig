@@ -21,11 +21,11 @@ pub fn build(b: *std.build.Builder) !void {
     // lib.emit_h = true;
     lib.install();
 
-    // const shared_lib = b.addSharedLibrary("zig-plotille", "src/main.zig", b.version(1, 0, 0));
-    // shared_lib.setTarget(target);
-    // shared_lib.setBuildMode(mode);
-    // // shared_lib.emit_h = true;
-    // shared_lib.install();
+    const shared_lib = b.addSharedLibrary("zig-plotille", "src/main.zig", b.version(1, 0, 0));
+    shared_lib.setTarget(target);
+    shared_lib.setBuildMode(mode);
+    // shared_lib.emit_h = true;
+    shared_lib.install();
 
     const example_step = b.step("examples", "Build example exe's.");
     for (example_files) |example| {
@@ -33,9 +33,9 @@ pub fn build(b: *std.build.Builder) !void {
         const exe = b.addExecutable(iter.next().?, example);
         exe.setTarget(target);
         exe.setBuildMode(mode);
-        // exe.setOutputDir("zig-out/examples");
-        // example_step.dependOn(&exe.step);
-        exe.install();
+        exe.setOutputDir("zig-out/examples");
+        example_step.dependOn(&exe.step);
+        // exe.install();
 
         const exe_run = exe.run();
         example_step.dependOn(&exe_run.step);
