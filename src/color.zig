@@ -333,7 +333,7 @@ pub fn colorPrint(writer: anytype, comptime fmt: []const u8, args: anytype, opti
     }
 
     // no color on not stdout tty (except FORCE_COLOR as something valid set)
-    if (!(info.stdout_interactive or (info.force_color != null and info.force_color.?))) {
+    if (!(info.stdout_tty or (info.force_color != null and info.force_color.?))) {
         try writer.print(fmt, args);
         return;
     }

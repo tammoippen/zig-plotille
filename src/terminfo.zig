@@ -3,7 +3,10 @@ const std = @import("std");
 var info: ?TermInfo = null;
 
 pub const TermInfo = struct {
-    stdout_interactive: bool,
+    // whether stdout is a tty / is interactive
+    // if is false, then we probably pipe or
+    // redirect into a file
+    stdout_tty: bool,
     // respect NO_COLOR env var: https://no-color.org/
     no_color: bool,
     // respect FORCE_COLOR env var somewhat: https://nodejs.org/api/tty.html#tty_writestream_getcolordepth_env
@@ -24,7 +27,7 @@ pub const TermInfo = struct {
         info = TermInfo{
             .no_color = false,
             .force_color = true,
-            .stdout_interactive = true,
+            .stdout_tty = true,
         };
     }
 
@@ -49,7 +52,7 @@ pub const TermInfo = struct {
         }
 
         info = TermInfo{
-            .stdout_interactive = stdout_tty,
+            .stdout_tty = stdout_tty,
             .no_color = no_color,
             .force_color = force_color,
         };
