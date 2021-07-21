@@ -112,7 +112,17 @@ pub const TermInfo = struct {
     fn isWindowsTerminal(allocator: *std.mem.Allocator) bool {
         // on windows needs allocator to put key into utf16
         // https://github.com/microsoft/terminal/issues/1040#issuecomment-496691842
-        return std.process.hasEnvVar(allocator, "WT_SESSION") catch unreachable;
+        const opt_wt_session = std.process.getEnvVarOwned(allocator, "WT_SESSION") catch |err| switch(err) {
+            error.EnvironmentVariableNotFound => null,
+            // oom or utf8 errors, hence var is set and more than on char
+            else => return true,
+        };
+        if (opt_wt_session) |wt_session| {
+            defer allocator.free(wt_session);
+            return wt_session.len > 0;
+        } else {
+            return false;
+        }
     }
     /// free on its own
     fn isDomTerm(allocator: *std.mem.Allocator) bool {
