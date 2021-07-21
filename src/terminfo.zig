@@ -7,7 +7,24 @@ const rgb_termprogs = [_][]const u8{
     "hyper", "wezterm", "vscode"
 };
 const lookup_termprogs = [_][]const u8{
-    "apple_terminal"
+    // TODO: iterm => lookup , iterm >=3 => rgb via TERM_PROGRAM_VERSION
+    "iterm", "apple_terminal"
+};
+const rgb_level = [_][]const u8{
+    "24bit", "24bits", "direct", "truecolor"
+};
+const lookup_level = [_][]const u8{
+    "256", "256color", "256colors"
+};
+const rgb_term = [_][]const u8{
+    "alacritty"
+};
+const lookup_term = [_][]const u8{
+    // TODO: on win 10 supports .rgb
+    "cygwin"
+};
+const names_term = [_][]const u8{
+    "xterm", "vt100", "vt220", "screen", "color", "linux", "ansi", "rxvt", "konsole"
 };
 
 
@@ -22,7 +39,7 @@ pub const TermInfo = struct {
     // if set and 0, false or none, same effect as NO_COLOR
     // on all other values force color on (but not the respective kind)
     force_color: ?bool,
-    suggested_color_mode: ?color.ColorMode,
+    suggested_color_mode: color.ColorMode,
 
     pub fn get() TermInfo {
         return info orelse @panic("You have to initialize the TermInfo with either `set` or `detect`") ;
@@ -38,7 +55,7 @@ pub const TermInfo = struct {
             .no_color = false,
             .force_color = true,
             .stdout_tty = true,
-            .suggested_color_mode = null,
+            .suggested_color_mode = .none,
         };
     }
 
@@ -80,15 +97,24 @@ pub const TermInfo = struct {
         }
         return force_color;
     }
-    fn getColorMode(allocator: *std.mem.Allocator) !?color.ColorMode {
-        if (isWindowsTerminal(allocator) or isDomTerm(allocator)) {
-            std.debug.print("win/dom term\n", .{});
+    fn getColorMode(allocator: *std.mem.Allocator) !color.ColorMode {
+        if (isWindowsTerminal(allocator) or isDomTerm(allocator) or isKittyTerm(allocator)) {
+            std.debug.print("win/dom/kitty term\n", .{});
             return .rgb;
         }
 
-        // TODO: COLORTERM
 
-        const opt_termprogram = try getTermProgram(allocator);
+        const opt_colorterm = try getEnvVar(allocator, "COLORTERM");
+        if (opt_colorterm) |colorterm| {
+            defer allocator.free(colorterm);
+            for (rgb_level) |rgb_lvl| {
+                if (std.mem.eql(u8, colorterm, rgb_lvl)) {
+                    return .rgb;
+                }
+            }
+        }
+
+        const opt_termprogram = try getEnvVar(allocator, "TERM_PROGRAM");
         if (opt_termprogram) |termprogram| {
             defer allocator.free(termprogram);
             for (rgb_termprogs) |name| {
@@ -100,13 +126,52 @@ pub const TermInfo = struct {
             for (lookup_termprogs) |name| {
                 if (std.mem.eql(u8, name, termprogram)) {
                     std.debug.print("term lookup: {s}\n", .{termprogram});
-                    return .rgb;
+                    return .lookup;
                 }
             }
             // TODO: iterm => lookup , iterm >=3 => rgb via TERM_PROGRAM_VERSION
         }
 
-        return null;
+        const opt_term = try getEnvVar(allocator, "TERM");
+        if (opt_term) |term| {
+            defer allocator.free(term);
+
+            var iter = std.mem.split(term, "-");
+            const opt_term_part = iter.next();
+            const opt_level_part = if (opt_term_part != null) iter.next() else null;
+
+            if (opt_level_part) |level_part| {
+                for (rgb_level) |rgb_lvl| {
+                    if (std.mem.eql(u8, level_part, rgb_lvl)) {
+                        return .rgb;
+                    }
+                }
+                for (lookup_level) |lookup_lvl| {
+                    if (std.mem.eql(u8, level_part, lookup_lvl)) {
+                        return .lookup;
+                    }
+                }
+            }
+            if (opt_term_part) |term_part| {
+                for (rgb_term) |rgb_t| {
+                    if (std.mem.eql(u8, term_part, rgb_t)) {
+                        return .rgb;
+                    }
+                }
+                for (lookup_term) |lookup_t| {
+                    if (std.mem.eql(u8, term_part, lookup_t)) {
+                        return .lookup;
+                    }
+                }
+                for (names_term) |names_t| {
+                    if (std.mem.eql(u8, term_part, names_t)) {
+                        return .names;
+                    }
+                }
+            }
+        }
+
+        return .none;
     }
     /// free on its own
     fn isWindowsTerminal(allocator: *std.mem.Allocator) bool {
@@ -130,15 +195,21 @@ pub const TermInfo = struct {
         // https://domterm.org/Detecting-domterm-terminal.html
         return std.process.hasEnvVar(allocator, "DOMTERM") catch unreachable;
     }
+    /// free on its own
+    fn isKittyTerm(allocator: *std.mem.Allocator) bool {
+        // on windows needs allocator to put key into utf16
+        // https://github.com/kovidgoyal/kitty/issues/957#issuecomment-420318828
+        return std.process.hasEnvVar(allocator, "KITTY_WINDOW_ID") catch unreachable;
+    }
     /// free returned string
-    fn getTermProgram(allocator: *std.mem.Allocator) !?[]const u8 {
-        const term_program = std.process.getEnvVarOwned(allocator, "TERM_PROGRAM") catch |err| switch(err) {
+    fn getEnvVar(allocator: *std.mem.Allocator, name: []const u8) !?[]const u8 {
+        const opt_value = std.process.getEnvVarOwned(allocator, name) catch |err| switch(err) {
             error.EnvironmentVariableNotFound => null,
             else => return err,
         };
-        if (term_program) |tp| {
-            defer allocator.free(tp);
-            return try std.ascii.allocLowerString(allocator, tp);
+        if (opt_value) |value| {
+            defer allocator.free(value);
+            return try std.ascii.allocLowerString(allocator, value);
         }
         return null;
     }
