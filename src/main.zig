@@ -3,6 +3,11 @@ const std = @import("std");
 pub const color = @import("./color.zig");
 pub const dots = @import("./dots.zig");
 pub const terminfo = @import("./terminfo.zig");
+pub const canvas = @import("./canvas.zig");
+
+comptime {
+    _ = canvas;
+}
 
 // C API
 
