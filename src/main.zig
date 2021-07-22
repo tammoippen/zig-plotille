@@ -1,7 +1,8 @@
 const std = @import("std");
-const color = @import("./color.zig");
-const dots = @import("./dots.zig");
-const terminfo = @import("./terminfo.zig");
+
+pub const color = @import("./color.zig");
+pub const dots = @import("./dots.zig");
+pub const terminfo = @import("./terminfo.zig");
 
 // C API
 

@@ -1,7 +1,6 @@
 const std = @import("std");
 
-const color = @import("./color.zig");
-const terminfo = @import("./terminfo.zig");
+const plt = @import("zig-plotille");
 
 pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
@@ -9,28 +8,28 @@ pub fn main() !void {
     const allocator = &arena.allocator;
 
     // detect terminal information
-    try terminfo.TermInfo.detect(allocator);
+    try plt.terminfo.TermInfo.detect(allocator);
 
     var int_buff: [4]u8 = undefined;
-    const fg_black = color.Color.by_lookup(16);
-    const fg_white = color.Color.by_lookup(231);
+    const fg_black = plt.color.Color.by_lookup(16);
+    const fg_white = plt.color.Color.by_lookup(231);
 
     std.debug.print("Colors by lookup:\n", .{});
 
     std.debug.print("- Standard colors (can be modified in terminal):\n    ", .{});
     var idx: u16 = 0;
     while (idx <= 7) : (idx += 1) {
-        const bg = color.Color.by_lookup(@truncate(u8, idx));
+        const bg = plt.color.Color.by_lookup(@truncate(u8, idx));
         const int_str = try std.fmt.bufPrint(int_buff[0..], "{:4}", .{idx});
-        try color.colorPrint(std.io.getStdOut().writer(), "{s}", .{int_str}, .{ .fg = fg_white, .bg = bg });
+        try plt.color.colorPrint(std.io.getStdOut().writer(), "{s}", .{int_str}, .{ .fg = fg_white, .bg = bg });
     }
     std.debug.print("\n", .{});
 
     std.debug.print("- High-intensity colors (can be modified in terminal):\n    ", .{});
     while (idx <= 15) : (idx += 1) {
-        const bg = color.Color.by_lookup(@truncate(u8, idx));
+        const bg = plt.color.Color.by_lookup(@truncate(u8, idx));
         const int_str = try std.fmt.bufPrint(int_buff[0..], "{:4}", .{idx});
-        try color.colorPrint(std.io.getStdOut().writer(), "{s}", .{int_str}, .{ .fg = fg_black, .bg = bg });
+        try plt.color.colorPrint(std.io.getStdOut().writer(), "{s}", .{int_str}, .{ .fg = fg_black, .bg = bg });
     }
     std.debug.print("\n", .{});
 
@@ -46,24 +45,24 @@ pub fn main() !void {
         if ((idx - 16) % 36 == 0) {
             std.debug.print("\n    ", .{});
         }
-        const bg = color.Color.by_lookup(@truncate(u8, idx));
+        const bg = plt.color.Color.by_lookup(@truncate(u8, idx));
         const int_str = try std.fmt.bufPrint(int_buff[0..], "{:4}", .{idx});
         if ((idx - 16) % 36 >= 18) {
-            try color.colorPrint(std.io.getStdOut().writer(), "{s}", .{int_str}, .{ .fg = fg_black, .bg = bg });
+            try plt.color.colorPrint(std.io.getStdOut().writer(), "{s}", .{int_str}, .{ .fg = fg_black, .bg = bg });
         } else {
-            try color.colorPrint(std.io.getStdOut().writer(), "{s}", .{int_str}, .{ .fg = fg_white, .bg = bg });
+            try plt.color.colorPrint(std.io.getStdOut().writer(), "{s}", .{int_str}, .{ .fg = fg_white, .bg = bg });
         }
     }
     std.debug.print("\n", .{});
 
     std.debug.print("- Grayscale colors:\n    ", .{});
     while (idx <= 255) : (idx += 1) {
-        const bg = color.Color.by_lookup(@truncate(u8, idx));
+        const bg = plt.color.Color.by_lookup(@truncate(u8, idx));
         const int_str = try std.fmt.bufPrint(int_buff[0..], "{:4}", .{idx});
         if (idx < 244) {
-            try color.colorPrint(std.io.getStdOut().writer(), "{s}", .{int_str}, .{ .fg = fg_white, .bg = bg });
+            try plt.color.colorPrint(std.io.getStdOut().writer(), "{s}", .{int_str}, .{ .fg = fg_white, .bg = bg });
         } else {
-            try color.colorPrint(std.io.getStdOut().writer(), "{s}", .{int_str}, .{ .fg = fg_black, .bg = bg });
+            try plt.color.colorPrint(std.io.getStdOut().writer(), "{s}", .{int_str}, .{ .fg = fg_black, .bg = bg });
         }
     }
     std.debug.print("\n", .{});

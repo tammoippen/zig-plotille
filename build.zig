@@ -11,10 +11,6 @@ pub fn build(b: *std.build.Builder) !void {
     // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall.
     const mode = b.standardReleaseOptions();
 
-    const build_files = [_][]const u8{"build.zig"};
-    const source_files = [_][]const u8{ "src/color.zig", "src/dots.zig", "src/main.zig" };
-    const example_files = [_][]const u8{ "src/names_example.zig", "src/lookup_example.zig", "src/hsl_example.zig" };
-
     const lib = b.addStaticLibrary("zig-plotille", "src/main.zig");
     lib.setTarget(target);
     lib.setBuildMode(mode);
@@ -27,32 +23,33 @@ pub fn build(b: *std.build.Builder) !void {
     // shared_lib.emit_h = true;
     shared_lib.install();
 
+    const test_step = b.step("test", "Run library tests");
+    const tests = b.addTest("src/main.zig");
+    tests.setBuildMode(mode);
+    test_step.dependOn(&tests.step);
+
     const example_step = b.step("examples", "Build example exe's.");
-    for (example_files) |example| {
-        var iter = std.mem.split(std.fs.path.basename(example), ".");
-        const exe = b.addExecutable(iter.next().?, example);
+    const example_names = [_][]const u8{ "names", "lookup", "hsl" };
+    inline for (example_names) |example| {
+        const exe = b.addExecutable(example, "./examples/" ++ example ++ ".zig");
+        exe.addPackagePath("zig-plotille", "src/main.zig");
         exe.setTarget(target);
         exe.setBuildMode(mode);
-        exe.setOutputDir("zig-out/examples");
+        exe.install();
         example_step.dependOn(&exe.step);
-        // exe.install();
 
         const exe_run = exe.run();
         example_step.dependOn(&exe_run.step);
-    }
+        if (std.mem.eql(u8, example, "hsl")) {
+            const ranges = exe.run();
+            const ranges_args = [_][]const u8{ "45", "90" };
+            ranges.addArgs(&ranges_args);
+            example_step.dependOn(&ranges.step);
 
-    const test_step = b.step("test", "Run library tests");
-    for (source_files) |source| {
-        const tests = b.addTest(source);
-        tests.setBuildMode(mode);
-        test_step.dependOn(&tests.step);
+            const short = exe.run();
+            const short_args = [_][]const u8{ "--short", "0", "45", "90", "135", "180", "225", "270", "315", "360" };
+            short.addArgs(&short_args);
+            example_step.dependOn(&short.step);
+        }
     }
-
-    const fmt_step = b.step("fmt", "Format the library.");
-    var build_fmt = b.addFmt(&build_files);
-    var main_fmt = b.addFmt(&source_files);
-    var example_fmt = b.addFmt(&example_files);
-    fmt_step.dependOn(&build_fmt.step);
-    fmt_step.dependOn(&main_fmt.step);
-    fmt_step.dependOn(&example_fmt.step);
 }

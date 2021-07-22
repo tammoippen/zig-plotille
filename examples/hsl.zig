@@ -1,12 +1,11 @@
 const std = @import("std");
 
-const color = @import("./color.zig");
-const terminfo = @import("./terminfo.zig");
+const plt = @import("zig-plotille");
 
 fn usage() void {
     std.debug.print(
         \\Use like:
-        \\> hsl_example [--short] [HUE_VALUES ...]
+        \\> hsl [--short] [HUE_VALUES ...]
         \\
         \\Please make sure the HUE_VALUES are in the range [0, 360].
         \\
@@ -16,9 +15,10 @@ fn usage() void {
         \\ Examples:
         \\
         \\  - Print one hue map per hue value:
-        \\      > hsl_example 10.4 100 200
+        \\      > hsl 10.4 100 200
         \\  - Print a rainbow over all hue values:
-        \\      > hsl_example --short $(seq 0 360)
+        \\      > hsl --short $(seq 0 360)
+        \\
     , .{});
 }
 
@@ -32,10 +32,9 @@ pub fn main() !void {
     const allocator = &arena.allocator;
 
     // detect terminal information
-    try terminfo.TermInfo.detect(allocator);
+    try plt.terminfo.TermInfo.detect(allocator);
 
     const writer = std.io.getStdOut().writer();
-    try writer.print("{any}\n", .{terminfo.TermInfo.get()});
 
     const args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);
@@ -65,9 +64,9 @@ pub fn main() !void {
         }
 
         if (short) {
-            const bg = color.Color.by_hsl(hue, 1.0, 0.5);
+            const bg = plt.color.Color.by_hsl(hue, 1.0, 0.5);
             try writer.print("{s:>5} ", .{arg[0..std.math.min(arg.len, 5)]});
-            try color.colorPrint(writer, "{s}", .{space}, .{ .bg = bg });
+            try plt.color.colorPrint(writer, "{s}", .{space}, .{ .bg = bg });
             try writer.print(" {x:0<2}{x:0<2}{x:0<2}\n", .{ bg.rgb[0], bg.rgb[1], bg.rgb[2] });
             continue;
         }
@@ -78,8 +77,8 @@ pub fn main() !void {
         while (lum >= 0) : (lum -= 1.0) {
             var sat: f64 = 0.0;
             while (sat < max_col) : (sat += 1.0) {
-                const bg = color.Color.by_hsl(hue, sat / max_col, lum / max_rows);
-                try color.colorPrint(writer, " ", .{}, .{ .bg = bg });
+                const bg = plt.color.Color.by_hsl(hue, sat / max_col, lum / max_rows);
+                try plt.color.colorPrint(writer, " ", .{}, .{ .bg = bg });
             }
             if (lum == max_rows / 2) {
                 try writer.print("  Lightness top down 1.0 to 0.0; max color at 0.5", .{});

@@ -1,5 +1,8 @@
 .PHONY: clean gen-headers samples/dots.exe
 
+fmt:
+	zig fmt .
+
 clean:
 	rm -rf zig-cache zig-out
 

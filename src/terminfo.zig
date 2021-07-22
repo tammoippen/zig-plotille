@@ -6,29 +6,15 @@ const color = @import("./color.zig");
 
 var info: ?TermInfo = null;
 
-const rgb_termprogs = [_][]const u8{
-    "hyper", "wezterm", "vscode"
-};
-const lookup_termprogs = [_][]const u8{
-    "apple_terminal"
-};
-const rgb_level = [_][]const u8{
-    "24bit", "24bits", "direct", "truecolor"
-};
-const lookup_level = [_][]const u8{
-    "256", "256color", "256colors"
-};
-const rgb_term = [_][]const u8{
-    "alacritty"
-};
+const rgb_termprogs = [_][]const u8{ "hyper", "wezterm", "vscode" };
+const lookup_termprogs = [_][]const u8{"apple_terminal"};
+const rgb_level = [_][]const u8{ "24bit", "24bits", "direct", "truecolor" };
+const lookup_level = [_][]const u8{ "256", "256color", "256colors" };
+const rgb_term = [_][]const u8{"alacritty"};
 const lookup_term = [_][]const u8{
-    // TODO: on win 10, cygwin supports .rgb
-    "cygwin"
-};
-const names_term = [_][]const u8{
-    "xterm", "vt100", "vt220", "screen", "color", "linux", "ansi", "rxvt", "konsole"
-};
-
+// TODO: on win 10, cygwin supports .rgb
+"cygwin"};
+const names_term = [_][]const u8{ "xterm", "vt100", "vt220", "screen", "color", "linux", "ansi", "rxvt", "konsole" };
 
 pub const TermInfo = struct {
     // whether stdout is a tty / is interactive
@@ -45,7 +31,7 @@ pub const TermInfo = struct {
 
     /// Get the 'cached' TermInfo. Set via `set(...)` or `detect(...)` beforehand.
     pub fn get() TermInfo {
-        return info orelse @panic("You have to initialize the TermInfo with either `set(...)` or `detect(...)`") ;
+        return info orelse @panic("You have to initialize the TermInfo with either `set(...)` or `detect(...)`");
     }
 
     /// Set your own TermInfo for testing, forcing color on / off.
@@ -89,7 +75,7 @@ pub const TermInfo = struct {
         var force_color: ?bool = null;
 
         // on issues, ignore force_color
-        const opt_force_color_str = std.process.getEnvVarOwned(allocator, "FORCE_COLOR") catch |err| switch(err) {
+        const opt_force_color_str = std.process.getEnvVarOwned(allocator, "FORCE_COLOR") catch |err| switch (err) {
             error.EnvironmentVariableNotFound => null,
             else => return err,
         };
@@ -106,7 +92,6 @@ pub const TermInfo = struct {
         if (isWindowsTerminal(allocator) or isDomTerm(allocator) or isKittyTerm(allocator)) {
             return .rgb;
         }
-
 
         const opt_colorterm = try getEnvVar(allocator, "COLORTERM");
         if (opt_colorterm) |colorterm| {
@@ -183,7 +168,7 @@ pub const TermInfo = struct {
     fn isWindowsTerminal(allocator: *std.mem.Allocator) bool {
         // on windows needs allocator to put key into utf16
         // https://github.com/microsoft/terminal/issues/1040#issuecomment-496691842
-        const opt_wt_session = std.process.getEnvVarOwned(allocator, "WT_SESSION") catch |err| switch(err) {
+        const opt_wt_session = std.process.getEnvVarOwned(allocator, "WT_SESSION") catch |err| switch (err) {
             error.EnvironmentVariableNotFound => null,
             // oom or utf8 errors, hence var is set and more than on char
             else => return true,
@@ -228,7 +213,7 @@ pub const TermInfo = struct {
     /// free returned string
     /// Get optional and lowercase string.
     fn getEnvVar(allocator: *std.mem.Allocator, name: []const u8) !?[]const u8 {
-        const opt_value = std.process.getEnvVarOwned(allocator, name) catch |err| switch(err) {
+        const opt_value = std.process.getEnvVarOwned(allocator, name) catch |err| switch (err) {
             error.EnvironmentVariableNotFound => null,
             else => return err,
         };
