@@ -1,7 +1,12 @@
-.PHONY: clean gen-headers samples/dots.exe
+.PHONY: clean gen-headers samples/dots.exe fmt tests
 
 fmt:
 	zig fmt .
+	black tests/*.py
+
+tests:
+	zig build test examples install
+	python3 tests/test_terminfo.py -v
 
 clean:
 	rm -rf zig-cache zig-out

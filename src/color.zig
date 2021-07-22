@@ -62,6 +62,11 @@ pub const ColorMode = enum(c_uint) {
     names,
     lookup,
     rgb,
+
+    pub fn jsonStringify(self: ColorMode, options: std.json.StringifyOptions, out_stream: anytype) @TypeOf(out_stream).Error!void {
+        _ = options;
+        try out_stream.print("\"{s}\"", .{@tagName(self)});
+    }
 };
 
 export const ESC = '\x1b';

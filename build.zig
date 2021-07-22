@@ -29,7 +29,7 @@ pub fn build(b: *std.build.Builder) !void {
     test_step.dependOn(&tests.step);
 
     const example_step = b.step("examples", "Build example exe's.");
-    const example_names = [_][]const u8{ "names", "lookup", "hsl" };
+    const example_names = [_][]const u8{ "names", "lookup", "hsl", "terminfo" };
     inline for (example_names) |example| {
         const exe = b.addExecutable(example, "./examples/" ++ example ++ ".zig");
         exe.addPackagePath("zig-plotille", "src/main.zig");
