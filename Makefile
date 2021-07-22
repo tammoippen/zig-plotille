@@ -2,11 +2,11 @@
 
 fmt:
 	zig fmt .
-	black tests/*.py
+	black examples/*.py
 
 tests:
 	zig build test examples install
-	python3 tests/test_terminfo.py -v
+	python3 examples/test_terminfo.py -v
 
 clean:
 	rm -rf zig-cache zig-out

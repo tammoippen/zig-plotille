@@ -224,3 +224,20 @@ pub const TermInfo = struct {
         return null;
     }
 };
+
+test "detect frees memory" {
+    try TermInfo.detect(std.testing.allocator);
+    _ = TermInfo.isNoColorSet(std.testing.allocator);
+    _ = try TermInfo.forceColors(std.testing.allocator);
+    _ = try TermInfo.getColorMode(std.testing.allocator);
+    _ = TermInfo.isWindowsTerminal(std.testing.allocator);
+    _ = TermInfo.isDomTerm(std.testing.allocator);
+    _ = TermInfo.isKittyTerm(std.testing.allocator);
+    _ = try TermInfo.checkiTerm(std.testing.allocator);
+    const opt_term = try TermInfo.getEnvVar(std.testing.allocator, "TERM");
+    if (opt_term) |term| {
+        defer std.testing.allocator.free(term);
+    }
+}
+
+// other tests via examples/terminfo.zig and examples/test_terminfo.py
