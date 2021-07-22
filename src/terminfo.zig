@@ -10,8 +10,7 @@ const rgb_termprogs = [_][]const u8{
     "hyper", "wezterm", "vscode"
 };
 const lookup_termprogs = [_][]const u8{
-    // TODO: iterm => lookup , iterm >=3 => rgb via TERM_PROGRAM_VERSION
-    "iterm", "apple_terminal"
+    "apple_terminal"
 };
 const rgb_level = [_][]const u8{
     "24bit", "24bits", "direct", "truecolor"
@@ -127,6 +126,9 @@ pub const TermInfo = struct {
                     return .rgb;
                 }
             }
+            if (std.mem.eql(u8, "iterm.app", termprogram)) {
+                return try checkiTerm(allocator);
+            }
             for (lookup_termprogs) |name| {
                 if (std.mem.eql(u8, name, termprogram)) {
                     return .lookup;
@@ -204,6 +206,24 @@ pub const TermInfo = struct {
         // on windows needs allocator to put key into utf16
         // https://github.com/kovidgoyal/kitty/issues/957#issuecomment-420318828
         return std.process.hasEnvVar(allocator, "KITTY_WINDOW_ID") catch unreachable;
+    }
+    /// free on its own
+    /// assumes that TERM_PROGRAM lower == iterm.app
+    fn checkiTerm(allocator: *std.mem.Allocator) !color.ColorMode {
+        const opt_version = try getEnvVar(allocator, "TERM_PROGRAM_VERSION");
+        if (opt_version) |version| {
+            defer allocator.free(version);
+            // get major version
+            var iter = std.mem.split(version, ".");
+            const first = iter.next();
+            if (first) |major_str| {
+                const major = try std.fmt.parseUnsigned(u8, major_str, 10);
+                if (major >= 3) {
+                    return .rgb;
+                }
+            }
+        }
+        return .lookup;
     }
     /// free returned string
     /// Get optional and lowercase string.
