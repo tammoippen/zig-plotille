@@ -7,6 +7,19 @@ import unittest
 
 
 class TestTermInfoOutput(unittest.TestCase):
+    def run_subprocess(self, names, vals, result):
+        if not isinstance(names, list):
+            names = [names]
+            vals = [vals]
+        assert len(names) == len(vals)
+        env = {k: v for k, v in zip(names, vals)}
+        res = subprocess.run(["./zig-out/bin/terminfo"], capture_output=True, env=env)
+        self.assertEqual(res.returncode, 0)
+        self.assertEqual(res.stderr, b"", res.stderr)
+
+        out = json.loads(res.stdout)
+        self.assertEqual(out, result, res.stderr)
+
     def test_tty(self):
         with tempfile.TemporaryFile() as fp:
 
@@ -20,19 +33,6 @@ class TestTermInfoOutput(unittest.TestCase):
             fp.seek(0)
             out = json.loads(fp.read())
             self.assertTrue(out["stdout_tty"])
-
-    def run_subprocess(self, names, vals, result):
-        if not isinstance(names, list):
-            names = [names]
-            vals = [vals]
-        assert len(names) == len(vals)
-        env = {k: v for k, v in zip(names, vals)}
-        res = subprocess.run(["./zig-out/bin/terminfo"], capture_output=True, env=env)
-        self.assertEqual(res.returncode, 0)
-        self.assertEqual(res.stderr, b"", res.stderr)
-
-        out = json.loads(res.stdout)
-        self.assertEqual(out, result)
 
     def test_empty(self):
         self.run_subprocess(
@@ -219,11 +219,25 @@ class TestTermInfoOutput(unittest.TestCase):
                         },
                     )
 
-    def test_termm_rgb(self):
-        for val in ["iTerm.app", "iTerm.app"]:
-            with self.subTest(msg="Check TERM_PROGRAM=val", val=val):
+    def test_term_level_rgb(self):
+        for val in ["xxx-24bit", "xxx-24BITS", "xxx-direct", "xxx-trueCOLOR"]:
+            with self.subTest(msg="Check TERM=val", val=val):
                 self.run_subprocess(
-                    "TERM_PROGRAM",
+                    "TERM",
+                    val,
+                    {
+                        "stdout_tty": False,  # subprocess has no tty
+                        "no_color": False,
+                        "force_color": None,
+                        "suggested_color_mode": "rgb",
+                    },
+                )
+
+    def test_term_level_lookup(self):
+        for val in ["xxx-256", "xxx-256color", "xx-256cOLOrs"]:
+            with self.subTest(msg="Check TERM=val", val=val):
+                self.run_subprocess(
+                    "TERM",
                     val,
                     {
                         "stdout_tty": False,  # subprocess has no tty
@@ -232,6 +246,71 @@ class TestTermInfoOutput(unittest.TestCase):
                         "suggested_color_mode": "lookup",
                     },
                 )
+
+    def test_term_term_rgb(self):
+        for val in ["alacritty", "Alacritty"]:
+            with self.subTest(msg="Check TERM=val", val=val):
+                self.run_subprocess(
+                    "TERM",
+                    val,
+                    {
+                        "stdout_tty": False,  # subprocess has no tty
+                        "no_color": False,
+                        "force_color": None,
+                        "suggested_color_mode": "rgb",
+                    },
+                )
+
+    def test_term_term_lookup(self):
+        for val in ["cygwin"]:
+            with self.subTest(msg="Check TERM=val", val=val):
+                self.run_subprocess(
+                    "TERM",
+                    val,
+                    {
+                        "stdout_tty": False,  # subprocess has no tty
+                        "no_color": False,
+                        "force_color": None,
+                        "suggested_color_mode": "lookup",
+                    },
+                )
+
+    def test_term_term_names(self):
+        for val in [
+            "xterm",
+            "vt100-xxx",
+            "vt220",
+            "screen",
+            "COLOR",
+            "linux",
+            "aNSi",
+            "rxvt",
+            "konsole",
+        ]:
+            with self.subTest(msg="Check TERM=val", val=val):
+                self.run_subprocess(
+                    "TERM",
+                    val,
+                    {
+                        "stdout_tty": False,  # subprocess has no tty
+                        "no_color": False,
+                        "force_color": None,
+                        "suggested_color_mode": "names",
+                    },
+                )
+
+    def test_term_empty(self):
+
+        self.run_subprocess(
+            "TERM",
+            "",
+            {
+                "stdout_tty": False,  # subprocess has no tty
+                "no_color": False,
+                "force_color": None,
+                "suggested_color_mode": "none",
+            },
+        )
 
 
 if __name__ == "__main__":
