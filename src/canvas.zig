@@ -5,6 +5,17 @@ const expect = std.testing.expect;
 const color = @import("./color.zig");
 const dots = @import("./dots.zig");
 
+const XCoord = struct {
+    braille_idx: u9,
+    char_idx: u8,
+    dot_idx: u1,
+};
+const YCoord = struct {
+    braille_idx: u10,
+    char_idx: u8,
+    dot_idx: u2,
+};
+
 /// A canvas object for plotting braille dots
 ///
 /// A Canvas object has a `width` x `height` characters large canvas, in which it
@@ -82,19 +93,29 @@ pub const Canvas = struct {
     }
 
     /// Transform an x-coordinate of the reference system to an index
-    /// of a braille point.
+    /// of a braille point and char index.
     /// As we have a width defined as u8, and 2 points per character
     /// we are in the range of u9.
-    fn transform_x(self: Canvas, x: f64) u9 {
-        return @floatToInt(u9, (x - self.xmin) / self.x_delta_pt);
+    fn transform_x(self: Canvas, x: f64) XCoord {
+        const braille_idx = @floatToInt(u9, (x - self.xmin) / self.x_delta_pt);
+        return XCoord{
+            .braille_idx = braille_idx,
+            .char_idx = @truncate(u8, braille_idx >> 1), // / 2
+            .dot_idx = @truncate(u1, braille_idx), // % 2
+        };
     }
 
     /// Transform an y-coordinate of the reference system to an index
-    /// of a braille point.
+    /// of a braille point and char index.
     /// As we have a height defined as u8, and 4 points per character
     /// we are in the range of u0.
-    fn transform_y(self: Canvas, y: f64) u10 {
-        return @floatToInt(u10, (y - self.ymin) / self.y_delta_pt);
+    fn transform_y(self: Canvas, y: f64) YCoord {
+        const braille_idx = @floatToInt(u10, (y - self.ymin) / self.y_delta_pt);
+        return YCoord{
+            .braille_idx = braille_idx,
+            .char_idx = @truncate(u8, braille_idx >> 2), // / 4
+            .dot_idx = @truncate(u2, braille_idx), // % 4
+        };
     }
 };
 
@@ -110,23 +131,98 @@ test "init and deinit Canvas" {
     try expect(c.y_delta_pt == 0.025);
 }
 
-test "compute coordinates of braille points" {
+test "compute x-coordinates of braille points" {
     const c = try Canvas.init(std.testing.allocator, 1, 1, color.Color.by_name(.blue));
     defer c.deinit(std.testing.allocator);
 
-    try expect(c.transform_x(0) == 0);
-    try expect(c.transform_x(0.24) == 0);
-    try expect(c.transform_x(0.25) == 0);
-    try expect(c.transform_x(0.49) == 0);
-    try expect(c.transform_x(0.5) == 1);
-    try expect(c.transform_x(0.75) == 1);
-    try expect(c.transform_x(0.99) == 1);
-    try expect(c.transform_x(1) == 2);
+    {
+        const coord = c.transform_x(0);
+        try expect(coord.braille_idx == 0);
+        try expect(coord.char_idx == 0);
+        try expect(coord.dot_idx == 0);
+    }
+    {
+        const coord = c.transform_x(0.24);
+        try expect(coord.braille_idx == 0);
+        try expect(coord.char_idx == 0);
+        try expect(coord.dot_idx == 0);
+    }
+    {
+        const coord = c.transform_x(0.25);
+        try expect(coord.braille_idx == 0);
+        try expect(coord.char_idx == 0);
+        try expect(coord.dot_idx == 0);
+    }
+    {
+        const coord = c.transform_x(0.49);
+        try expect(coord.braille_idx == 0);
+        try expect(coord.char_idx == 0);
+        try expect(coord.dot_idx == 0);
+    }
+    {
+        const coord = c.transform_x(0.5);
+        try expect(coord.braille_idx == 1);
+        try expect(coord.char_idx == 0);
+        try expect(coord.dot_idx == 1);
+    }
+    {
+        const coord = c.transform_x(0.75);
+        try expect(coord.braille_idx == 1);
+        try expect(coord.char_idx == 0);
+        try expect(coord.dot_idx == 1);
+    }
+    {
+        const coord = c.transform_x(0.99);
+        try expect(coord.braille_idx == 1);
+        try expect(coord.char_idx == 0);
+        try expect(coord.dot_idx == 1);
+    }
+    {
+        const coord = c.transform_x(1);
+        try expect(coord.braille_idx == 2);
+        try expect(coord.char_idx == 1);
+        try expect(coord.dot_idx == 0);
+    }
+}
 
-    try expect(c.transform_y(0) == 0);
-    try expect(c.transform_y(0.25) == 1);
-    try expect(c.transform_y(0.5) == 2);
-    try expect(c.transform_y(0.75) == 3);
-    try expect(c.transform_y(0.99) == 3);
-    try expect(c.transform_y(1) == 4);
+test "compute y-coordinates of braille points" {
+    const c = try Canvas.init(std.testing.allocator, 1, 1, color.Color.by_name(.blue));
+    defer c.deinit(std.testing.allocator);
+
+    {
+        const coord = c.transform_y(0);
+        try expect(coord.braille_idx == 0);
+        try expect(coord.char_idx == 0);
+        try expect(coord.dot_idx == 0);
+    }
+    {
+        const coord = c.transform_y(0.25);
+        try expect(coord.braille_idx == 1);
+        try expect(coord.char_idx == 0);
+        try expect(coord.dot_idx == 1);
+    }
+    {
+        const coord = c.transform_y(0.5);
+        try expect(coord.braille_idx == 2);
+        try expect(coord.char_idx == 0);
+        try expect(coord.dot_idx == 2);
+    }
+    {
+        const coord = c.transform_y(0.75);
+        try expect(coord.braille_idx == 3);
+        try expect(coord.char_idx == 0);
+        try expect(coord.dot_idx == 3);
+    }
+    {
+        const coord = c.transform_y(0.99);
+        try expect(coord.braille_idx == 3);
+        try expect(coord.char_idx == 0);
+        try expect(coord.dot_idx == 3);
+    }
+    {
+        const coord = c.transform_y(1);
+        try expect(coord.braille_idx == 4);
+        try expect(coord.char_idx == 1);
+        try expect(coord.dot_idx == 0);
+    }
 }
