@@ -117,6 +117,36 @@ pub const Canvas = struct {
             .dot_idx = @truncate(u2, braille_idx), // % 4
         };
     }
+
+    pub fn set(self: *Canvas, x: f64, y: f64, fg_color: ?color.Color) void {
+        const x_coord = self.transform_x(x);
+        const y_coord = self.transform_y(y);
+
+        if (x_coord < 0 or x_coord >= self.width or y_coord < 0 or y_coord >= self.height) {
+            // out of canvas
+            return;
+        }
+        const idx = y_coord.char_idx * self.width + x_coord.char_idx;
+        self.canvas[idx].set(x_coord.dot_idx, y_coord.dot_idx);
+        if (fg_color) |c| {
+            self.canvas[idx].color.fg = c;
+        }
+    }
+
+    pub fn unset(self: *Canvas, x: f64, y: f64, unset_color: bool) void {
+        const x_coord = self.transform_x(x);
+        const y_coord = self.transform_y(y);
+
+        if (x_coord < 0 or x_coord >= self.width or y_coord < 0 or y_coord >= self.height) {
+            // out of canvas
+            return;
+        }
+        const idx = y_coord.char_idx * self.width + x_coord.char_idx;
+        self.canvas[idx].unset(x_coord.dot_idx, y_coord.dot_idx);
+        if (unset_color) {
+            self.canvas[idx].color.fg = color.Color.no_color();
+        }
+    }
 };
 
 test "init and deinit Canvas" {
