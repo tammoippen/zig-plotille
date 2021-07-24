@@ -1,5 +1,6 @@
 const std = @import("std");
 const assert = std.debug.assert;
+const expect = std.testing.expect;
 
 const color = @import("./color.zig");
 const dots = @import("./dots.zig");
@@ -66,6 +67,9 @@ pub const Canvas = struct {
         allocator.free(self.canvas);
     }
 
+    /// Set the reference system of the canvas.
+    ///
+    /// Default reference system is bottom-left (0,0) to top right (1, 1).
     pub fn setReferenceSystem(self: *Canvas, xmin: f64, ymin: f64, xmax: f64, ymax: f64) void {
         assert(xmin < xmax);
         assert(ymin < ymax);
@@ -76,11 +80,53 @@ pub const Canvas = struct {
         self.x_delta_pt = std.math.absFloat((xmax - xmin) / @intToFloat(f64, self.width * 2)); // 2 points in left
         self.y_delta_pt = std.math.absFloat((ymax - ymin) / @intToFloat(f64, self.height * 4)); // 4 points in up
     }
+
+    /// Transform an x-coordinate of the reference system to an index
+    /// of a braille point.
+    /// As we have a width defined as u8, and 2 points per character
+    /// we are in the range of u9.
+    fn transform_x(self: Canvas, x: f64) u9 {
+        return @floatToInt(u9, (x - self.xmin) / self.x_delta_pt);
+    }
+
+    /// Transform an y-coordinate of the reference system to an index
+    /// of a braille point.
+    /// As we have a height defined as u8, and 4 points per character
+    /// we are in the range of u0.
+    fn transform_y(self: Canvas, y: f64) u10 {
+        return @floatToInt(u10, (y - self.ymin) / self.y_delta_pt);
+    }
 };
 
 test "init and deinit Canvas" {
     const c = try Canvas.init(std.testing.allocator, 10, 10, color.Color.by_name(.blue));
     defer c.deinit(std.testing.allocator);
 
-    std.debug.print("{any}\n", .{c});
+    try expect(c.xmin == 0);
+    try expect(c.ymin == 0);
+    try expect(c.x_delta_pt == 0.05);
+    try expect(c.xmax == 1);
+    try expect(c.ymax == 1);
+    try expect(c.y_delta_pt == 0.025);
+}
+
+test "compute coordinates of braille points" {
+    const c = try Canvas.init(std.testing.allocator, 1, 1, color.Color.by_name(.blue));
+    defer c.deinit(std.testing.allocator);
+
+    try expect(c.transform_x(0) == 0);
+    try expect(c.transform_x(0.24) == 0);
+    try expect(c.transform_x(0.25) == 0);
+    try expect(c.transform_x(0.49) == 0);
+    try expect(c.transform_x(0.5) == 1);
+    try expect(c.transform_x(0.75) == 1);
+    try expect(c.transform_x(0.99) == 1);
+    try expect(c.transform_x(1) == 2);
+
+    try expect(c.transform_y(0) == 0);
+    try expect(c.transform_y(0.25) == 1);
+    try expect(c.transform_y(0.5) == 2);
+    try expect(c.transform_y(0.75) == 3);
+    try expect(c.transform_y(0.99) == 3);
+    try expect(c.transform_y(1) == 4);
 }
