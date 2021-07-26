@@ -158,6 +158,17 @@ pub const Canvas = struct {
         self.canvas[idx].fill();
     }
 
+    pub fn line(self: *Canvas, x0: f64, y0: f64, x1: f64, y1: f64, color: ?color.Color) void {
+        self.point(x0, y0, color);
+        self.point(x1, y1, color);
+
+        const x_diff = x1 - x0;
+        const y_diff = y1 - y0;
+
+
+
+    }
+
     /// Output the canvas to a writer.
     pub fn format(
         self: Canvas,
