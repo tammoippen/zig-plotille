@@ -1,0 +1,87 @@
+Test [1/25] canvas.test "init and deinit Canvas"...
+Test [2/25] canvas.test "compute x-coordinates of braille points"...
+Test [3/25] canvas.test "compute y-coordinates of braille points"...
+Test [4/25] canvas.test "simple format canvas"...
+Test [5/25] canvas.test "format canvas with color"...
+\x1b[30;103m⠁\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[30;103m⠁\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m
+\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m
+\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m
+\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m
+\x1b[30;103m⡀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[34;103m⡀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[30;103m⢀\x1b[39;49m
+\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m
+\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m
+\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m
+\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m
+\x1b[31;103m⡀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[30;103m⡀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[38;5;123;103m⢀\x1b[39;49m
+1740
+
+Test [6/25] canvas.test "format canvas with color"... FAIL (TestUnexpectedResult)
+/home/tammo/repos/zig/build/install/lib/zig/std/heap/general_purpose_allocator.zig:730:13: 0x20bc2d in std.heap.general_purpose_allocator.GeneralPurposeAllocator((struct std.heap.general_purpose_allocator.Config constant)).resize (test)
+            return error.OutOfMemory;
+            ^
+/home/tammo/repos/zig/build/install/lib/zig/std/heap/general_purpose_allocator.zig:730:13: 0x20bc2d in std.heap.general_purpose_allocator.GeneralPurposeAllocator((struct std.heap.general_purpose_allocator.Config constant)).resize (test)
+            return error.OutOfMemory;
+            ^
+/home/tammo/repos/zig/build/install/lib/zig/std/heap/general_purpose_allocator.zig:730:13: 0x20bc2d in std.heap.general_purpose_allocator.GeneralPurposeAllocator((struct std.heap.general_purpose_allocator.Config constant)).resize (test)
+            return error.OutOfMemory;
+            ^
+/home/tammo/repos/zig/build/install/lib/zig/std/heap/general_purpose_allocator.zig:730:13: 0x20bc2d in std.heap.general_purpose_allocator.GeneralPurposeAllocator((struct std.heap.general_purpose_allocator.Config constant)).resize (test)
+            return error.OutOfMemory;
+            ^
+/home/tammo/repos/zig/build/install/lib/zig/std/heap/general_purpose_allocator.zig:730:13: 0x20bc2d in std.heap.general_purpose_allocator.GeneralPurposeAllocator((struct std.heap.general_purpose_allocator.Config constant)).resize (test)
+            return error.OutOfMemory;
+            ^
+/home/tammo/repos/zig/build/install/lib/zig/std/heap/general_purpose_allocator.zig:730:13: 0x20bc2d in std.heap.general_purpose_allocator.GeneralPurposeAllocator((struct std.heap.general_purpose_allocator.Config constant)).resize (test)
+            return error.OutOfMemory;
+            ^
+/home/tammo/repos/zig/build/install/lib/zig/std/heap/general_purpose_allocator.zig:730:13: 0x20bc2d in std.heap.general_purpose_allocator.GeneralPurposeAllocator((struct std.heap.general_purpose_allocator.Config constant)).resize (test)
+            return error.OutOfMemory;
+            ^
+/home/tammo/repos/zig/build/install/lib/zig/std/heap/general_purpose_allocator.zig:730:13: 0x20bc2d in std.heap.general_purpose_allocator.GeneralPurposeAllocator((struct std.heap.general_purpose_allocator.Config constant)).resize (test)
+            return error.OutOfMemory;
+            ^
+/home/tammo/repos/zig/build/install/lib/zig/std/heap/general_purpose_allocator.zig:730:13: 0x20bc2d in std.heap.general_purpose_allocator.GeneralPurposeAllocator((struct std.heap.general_purpose_allocator.Config constant)).resize (test)
+            return error.OutOfMemory;
+            ^
+/home/tammo/repos/zig/build/install/lib/zig/std/heap/general_purpose_allocator.zig:730:13: 0x20bc2d in std.heap.general_purpose_allocator.GeneralPurposeAllocator((struct std.heap.general_purpose_allocator.Config constant)).resize (test)
+            return error.OutOfMemory;
+            ^
+/home/tammo/repos/zig/build/install/lib/zig/std/heap/general_purpose_allocator.zig:730:13: 0x20bc2d in std.heap.general_purpose_allocator.GeneralPurposeAllocator((struct std.heap.general_purpose_allocator.Config constant)).resize (test)
+            return error.OutOfMemory;
+            ^
+/home/tammo/repos/zig/build/install/lib/zig/std/heap/general_purpose_allocator.zig:730:13: 0x20bc2d in std.heap.general_purpose_allocator.GeneralPurposeAllocator((struct std.heap.general_purpose_allocator.Config constant)).resize (test)
+            return error.OutOfMemory;
+            ^
+/home/tammo/repos/zig/build/install/lib/zig/std/testing.zig:309:14: 0x20c06b in std.testing.expect (test)
+    if (!ok) return error.TestUnexpectedResult;
+             ^
+/home/tammo/repos/zig-plotille/src/canvas.zig:346:5: 0x20e2cd in canvas.test "format canvas with color" (test)
+    try expect(std.mem.eql(u8, list.items,
+    ^
+Test [6/25] dots.test "test clear and full char"...
+Test [7/25] dots.test "set and unset individual vals"...
+Test [8/25] dots.test "colored dots"...
+Test [9/25] color.test "color by name"...
+Test [10/25] color.test "color by index"...
+Test [11/25] color.test "color by rgb"...
+Test [12/25] color.test "color by hsl red"...
+Test [13/25] color.test "color by hsl green"...
+Test [14/25] color.test "color by hsl blue"...
+Test [15/25] color.test "color by hsl white"...
+Test [16/25] color.test "color by hsl black"...
+Test [17/25] color.test "color by hsl other"...
+Test [18/25] color.test "names with optional fg, bg"...
+Test [19/25] color.test "color in names mode"...
+Test [20/25] color.test "lookups with optional fg, bg"...
+Test [21/25] color.test "color in lookup mode"...
+Test [22/25] color.test "rgbs with optional fg, bg"...
+Test [23/25] color.test "color in rgb mode"...
+Test [24/25] color.test "color in mixed modes"...
+Test [25/25] terminfo.test "detect frees memory"...
+24 passed; 0 skipped; 1 failed.
+error: the following test command failed with exit code 1:
+/home/tammo/repos/zig-plotille/zig-cache/o/42b01b3178e1b826c33a9619d84e3f5b/test /home/tammo/repos/zig/build/install/bin/zig
+The following command exited with error code 1:
+/home/tammo/repos/zig/build/install/bin/zig test /home/tammo/repos/zig-plotille/src/main.zig --cache-dir /home/tammo/repos/zig-plotille/zig-cache --global-cache-dir /home/tammo/.cache/zig --name test
+error: the following build command failed with exit code 1:
+/home/tammo/repos/zig-plotille/zig-cache/o/8baf4acd155433b3077edd3842d74fdd/build /home/tammo/repos/zig/build/install/bin/zig /home/tammo/repos/zig-plotille /home/tammo/repos/zig-plotille/zig-cache /home/tammo/.cache/zig test

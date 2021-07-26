@@ -57,9 +57,10 @@ pub const Dots = extern struct {
         assert(len == 3);
 
         if (self.color.hasColor()) {
-            try color.colorPrint(writer, "{s}", .{buff[0..]}, self.color);
+            try color.colorPrint(writer, "{s}", .{buff}, self.color);
         } else {
-            try writer.writeAll(buff[0..]);
+            try writer.print("{s}", .{buff});
+            // try writer.writeAll(" ");
         }
     }
 

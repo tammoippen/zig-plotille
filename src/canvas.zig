@@ -4,6 +4,7 @@ const expect = std.testing.expect;
 
 const color = @import("./color.zig");
 const dots = @import("./dots.zig");
+const terminfo = @import("./terminfo.zig");
 
 const XCoord = struct {
     braille_idx: u9,
@@ -122,7 +123,7 @@ pub const Canvas = struct {
         const x_coord = self.transform_x(x);
         const y_coord = self.transform_y(y);
 
-        if (x_coord < 0 or x_coord >= self.width or y_coord < 0 or y_coord >= self.height) {
+        if (x_coord.char_idx < 0 or x_coord.char_idx >= self.width or y_coord.char_idx < 0 or y_coord.char_idx >= self.height) {
             // out of canvas
             return;
         }
@@ -145,6 +146,30 @@ pub const Canvas = struct {
         self.canvas[idx].unset(x_coord.dot_idx, y_coord.dot_idx);
         if (unset_color) {
             self.canvas[idx].color.fg = color.Color.no_color();
+        }
+    }
+
+    pub fn format(
+        self: Canvas,
+        comptime fmt: []const u8,
+        options: std.fmt.FormatOptions,
+        writer: anytype,
+    ) !void {
+        // ignored options -> conform to signature
+        _ = options;
+        _ = fmt;
+        var h_idx: i9 = self.height - 1;
+        while (h_idx >= 0) : (h_idx -= 1) {
+            var w_idx: u9 = 0;
+            while (w_idx < self.width) : (w_idx += 1) {
+                const idx: usize = @intCast(usize, h_idx * self.width) + w_idx;
+                var d = self.canvas[idx];
+                d.color.bg = self.bg;
+                try writer.print("{}", .{d});
+            }
+            if (h_idx > 0) {
+                try writer.writeAll("\n");
+            }
         }
     }
 };
@@ -255,4 +280,76 @@ test "compute y-coordinates of braille points" {
         try expect(coord.char_idx == 1);
         try expect(coord.dot_idx == 0);
     }
+}
+
+test "simple format canvas" {
+    var c = try Canvas.init(std.testing.allocator, 10, 10, color.Color.no_color());
+    defer c.deinit(std.testing.allocator);
+
+    var list = std.ArrayList(u8).init(std.testing.allocator);
+    defer list.deinit();
+
+    c.set(0, 0, null);
+    c.set(0, 0.5, null);
+    c.set(0, 0.99, null);
+    c.set(0.5, 0.99, null);
+    // intentionally leave right bottom blank
+    // c.set(0.99, 0.99, null);
+    c.set(0.99, 0.5, null);
+    c.set(0.99, 0, null);
+    c.set(0.5, 0, null);
+    c.set(0.5, 0.5, null);
+
+    try list.writer().print("{}", .{c});
+    try expect(list.items.len == 309); // 3 chars per unicode + 9 linebreaks
+    try expect(std.mem.eql(u8, list.items,
+        \\⠁⠀⠀⠀⠀⠁⠀⠀⠀⠀
+        \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\⡀⠀⠀⠀⠀⡀⠀⠀⠀⢀
+        \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\⡀⠀⠀⠀⠀⡀⠀⠀⠀⢀
+    ));
+}
+
+test "format canvas with color" {
+    // force colors
+    terminfo.TermInfo.testing();
+
+    var c = try Canvas.init(std.testing.allocator, 10, 10, color.Color.by_name(.bright_yellow));
+    defer c.deinit(std.testing.allocator);
+
+    var list = std.ArrayList(u8).init(std.testing.allocator);
+    defer list.deinit();
+
+    c.set(0, 0, color.Color.by_name(.red));
+    c.set(0, 0.5, color.Color.by_name(.black));
+    c.set(0, 0.99, color.Color.by_name(.black));
+    c.set(0.5, 0.99, color.Color.by_name(.black));
+    // intentionally leave right bottom blank
+    // c.set(0.99, 0.99, color.Color.by_name(.black));
+    c.set(0.99, 0.5, color.Color.by_name(.black));
+    c.set(0.99, 0, color.Color.by_lookup(123));
+    c.set(0.5, 0, color.Color.by_name(.black));
+    c.set(0.5, 0.5, color.Color.by_name(.blue));
+
+    try list.writer().print("{}", .{c});
+    try expect(list.items.len == 100 * (14 + 3) // 3 chars per unicode, 14 for bg and reset
+    + 9 // linebreaks
+    + 7 * 3 // 7 x fg color by name
+    + 9); // 1 x fg color by lookup
+    try expect(std.mem.eql(u8, list.items, "\x1b[30;103m⠁\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[30;103m⠁\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\n" ++
+        "\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\n" ++
+        "\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\n" ++
+        "\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\n" ++
+        "\x1b[30;103m⡀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[34;103m⡀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[30;103m⢀\x1b[39;49m\n" ++
+        "\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\n" ++
+        "\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\n" ++
+        "\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\n" ++
+        "\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\n" ++
+        "\x1b[31;103m⡀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[30;103m⡀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[38;5;123;103m⢀\x1b[39;49m"));
 }
