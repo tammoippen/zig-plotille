@@ -120,6 +120,12 @@ pub const Canvas = struct {
         };
     }
 
+    /// Put a point into the canvas at (x, y) [reference coordinate system]
+    ///
+    /// Parameters:
+    ///     x:      x-coordinate on reference system.
+    ///     y:      y-coordinate on reference system.
+    ///     color:  Color of the point.
     pub fn point(self: *Canvas, x: f64, y: f64, fg_color: ?color.Color) void {
         const x_coord = self.transform_x(x);
         const y_coord = self.transform_y(y);
@@ -135,6 +141,11 @@ pub const Canvas = struct {
         }
     }
 
+    /// Fill the complete char in the canvas at (x, y) [reference coordinate system]
+    ///
+    /// Parameters:
+    ///     x:      x-coordinate on reference system.
+    ///     y:      y-coordinate on reference system.
     pub fn fillChar(self: *Canvas, x: f64, y: f64) void {
         const x_coord = self.transform_x(x);
         const y_coord = self.transform_y(y);
@@ -147,6 +158,7 @@ pub const Canvas = struct {
         self.canvas[idx].fill();
     }
 
+    /// Output the canvas to a writer.
     pub fn format(
         self: Canvas,
         comptime fmt: []const u8,
