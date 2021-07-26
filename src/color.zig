@@ -3,7 +3,8 @@ const mem = std.mem;
 
 const testing = std.testing;
 const assert = std.debug.assert;
-const expect = testing.expect;
+const expectEqual = testing.expectEqual;
+const expectEqualStrings = testing.expectEqualStrings;
 
 const terminfo = @import("./terminfo.zig");
 
@@ -263,64 +264,64 @@ pub const ColorOptions = extern struct {
 test "color by name" {
     const c = Color.by_name(.bright_blue);
 
-    try expect(c.mode == .names);
-    try expect(c.name == .bright_blue);
+    try expectEqual(c.mode, .names);
+    try expectEqual(c.name, .bright_blue);
 }
 
 test "color by index" {
     const c = Color.by_lookup(123);
 
-    try expect(c.mode == .lookup);
-    try expect(c.lookup == 123);
+    try expectEqual(c.mode, .lookup);
+    try expectEqual(c.lookup, 123);
 }
 
 test "color by rgb" {
     const c = Color.by_rgb(255, 0, 0);
 
-    try expect(c.mode == .rgb);
-    try expect(mem.eql(u8, c.rgb[0..], ([3]u8{ 255, 0, 0 })[0..]));
+    try expectEqual(c.mode, .rgb);
+    try expectEqual(c.rgb, [3]u8{ 255, 0, 0 });
 }
 
 test "color by hsl red" {
     const c = Color.by_hsl(0, 1, 0.5);
 
-    try expect(c.mode == .rgb);
-    try expect(mem.eql(u8, c.rgb[0..], ([3]u8{ 255, 0, 0 })[0..]));
+    try expectEqual(c.mode, .rgb);
+    try expectEqual(c.rgb, [3]u8{ 255, 0, 0 });
 }
 
 test "color by hsl green" {
     const c = Color.by_hsl(120.0, 1.0, 0.5);
 
-    try expect(c.mode == .rgb);
-    try expect(mem.eql(u8, c.rgb[0..], ([3]u8{ 0, 255, 0 })[0..]));
+    try expectEqual(c.mode, .rgb);
+    try expectEqual(c.rgb, [3]u8{ 0, 255, 0 });
 }
 
 test "color by hsl blue" {
     const c = Color.by_hsl(240.0, 1.0, 0.5);
 
-    try expect(c.mode == .rgb);
-    try expect(mem.eql(u8, c.rgb[0..], ([3]u8{ 0, 0, 255 })[0..]));
+    try expectEqual(c.mode, .rgb);
+    try expectEqual(c.rgb, [3]u8{ 0, 0, 255 });
 }
 
 test "color by hsl white" {
     const c = Color.by_hsl(0, 0, 1);
 
-    try expect(c.mode == .rgb);
-    try expect(mem.eql(u8, c.rgb[0..], ([3]u8{ 255, 255, 255 })[0..]));
+    try expectEqual(c.mode, .rgb);
+    try expectEqual(c.rgb, [3]u8{ 255, 255, 255 });
 }
 
 test "color by hsl black" {
     const c = Color.by_hsl(0, 0, 0);
 
-    try expect(c.mode == .rgb);
-    try expect(mem.eql(u8, c.rgb[0..], ([3]u8{ 0, 0, 0 })[0..]));
+    try expectEqual(c.mode, .rgb);
+    try expectEqual(c.rgb, [3]u8{ 0, 0, 0 });
 }
 
 test "color by hsl other" {
     const c = Color.by_hsl(123, 0.8, 0.5);
 
-    try expect(c.mode == .rgb);
-    try expect(mem.eql(u8, c.rgb[0..], ([3]u8{ 25, 229, 35 })[0..]));
+    try expectEqual(c.mode, .rgb);
+    try expectEqual(c.rgb, [3]u8{ 25, 229, 35 });
 }
 
 pub fn colorPrint(writer: anytype, comptime fmt: []const u8, args: anytype, options: ColorOptions) !void {
@@ -390,33 +391,33 @@ test "names with optional fg, bg" {
     var fbs = std.io.fixedBufferStream(&buff);
 
     try names(.red, true, fbs.writer());
-    try expect(fbs.pos == 2);
-    try expect(mem.eql(u8, "31", fbs.getWritten()));
+    try expectEqual(fbs.pos, 2);
+    try expectEqualStrings("31", fbs.getWritten());
     fbs.reset();
 
     try names(.red, false, fbs.writer());
-    try expect(fbs.pos == 2);
-    try expect(mem.eql(u8, "41", fbs.getWritten()));
+    try expectEqual(fbs.pos, 2);
+    try expectEqualStrings("41", fbs.getWritten());
     fbs.reset();
 
     try names(.bright_green, true, fbs.writer());
-    try expect(fbs.pos == 2);
-    try expect(mem.eql(u8, "92", fbs.getWritten()));
+    try expectEqual(fbs.pos, 2);
+    try expectEqualStrings("92", fbs.getWritten());
     fbs.reset();
 
     try names(.bright_green, false, fbs.writer());
-    try expect(fbs.pos == 3);
-    try expect(mem.eql(u8, "102", fbs.getWritten()));
+    try expectEqual(fbs.pos, 3);
+    try expectEqualStrings("102", fbs.getWritten());
     fbs.reset();
 
     try names(.bright_magenta_old, true, fbs.writer());
-    try expect(fbs.pos == 4);
-    try expect(mem.eql(u8, "1;35", fbs.getWritten()));
+    try expectEqual(fbs.pos, 4);
+    try expectEqualStrings("1;35", fbs.getWritten());
     fbs.reset();
 
     try names(.bright_magenta_old, false, fbs.writer());
-    try expect(fbs.pos == 4);
-    try expect(mem.eql(u8, "1;45", fbs.getWritten()));
+    try expectEqual(fbs.pos, 4);
+    try expectEqualStrings("1;45", fbs.getWritten());
     fbs.reset();
 }
 
@@ -426,18 +427,18 @@ test "color in names mode" {
     var fbs = std.io.fixedBufferStream(&buff);
 
     try colorPrint(fbs.writer(), "Some text", .{}, .{ .fg = Color.by_name(.red) });
-    try expect(fbs.pos == 22);
-    try expect(mem.eql(u8, "\x1b[31mSome text\x1b[39;49m", fbs.getWritten()));
+    try expectEqual(fbs.pos, 22);
+    try expectEqualStrings("\x1b[31mSome text\x1b[39;49m", fbs.getWritten());
     fbs.reset();
 
     try colorPrint(fbs.writer(), "Some text", .{}, .{ .bg = Color.by_name(.red) });
-    try expect(fbs.pos == 22);
-    try expect(mem.eql(u8, "\x1b[41mSome text\x1b[39;49m", fbs.getWritten()));
+    try expectEqual(fbs.pos, 22);
+    try expectEqualStrings("\x1b[41mSome text\x1b[39;49m", fbs.getWritten());
     fbs.reset();
 
     try colorPrint(fbs.writer(), "Some text", .{}, .{ .fg = Color.by_name(.bright_magenta), .bg = Color.by_name(.red) });
-    try expect(fbs.pos == 25);
-    try expect(mem.eql(u8, "\x1b[95;41mSome text\x1b[39;49m", fbs.getWritten()));
+    try expectEqual(fbs.pos, 25);
+    try expectEqualStrings("\x1b[95;41mSome text\x1b[39;49m", fbs.getWritten());
     fbs.reset();
 }
 
@@ -457,23 +458,23 @@ test "lookups with optional fg, bg" {
     var fbs = std.io.fixedBufferStream(&buff);
 
     try lookups(3, true, fbs.writer());
-    try expect(fbs.pos == 6);
-    try expect(mem.eql(u8, "38;5;3", fbs.getWritten()));
+    try expectEqual(fbs.pos, 6);
+    try expectEqualStrings("38;5;3", fbs.getWritten());
     fbs.reset();
 
     try lookups(25, false, fbs.writer());
-    try expect(fbs.pos == 7);
-    try expect(mem.eql(u8, "48;5;25", fbs.getWritten()));
+    try expectEqual(fbs.pos, 7);
+    try expectEqualStrings("48;5;25", fbs.getWritten());
     fbs.reset();
 
     try lookups(33, true, fbs.writer());
-    try expect(fbs.pos == 7);
-    try expect(mem.eql(u8, "38;5;33", fbs.getWritten()));
+    try expectEqual(fbs.pos, 7);
+    try expectEqualStrings("38;5;33", fbs.getWritten());
     fbs.reset();
 
     try lookups(245, false, fbs.writer());
-    try expect(fbs.pos == 8);
-    try expect(mem.eql(u8, "48;5;245", fbs.getWritten()));
+    try expectEqual(fbs.pos, 8);
+    try expectEqualStrings("48;5;245", fbs.getWritten());
     fbs.reset();
 }
 
@@ -483,18 +484,18 @@ test "color in lookup mode" {
     var fbs = std.io.fixedBufferStream(&buff);
 
     try colorPrint(fbs.writer(), "Some text", .{}, .{ .fg = Color.by_lookup(44) });
-    try expect(fbs.pos == 27);
-    try expect(mem.eql(u8, "\x1b[38;5;44mSome text\x1b[39;49m", fbs.getWritten()));
+    try expectEqual(fbs.pos, 27);
+    try expectEqualStrings("\x1b[38;5;44mSome text\x1b[39;49m", fbs.getWritten());
     fbs.reset();
 
     try colorPrint(fbs.writer(), "Some text", .{}, .{ .bg = Color.by_lookup(5) });
-    try expect(fbs.pos == 26);
-    try expect(mem.eql(u8, "\x1b[48;5;5mSome text\x1b[39;49m", fbs.getWritten()));
+    try expectEqual(fbs.pos, 26);
+    try expectEqualStrings("\x1b[48;5;5mSome text\x1b[39;49m", fbs.getWritten());
     fbs.reset();
 
     try colorPrint(fbs.writer(), "Some text", .{}, .{ .fg = Color.by_lookup(123), .bg = Color.by_lookup(76) });
-    try expect(fbs.pos == 36);
-    try expect(mem.eql(u8, "\x1b[38;5;123;48;5;76mSome text\x1b[39;49m", fbs.getWritten()));
+    try expectEqual(fbs.pos, 36);
+    try expectEqualStrings("\x1b[38;5;123;48;5;76mSome text\x1b[39;49m", fbs.getWritten());
     fbs.reset();
 }
 
@@ -514,23 +515,23 @@ test "rgbs with optional fg, bg" {
     var fbs = std.io.fixedBufferStream(&buff);
 
     var len = try rgbs([3]u8{ 255, 0, 0 }, true, fbs.writer());
-    try expect(fbs.pos == 12);
-    try expect(mem.eql(u8, "38;2;255;0;0", fbs.getWritten()));
+    try expectEqual(fbs.pos, 12);
+    try expectEqualStrings("38;2;255;0;0", fbs.getWritten());
     fbs.reset();
 
     len = try rgbs([_]u8{ 34, 25, 100 }, false, fbs.writer());
-    try expect(fbs.pos == 14);
-    try expect(mem.eql(u8, "48;2;34;25;100", fbs.getWritten()));
+    try expectEqual(fbs.pos, 14);
+    try expectEqualStrings("48;2;34;25;100", fbs.getWritten());
     fbs.reset();
 
     len = try rgbs([_]u8{ 1, 2, 3 }, true, fbs.writer());
-    try expect(fbs.pos == 10);
-    try expect(mem.eql(u8, "38;2;1;2;3", fbs.getWritten()));
+    try expectEqual(fbs.pos, 10);
+    try expectEqualStrings("38;2;1;2;3", fbs.getWritten());
     fbs.reset();
 
     len = try rgbs([_]u8{ 100, 200, 50 }, false, fbs.writer());
-    try expect(fbs.pos == 15);
-    try expect(mem.eql(u8, "48;2;100;200;50", fbs.getWritten()));
+    try expectEqual(fbs.pos, 15);
+    try expectEqualStrings("48;2;100;200;50", fbs.getWritten());
     fbs.reset();
 }
 
@@ -540,18 +541,18 @@ test "color in rgb mode" {
     var fbs = std.io.fixedBufferStream(&buff);
 
     try colorPrint(fbs.writer(), "Some text", .{}, .{ .fg = Color.by_rgb(44, 22, 11) });
-    try expect(fbs.pos == 33);
-    try expect(mem.eql(u8, "\x1b[38;2;44;22;11mSome text\x1b[39;49m", fbs.getWritten()));
+    try expectEqual(fbs.pos, 33);
+    try expectEqualStrings("\x1b[38;2;44;22;11mSome text\x1b[39;49m", fbs.getWritten());
     fbs.reset();
 
     try colorPrint(fbs.writer(), "Some text", .{}, .{ .bg = Color.by_rgb(5, 66, 100) });
-    try expect(fbs.pos == 33);
-    try expect(mem.eql(u8, "\x1b[48;2;5;66;100mSome text\x1b[39;49m", fbs.getWritten()));
+    try expectEqual(fbs.pos, 33);
+    try expectEqualStrings("\x1b[48;2;5;66;100mSome text\x1b[39;49m", fbs.getWritten());
     fbs.reset();
 
     try colorPrint(fbs.writer(), "Some text", .{}, .{ .fg = Color.by_hsl(123, 0.8, 0.5), .bg = Color.by_rgb(76, 89, 9) });
-    try expect(fbs.pos == 47);
-    try expect(mem.eql(u8, "\x1b[38;2;25;229;35;48;2;76;89;9mSome text\x1b[39;49m", fbs.getWritten()));
+    try expectEqual(fbs.pos, 47);
+    try expectEqualStrings("\x1b[38;2;25;229;35;48;2;76;89;9mSome text\x1b[39;49m", fbs.getWritten());
     fbs.reset();
 }
 
@@ -561,17 +562,17 @@ test "color in mixed modes" {
     var fbs = std.io.fixedBufferStream(&buff);
 
     try colorPrint(fbs.writer(), "Some text", .{}, .{ .fg = Color.by_rgb(44, 22, 11), .bg = Color.by_name(.yellow) });
-    try expect(fbs.pos == 36);
-    try expect(mem.eql(u8, "\x1b[38;2;44;22;11;43mSome text\x1b[39;49m", fbs.getWritten()));
+    try expectEqual(fbs.pos, 36);
+    try expectEqualStrings("\x1b[38;2;44;22;11;43mSome text\x1b[39;49m", fbs.getWritten());
     fbs.reset();
 
     try colorPrint(fbs.writer(), "Some text", .{}, .{ .fg = Color.by_lookup(155), .bg = Color.by_rgb(5, 66, 100) });
-    try expect(fbs.pos == 42);
-    try expect(mem.eql(u8, "\x1b[38;5;155;48;2;5;66;100mSome text\x1b[39;49m", fbs.getWritten()));
+    try expectEqual(fbs.pos, 42);
+    try expectEqualStrings("\x1b[38;5;155;48;2;5;66;100mSome text\x1b[39;49m", fbs.getWritten());
     fbs.reset();
 
     try colorPrint(fbs.writer(), "Some text", .{}, .{ .fg = Color.by_name(.bright_cyan_old), .bg = Color.by_lookup(254) });
-    try expect(fbs.pos == 33);
-    try expect(mem.eql(u8, "\x1b[1;36;48;5;254mSome text\x1b[39;49m", fbs.getWritten()));
+    try expectEqual(fbs.pos, 33);
+    try expectEqualStrings("\x1b[1;36;48;5;254mSome text\x1b[39;49m", fbs.getWritten());
     fbs.reset();
 }

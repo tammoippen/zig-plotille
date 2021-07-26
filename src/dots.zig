@@ -3,7 +3,8 @@ const assert = std.debug.assert;
 const unicode = std.unicode;
 
 const testing = std.testing;
-const expect = testing.expect;
+const expectEqual = testing.expectEqual;
+const expectEqualStrings = testing.expectEqualStrings;
 const mem = std.mem;
 
 const color = @import("./color.zig");
@@ -88,17 +89,17 @@ test "test clear and full char" {
     var d = Dots{};
 
     try std.fmt.format(fbs.writer(), "{s}", .{d});
-    try expect(mem.eql(u8, "⠀", fbs.getWritten()));
+    try expectEqualStrings("⠀", fbs.getWritten());
     fbs.reset();
 
     d.fill();
     try std.fmt.format(fbs.writer(), "{s}", .{d});
-    try expect(mem.eql(u8, "⣿", fbs.getWritten()));
+    try expectEqualStrings("⣿", fbs.getWritten());
     fbs.reset();
 
     d.clear();
     try std.fmt.format(fbs.writer(), "{s}", .{d});
-    try expect(mem.eql(u8, "⠀", fbs.getWritten()));
+    try expectEqualStrings("⠀", fbs.getWritten());
     fbs.reset();
 }
 
@@ -109,79 +110,79 @@ test "set and unset individual vals" {
     var d = Dots{};
 
     try std.fmt.format(fbs.writer(), "{s}", .{d});
-    try expect(mem.eql(u8, "⠀", fbs.getWritten()));
+    try expectEqualStrings("⠀", fbs.getWritten());
     fbs.reset();
 
     d.set(0, 0);
     try std.fmt.format(fbs.writer(), "{s}", .{d});
-    try expect(mem.eql(u8, "⡀", fbs.getWritten()));
+    try expectEqualStrings("⡀", fbs.getWritten());
     fbs.reset();
     d.unset(0, 0);
     try std.fmt.format(fbs.writer(), "{s}", .{d});
-    try expect(mem.eql(u8, "⠀", fbs.getWritten()));
+    try expectEqualStrings("⠀", fbs.getWritten());
     fbs.reset();
 
     d.set(0, 1);
     try std.fmt.format(fbs.writer(), "{s}", .{d});
-    try expect(mem.eql(u8, "⠄", fbs.getWritten()));
+    try expectEqualStrings("⠄", fbs.getWritten());
     fbs.reset();
     d.unset(0, 1);
     try std.fmt.format(fbs.writer(), "{s}", .{d});
-    try expect(mem.eql(u8, "⠀", fbs.getWritten()));
+    try expectEqualStrings("⠀", fbs.getWritten());
     fbs.reset();
 
     d.set(0, 2);
     try std.fmt.format(fbs.writer(), "{s}", .{d});
-    try expect(mem.eql(u8, "⠂", fbs.getWritten()));
+    try expectEqualStrings("⠂", fbs.getWritten());
     fbs.reset();
     d.unset(0, 2);
     try std.fmt.format(fbs.writer(), "{s}", .{d});
-    try expect(mem.eql(u8, "⠀", fbs.getWritten()));
+    try expectEqualStrings("⠀", fbs.getWritten());
     fbs.reset();
 
     d.set(0, 3);
     try std.fmt.format(fbs.writer(), "{s}", .{d});
-    try expect(mem.eql(u8, "⠁", fbs.getWritten()));
+    try expectEqualStrings("⠁", fbs.getWritten());
     fbs.reset();
     d.unset(0, 3);
     try std.fmt.format(fbs.writer(), "{s}", .{d});
-    try expect(mem.eql(u8, "⠀", fbs.getWritten()));
+    try expectEqualStrings("⠀", fbs.getWritten());
     fbs.reset();
 
     d.set(1, 0);
     try std.fmt.format(fbs.writer(), "{s}", .{d});
-    try expect(mem.eql(u8, "⢀", fbs.getWritten()));
+    try expectEqualStrings("⢀", fbs.getWritten());
     fbs.reset();
     d.unset(1, 0);
     try std.fmt.format(fbs.writer(), "{s}", .{d});
-    try expect(mem.eql(u8, "⠀", fbs.getWritten()));
+    try expectEqualStrings("⠀", fbs.getWritten());
     fbs.reset();
 
     d.set(1, 1);
     try std.fmt.format(fbs.writer(), "{s}", .{d});
-    try expect(mem.eql(u8, "⠠", fbs.getWritten()));
+    try expectEqualStrings("⠠", fbs.getWritten());
     fbs.reset();
     d.unset(1, 1);
     try std.fmt.format(fbs.writer(), "{s}", .{d});
-    try expect(mem.eql(u8, "⠀", fbs.getWritten()));
+    try expectEqualStrings("⠀", fbs.getWritten());
     fbs.reset();
 
     d.set(1, 2);
     try std.fmt.format(fbs.writer(), "{s}", .{d});
-    try expect(mem.eql(u8, "⠐", fbs.getWritten()));
+    try expectEqualStrings("⠐", fbs.getWritten());
     fbs.reset();
     d.unset(1, 2);
     try std.fmt.format(fbs.writer(), "{s}", .{d});
-    try expect(mem.eql(u8, "⠀", fbs.getWritten()));
+    try expectEqualStrings("⠀", fbs.getWritten());
     fbs.reset();
 
     d.set(1, 3);
     try std.fmt.format(fbs.writer(), "{s}", .{d});
-    try expect(mem.eql(u8, "⠈", fbs.getWritten()));
+    try expectEqualStrings("⠈", fbs.getWritten());
     fbs.reset();
     d.unset(1, 3);
     try std.fmt.format(fbs.writer(), "{s}", .{d});
-    try expect(mem.eql(u8, "⠀", fbs.getWritten()));
+    try expectEqualStrings("⠀", fbs.getWritten());
     fbs.reset();
 }
 
@@ -194,24 +195,24 @@ test "colored dots" {
     d.set(0, 0);
 
     try std.fmt.format(fbs.writer(), "{s}", .{d});
-    try expect(mem.eql(u8, "⡀", fbs.getWritten()));
+    try expectEqualStrings("⡀", fbs.getWritten());
     fbs.reset();
 
     d.color.fg = color.Color.by_name(.red);
     try std.fmt.format(fbs.writer(), "{s}", .{d});
-    try expect(fbs.pos == 16);
-    try expect(mem.eql(u8, "\x1b[31m⡀\x1b[39;49m", fbs.getWritten()));
+    try expectEqual(fbs.pos, 16);
+    try expectEqualStrings("\x1b[31m⡀\x1b[39;49m", fbs.getWritten());
     fbs.reset();
 
     d.color.bg = color.Color.by_lookup(123);
     try std.fmt.format(fbs.writer(), "{s}", .{d});
-    try expect(fbs.pos == 25);
-    try expect(mem.eql(u8, "\x1b[31;48;5;123m⡀\x1b[39;49m", fbs.getWritten()));
+    try expectEqual(fbs.pos, 25);
+    try expectEqualStrings("\x1b[31;48;5;123m⡀\x1b[39;49m", fbs.getWritten());
     fbs.reset();
 
     d.color.fg = color.Color.by_rgb(1, 22, 133);
     try std.fmt.format(fbs.writer(), "{s}", .{d});
-    try expect(fbs.pos == 36);
-    try expect(mem.eql(u8, "\x1b[38;2;1;22;133;48;5;123m⡀\x1b[39;49m", fbs.getWritten()));
+    try expectEqual(fbs.pos, 36);
+    try expectEqualStrings("\x1b[38;2;1;22;133;48;5;123m⡀\x1b[39;49m", fbs.getWritten());
     fbs.reset();
 }
