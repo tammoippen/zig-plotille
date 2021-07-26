@@ -120,7 +120,7 @@ pub const Canvas = struct {
         };
     }
 
-    pub fn set(self: *Canvas, x: f64, y: f64, fg_color: ?color.Color) void {
+    pub fn point(self: *Canvas, x: f64, y: f64, fg_color: ?color.Color) void {
         const x_coord = self.transform_x(x);
         const y_coord = self.transform_y(y);
 
@@ -135,19 +135,16 @@ pub const Canvas = struct {
         }
     }
 
-    pub fn unset(self: *Canvas, x: f64, y: f64, unset_color: bool) void {
+    pub fn fillChar(self: *Canvas, x: f64, y: f64) void {
         const x_coord = self.transform_x(x);
         const y_coord = self.transform_y(y);
 
-        if (x_coord < 0 or x_coord >= self.width or y_coord < 0 or y_coord >= self.height) {
+        if (x_coord.char_idx < 0 or x_coord.char_idx >= self.width or y_coord.char_idx < 0 or y_coord.char_idx >= self.height) {
             // out of canvas
             return;
         }
         const idx = y_coord.char_idx * self.width + x_coord.char_idx;
-        self.canvas[idx].unset(x_coord.dot_idx, y_coord.dot_idx);
-        if (unset_color) {
-            self.canvas[idx].color.fg = color.Color.no_color();
-        }
+        self.canvas[idx].fill();
     }
 
     pub fn format(
@@ -179,12 +176,12 @@ test "init and deinit Canvas" {
     const c = try Canvas.init(std.testing.allocator, 10, 10, color.Color.by_name(.blue));
     defer c.deinit(std.testing.allocator);
 
-    try expectEqual(c.xmin, 0);
-    try expectEqual(c.ymin, 0);
-    try expectEqual(c.x_delta_pt, 0.05);
-    try expectEqual(c.xmax, 1);
-    try expectEqual(c.ymax, 1);
-    try expectEqual(c.y_delta_pt, 0.025);
+    try expectEqual(@as(f64, 0.0), c.xmin);
+    try expectEqual(@as(f64, 0.0), c.ymin);
+    try expectEqual(@as(f64, 0.05), c.x_delta_pt);
+    try expectEqual(@as(f64, 1.0), c.xmax);
+    try expectEqual(@as(f64, 1.0), c.ymax);
+    try expectEqual(@as(f64, 0.025), c.y_delta_pt);
 }
 
 test "compute x-coordinates of braille points" {
@@ -193,51 +190,51 @@ test "compute x-coordinates of braille points" {
 
     {
         const coord = c.transform_x(0);
-        try expectEqual(coord.braille_idx, 0);
-        try expectEqual(coord.char_idx, 0);
-        try expectEqual(coord.dot_idx, 0);
+        try expectEqual(@as(usize, 0), coord.braille_idx);
+        try expectEqual(@as(usize, 0), coord.char_idx);
+        try expectEqual(@as(usize, 0), coord.dot_idx);
     }
     {
         const coord = c.transform_x(0.24);
-        try expectEqual(coord.braille_idx, 0);
-        try expectEqual(coord.char_idx, 0);
-        try expectEqual(coord.dot_idx, 0);
+        try expectEqual(@as(usize, 0), coord.braille_idx);
+        try expectEqual(@as(usize, 0), coord.char_idx);
+        try expectEqual(@as(usize, 0), coord.dot_idx);
     }
     {
         const coord = c.transform_x(0.25);
-        try expectEqual(coord.braille_idx, 0);
-        try expectEqual(coord.char_idx, 0);
-        try expectEqual(coord.dot_idx, 0);
+        try expectEqual(@as(usize, 0), coord.braille_idx);
+        try expectEqual(@as(usize, 0), coord.char_idx);
+        try expectEqual(@as(usize, 0), coord.dot_idx);
     }
     {
         const coord = c.transform_x(0.49);
-        try expectEqual(coord.braille_idx, 0);
-        try expectEqual(coord.char_idx, 0);
-        try expectEqual(coord.dot_idx, 0);
+        try expectEqual(@as(usize, 0), coord.braille_idx);
+        try expectEqual(@as(usize, 0), coord.char_idx);
+        try expectEqual(@as(usize, 0), coord.dot_idx);
     }
     {
         const coord = c.transform_x(0.5);
-        try expectEqual(coord.braille_idx, 1);
-        try expectEqual(coord.char_idx, 0);
-        try expectEqual(coord.dot_idx, 1);
+        try expectEqual(@as(usize, 1), coord.braille_idx);
+        try expectEqual(@as(usize, 0), coord.char_idx);
+        try expectEqual(@as(usize, 1), coord.dot_idx);
     }
     {
         const coord = c.transform_x(0.75);
-        try expectEqual(coord.braille_idx, 1);
-        try expectEqual(coord.char_idx, 0);
-        try expectEqual(coord.dot_idx, 1);
+        try expectEqual(@as(usize, 1), coord.braille_idx);
+        try expectEqual(@as(usize, 0), coord.char_idx);
+        try expectEqual(@as(usize, 1), coord.dot_idx);
     }
     {
         const coord = c.transform_x(0.99);
-        try expectEqual(coord.braille_idx, 1);
-        try expectEqual(coord.char_idx, 0);
-        try expectEqual(coord.dot_idx, 1);
+        try expectEqual(@as(usize, 1), coord.braille_idx);
+        try expectEqual(@as(usize, 0), coord.char_idx);
+        try expectEqual(@as(usize, 1), coord.dot_idx);
     }
     {
         const coord = c.transform_x(1);
-        try expectEqual(coord.braille_idx, 2);
-        try expectEqual(coord.char_idx, 1);
-        try expectEqual(coord.dot_idx, 0);
+        try expectEqual(@as(usize, 2), coord.braille_idx);
+        try expectEqual(@as(usize, 1), coord.char_idx);
+        try expectEqual(@as(usize, 0), coord.dot_idx);
     }
 }
 
@@ -247,39 +244,39 @@ test "compute y-coordinates of braille points" {
 
     {
         const coord = c.transform_y(0);
-        try expectEqual(coord.braille_idx, 0);
-        try expectEqual(coord.char_idx, 0);
-        try expectEqual(coord.dot_idx, 0);
+        try expectEqual(@as(usize, 0), coord.braille_idx);
+        try expectEqual(@as(usize, 0), coord.char_idx);
+        try expectEqual(@as(usize, 0), coord.dot_idx);
     }
     {
         const coord = c.transform_y(0.25);
-        try expectEqual(coord.braille_idx, 1);
-        try expectEqual(coord.char_idx, 0);
-        try expectEqual(coord.dot_idx, 1);
+        try expectEqual(@as(usize, 1), coord.braille_idx);
+        try expectEqual(@as(usize, 0), coord.char_idx);
+        try expectEqual(@as(usize, 1), coord.dot_idx);
     }
     {
         const coord = c.transform_y(0.5);
-        try expectEqual(coord.braille_idx, 2);
-        try expectEqual(coord.char_idx, 0);
-        try expectEqual(coord.dot_idx, 2);
+        try expectEqual(@as(usize, 2), coord.braille_idx);
+        try expectEqual(@as(usize, 0), coord.char_idx);
+        try expectEqual(@as(usize, 2), coord.dot_idx);
     }
     {
         const coord = c.transform_y(0.75);
-        try expectEqual(coord.braille_idx, 3);
-        try expectEqual(coord.char_idx, 0);
-        try expectEqual(coord.dot_idx, 3);
+        try expectEqual(@as(usize, 3), coord.braille_idx);
+        try expectEqual(@as(usize, 0), coord.char_idx);
+        try expectEqual(@as(usize, 3), coord.dot_idx);
     }
     {
         const coord = c.transform_y(0.99);
-        try expectEqual(coord.braille_idx, 3);
-        try expectEqual(coord.char_idx, 0);
-        try expectEqual(coord.dot_idx, 3);
+        try expectEqual(@as(usize, 3), coord.braille_idx);
+        try expectEqual(@as(usize, 0), coord.char_idx);
+        try expectEqual(@as(usize, 3), coord.dot_idx);
     }
     {
         const coord = c.transform_y(1);
-        try expectEqual(coord.braille_idx, 4);
-        try expectEqual(coord.char_idx, 1);
-        try expectEqual(coord.dot_idx, 0);
+        try expectEqual(@as(usize, 4), coord.braille_idx);
+        try expectEqual(@as(usize, 1), coord.char_idx);
+        try expectEqual(@as(usize, 0), coord.dot_idx);
     }
 }
 
@@ -290,20 +287,20 @@ test "simple format canvas" {
     var list = std.ArrayList(u8).init(std.testing.allocator);
     defer list.deinit();
 
-    c.set(0, 0, null);
-    c.set(0, 0.5, null);
-    c.set(0, 0.99, null);
-    c.set(0.5, 0.99, null);
+    c.point(0, 0, null);
+    c.point(0, 0.5, null);
+    c.point(0, 0.99, null);
+    c.point(0.5, 0.99, null);
     // intentionally leave right bottom blank
-    // c.set(0.99, 0.99, null);
-    c.set(0.99, 0.5, null);
-    c.set(0.99, 0, null);
-    c.set(0.5, 0, null);
-    c.set(0.5, 0.5, null);
+    // c.point(0.99, 0.99, null);
+    c.point(0.99, 0.5, null);
+    c.point(0.99, 0, null);
+    c.point(0.5, 0, null);
+    c.point(0.5, 0.5, null);
 
     try list.writer().print("{}", .{c});
-    try expectEqual(list.items.len, 309); // 3 chars per unicode + 9 linebreaks
-    try expectEqualStrings(list.items,
+    try expectEqual(@as(usize, 309), list.items.len); // 3 chars per unicode + 9 linebreaks
+    try expectEqualStrings(
         \\⠁⠀⠀⠀⠀⠁⠀⠀⠀⠀
         \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
         \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
@@ -314,7 +311,7 @@ test "simple format canvas" {
         \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
         \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
         \\⡀⠀⠀⠀⠀⡀⠀⠀⠀⢀
-    );
+    , list.items);
 }
 
 test "format canvas with color" {
@@ -327,23 +324,24 @@ test "format canvas with color" {
     var list = std.ArrayList(u8).init(std.testing.allocator);
     defer list.deinit();
 
-    c.set(0, 0, color.Color.by_name(.red));
-    c.set(0, 0.5, color.Color.by_name(.black));
-    c.set(0, 0.99, color.Color.by_name(.black));
-    c.set(0.5, 0.99, color.Color.by_name(.black));
+    c.point(0, 0, color.Color.by_name(.red));
+    c.point(0, 0.5, color.Color.by_name(.black));
+    c.point(0, 0.99, color.Color.by_name(.black));
+    c.point(0.5, 0.99, color.Color.by_name(.black));
     // intentionally leave right bottom blank
-    // c.set(0.99, 0.99, color.Color.by_name(.black));
-    c.set(0.99, 0.5, color.Color.by_name(.black));
-    c.set(0.99, 0, color.Color.by_lookup(123));
-    c.set(0.5, 0, color.Color.by_name(.black));
-    c.set(0.5, 0.5, color.Color.by_name(.blue));
+    // c.point(0.99, 0.99, color.Color.by_name(.black));
+    c.point(0.99, 0.5, color.Color.by_name(.black));
+    c.point(0.99, 0, color.Color.by_lookup(123));
+    c.point(0.5, 0, color.Color.by_name(.black));
+    c.point(0.5, 0.5, color.Color.by_name(.blue));
 
     try list.writer().print("{}", .{c});
-    try expectEqual(list.items.len, 100 * (14 + 3) // 3 chars per unicode, 14 for bg and reset
+    try expectEqual(@as(usize, 100 * (14 + 3) // 3 chars per unicode, 14 for bg and reset
     + 9 // linebreaks
     + 7 * 3 // 7 x fg color by name
-    + 9); // 1 x fg color by lookup
-    try expectEqualStrings(list.items, "\x1b[30;103m⠁\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[30;103m⠁\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\n" ++
+    + 9), // 1 x fg color by lookup
+        list.items.len);
+    try expectEqualStrings("\x1b[30;103m⠁\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[30;103m⠁\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\n" ++
         "\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\n" ++
         "\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\n" ++
         "\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\n" ++
@@ -352,5 +350,27 @@ test "format canvas with color" {
         "\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\n" ++
         "\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\n" ++
         "\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\n" ++
-        "\x1b[31;103m⡀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[30;103m⡀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[38;5;123;103m⢀\x1b[39;49m");
+        "\x1b[31;103m⡀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[30;103m⡀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[38;5;123;103m⢀\x1b[39;49m", list.items);
+}
+
+test "fill char in canvas" {
+    // force colors
+    terminfo.TermInfo.testing();
+
+    var c = try Canvas.init(std.testing.allocator, 3, 3, color.Color.no_color());
+    defer c.deinit(std.testing.allocator);
+
+    var list = std.ArrayList(u8).init(std.testing.allocator);
+    defer list.deinit();
+
+    c.fillChar(0.5, 0.5);
+
+    try list.writer().print("{}", .{c});
+    try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
+
+    try expectEqualStrings(
+        \\⠀⠀⠀
+        \\⠀⣿⠀
+        \\⠀⠀⠀
+    , list.items);
 }
