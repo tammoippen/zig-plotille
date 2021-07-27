@@ -181,20 +181,47 @@ pub const Canvas = struct {
         self.set(x1_coord, y1_coord, fg_color);
 
         // difference along the coordinates
-        const x_diff = try std.math.absInt(@as(i32, x1_coord.braille_idx) - x0_coord.braille_idx);
-        const y_diff = try std.math.absInt(@as(i32, y1_coord.braille_idx) - y0_coord.braille_idx);
+        const x_diff = x1_coord.braille_idx - x0_coord.braille_idx;
+        const y_diff = y1_coord.braille_idx - y0_coord.braille_idx;
 
         // steps to go in each direction
-        const max_steps = std.math.max(x_diff, y_diff);
+        const max_steps = std.math.max(try std.math.absInt(x_diff), try std.math.absInt(y_diff));
         const xstep = @intToFloat(f64, x_diff) / @intToFloat(f64, max_steps);
         const ystep = @intToFloat(f64, y_diff) / @intToFloat(f64, max_steps);
 
-        var idx: usize = 1;
-        while (idx < max_steps) : (idx += 1) {
-            const xb = x0_coord.braille_idx + @floatToInt(u9, std.math.round(xstep * @intToFloat(f64, idx)));
-            const yb = y0_coord.braille_idx + @floatToInt(u9, std.math.round(ystep * @intToFloat(f64, idx)));
-            self.set(XCoord.with(xb), YCoord.with(yb), fg_color);
+        if (max_steps > 1) {
+            std.debug.print("\nx{} step{}\n", .{ x0_coord.braille_idx, xstep });
+            const x_start = if (xstep == 0) 0 else @floatToInt(i32, @intToFloat(f64, -x0_coord.braille_idx) / xstep);
+            std.debug.print("y{} step{}\n\n", .{ y0_coord.braille_idx, ystep });
+            var y_start: usize = 1;
+            if (ystep != 0) {
+                y_start = @floatToInt(i32, @intToFloat(f64, -y0_coord.braille_idx) / ystep);
+            }
+
+            var idx: usize = std.math.max(1, std.math.min(x_start, y_start));
+            while (idx < max_steps) : (idx += 1) {
+                const xb = x0_coord.braille_idx + @floatToInt(i32, std.math.round(xstep * @intToFloat(f64, idx)));
+                const yb = y0_coord.braille_idx + @floatToInt(i32, std.math.round(ystep * @intToFloat(f64, idx)));
+                self.set(XCoord.with(xb), YCoord.with(yb), fg_color);
+            }
         }
+    }
+
+    fn start_idx(c: i32, step: f64, c_max: i32) usize {
+        if (std.math.approxEqAbs(f64, 0, step, 0.001)) {
+            // cannot devide by 0
+            return 0;
+        }
+        if (c >= 0 or c < c_max) {
+            // we are in the canvas
+            return 0;
+        }
+        if (std.math.signbit(c) == std.math.signbit(step)) {
+            // we are outside the canvas, and c and step have same
+            // sign => we leave the canvas even more
+            return -1;
+        }
+        return @floatToInt(i32, @intToFloat(f64, -c) / step);
     }
 
     /// Output the canvas to a writer.
@@ -481,6 +508,101 @@ test "point out of canvas" {
     try expectEqualStrings(
         \\⠀⠀⠀
         \\⠀⠀⠀
+        \\⠀⠀⠀
+    , list.items);
+}
+
+test "horizontal line out of canvas" {
+    var c = try Canvas.init(std.testing.allocator, 3, 3, color.Color.no_color());
+    defer c.deinit(std.testing.allocator);
+
+    var list = std.ArrayList(u8).init(std.testing.allocator);
+    defer list.deinit();
+
+    try c.line(-0.99, 0.5, 2, 0.5, null);
+
+    try list.writer().print("{}", .{c});
+    try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
+
+    try expectEqualStrings(
+        \\⠀⠀⠀
+        \\⠒⠒⠒
+        \\⠀⠀⠀
+    , list.items);
+}
+
+test "vertical line out of canvas" {
+    var c = try Canvas.init(std.testing.allocator, 3, 3, color.Color.no_color());
+    defer c.deinit(std.testing.allocator);
+
+    var list = std.ArrayList(u8).init(std.testing.allocator);
+    defer list.deinit();
+
+    try c.line(0.5, -0.99, 0.5, 2, null);
+
+    try list.writer().print("{}", .{c});
+    try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
+
+    try expectEqualStrings(
+        \\⠀⢸⠀
+        \\⠀⢸⠀
+        \\⠀⢸⠀
+    , list.items);
+}
+
+test "line out of canvas reversed" {
+    var c = try Canvas.init(std.testing.allocator, 3, 3, color.Color.no_color());
+    defer c.deinit(std.testing.allocator);
+
+    var list = std.ArrayList(u8).init(std.testing.allocator);
+    defer list.deinit();
+
+    try c.line(2, 0.5, -0.99, 0.5, null);
+
+    try list.writer().print("{}", .{c});
+    try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
+
+    try expectEqualStrings(
+        \\⠀⠀⠀
+        \\⠒⠒⠒
+        \\⠀⠀⠀
+    , list.items);
+}
+
+test "line in canvas small y" {
+    var c = try Canvas.init(std.testing.allocator, 3, 3, color.Color.no_color());
+    defer c.deinit(std.testing.allocator);
+
+    var list = std.ArrayList(u8).init(std.testing.allocator);
+    defer list.deinit();
+
+    try c.line(0.5, 0.5, 0.7, 0.55, null);
+
+    try list.writer().print("{}", .{c});
+    try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
+
+    try expectEqualStrings(
+        \\⠀⠀⠀
+        \\⠀⠐⠂
+        \\⠀⠀⠀
+    , list.items);
+}
+
+test "line in canvas small x" {
+    var c = try Canvas.init(std.testing.allocator, 3, 3, color.Color.no_color());
+    defer c.deinit(std.testing.allocator);
+
+    var list = std.ArrayList(u8).init(std.testing.allocator);
+    defer list.deinit();
+
+    try c.line(0.5, 0.5, 0.55, 0.7, null);
+
+    try list.writer().print("{}", .{c});
+    try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
+
+    try expectEqualStrings(
+        \\⠀⠀⠀
+        \\⠀⠐⠂
         \\⠀⠀⠀
     , list.items);
 }
