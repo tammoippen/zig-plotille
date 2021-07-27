@@ -1,4 +1,11 @@
 const std = @import("std");
+const max = std.math.max;
+const round = std.math.round;
+const absInt = std.math.absInt;
+const absFloat = std.math.absFloat;
+const approxEqAbs = std.math.approxEqAbs;
+const signbit = std.math.signbit;
+
 const assert = std.debug.assert;
 const expectEqual = std.testing.expectEqual;
 const expectEqualStrings = std.testing.expectEqualStrings;
@@ -16,7 +23,7 @@ const XCoord = struct {
         return XCoord{
             .braille_idx = idx,
             .char_idx = @divTrunc(idx, 2),
-            .dot_idx = @intCast(u1, std.math.absInt(@rem(idx, 2)) catch unreachable), // % 2
+            .dot_idx = @intCast(u1, absInt(@rem(idx, 2)) catch unreachable), // % 2
         };
     }
 };
@@ -29,7 +36,7 @@ const YCoord = struct {
         return YCoord{
             .braille_idx = idx,
             .char_idx = @divTrunc(idx, 4),
-            .dot_idx = @intCast(u2, std.math.absInt(@rem(idx, 4)) catch unreachable),
+            .dot_idx = @intCast(u2, absInt(@rem(idx, 4)) catch unreachable),
         };
     }
 };
@@ -106,8 +113,8 @@ pub const Canvas = struct {
         self.ymin = ymin;
         self.xmax = xmax;
         self.ymax = ymax;
-        self.x_delta_pt = std.math.absFloat((xmax - xmin) / @intToFloat(f64, self.width * 2)); // 2 points in left
-        self.y_delta_pt = std.math.absFloat((ymax - ymin) / @intToFloat(f64, self.height * 4)); // 4 points in up
+        self.x_delta_pt = absFloat((xmax - xmin) / @intToFloat(f64, self.width * 2)); // 2 points in left
+        self.y_delta_pt = absFloat((ymax - ymin) / @intToFloat(f64, self.height * 4)); // 4 points in up
     }
 
     /// Transform an x-coordinate of the reference system to an index
@@ -185,43 +192,49 @@ pub const Canvas = struct {
         const y_diff = y1_coord.braille_idx - y0_coord.braille_idx;
 
         // steps to go in each direction
-        const max_steps = std.math.max(try std.math.absInt(x_diff), try std.math.absInt(y_diff));
+        const max_steps = max(try absInt(x_diff), try absInt(y_diff));
         const xstep = @intToFloat(f64, x_diff) / @intToFloat(f64, max_steps);
         const ystep = @intToFloat(f64, y_diff) / @intToFloat(f64, max_steps);
 
-        if (max_steps > 1) {
-            std.debug.print("\nx{} step{}\n", .{ x0_coord.braille_idx, xstep });
-            const x_start = if (xstep == 0) 0 else @floatToInt(i32, @intToFloat(f64, -x0_coord.braille_idx) / xstep);
-            std.debug.print("y{} step{}\n\n", .{ y0_coord.braille_idx, ystep });
-            var y_start: usize = 1;
-            if (ystep != 0) {
-                y_start = @floatToInt(i32, @intToFloat(f64, -y0_coord.braille_idx) / ystep);
-            }
+        if (max_steps > 0) {
+            const x_start = start_idx(x0_coord.braille_idx, xstep, self.width * 2);
+            var y_start = start_idx(y0_coord.braille_idx, ystep, self.height * 4);
 
-            var idx: usize = std.math.max(1, std.math.min(x_start, y_start));
+            var idx: usize = max(1, max(x_start, y_start));
             while (idx < max_steps) : (idx += 1) {
-                const xb = x0_coord.braille_idx + @floatToInt(i32, std.math.round(xstep * @intToFloat(f64, idx)));
-                const yb = y0_coord.braille_idx + @floatToInt(i32, std.math.round(ystep * @intToFloat(f64, idx)));
-                self.set(XCoord.with(xb), YCoord.with(yb), fg_color);
+                const xb = x0_coord.braille_idx + @floatToInt(i32, round(xstep * @intToFloat(f64, idx)));
+                const yb = y0_coord.braille_idx + @floatToInt(i32, round(ystep * @intToFloat(f64, idx)));
+                // std.debug.print("idx{} xb{} yb{}\n", .{idx, xb, yb});
+                if (0 <= xb and xb < self.width * 2 and 0 <= yb and yb < self.height * 4) {
+                    self.set(XCoord.with(xb), YCoord.with(yb), fg_color);
+                } else {
+                    return;
+                }
             }
         }
     }
 
     fn start_idx(c: i32, step: f64, c_max: i32) usize {
-        if (std.math.approxEqAbs(f64, 0, step, 0.001)) {
+        assert(c_max > 0);
+        if (approxEqAbs(f64, 0, step, 0.001)) {
             // cannot devide by 0
             return 0;
         }
-        if (c >= 0 or c < c_max) {
+        if (0 <= c and c < c_max) {
             // we are in the canvas
             return 0;
         }
-        if (std.math.signbit(c) == std.math.signbit(step)) {
+        if ((c < 0) == signbit(step)) {
             // we are outside the canvas, and c and step have same
             // sign => we leave the canvas even more
-            return -1;
+            return 0; // TODO error?
         }
-        return @floatToInt(i32, @intToFloat(f64, -c) / step);
+        if (c < 0) {
+            return @floatToInt(usize, @intToFloat(f64, -c) / step);
+        } else {
+            assert(c >= c_max);
+            return @floatToInt(usize, @intToFloat(f64, -(c - c_max + 1)) / step);
+        }
     }
 
     /// Output the canvas to a writer.
@@ -569,6 +582,25 @@ test "line out of canvas reversed" {
     , list.items);
 }
 
+test "vertical line out of canvas reversed" {
+    var c = try Canvas.init(std.testing.allocator, 3, 3, color.Color.no_color());
+    defer c.deinit(std.testing.allocator);
+
+    var list = std.ArrayList(u8).init(std.testing.allocator);
+    defer list.deinit();
+
+    try c.line(0.5, 2, 0.5, -0.99, null);
+
+    try list.writer().print("{}", .{c});
+    try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
+
+    try expectEqualStrings(
+        \\⠀⢸⠀
+        \\⠀⢸⠀
+        \\⠀⢸⠀
+    , list.items);
+}
+
 test "line in canvas small y" {
     var c = try Canvas.init(std.testing.allocator, 3, 3, color.Color.no_color());
     defer c.deinit(std.testing.allocator);
@@ -595,14 +627,52 @@ test "line in canvas small x" {
     var list = std.ArrayList(u8).init(std.testing.allocator);
     defer list.deinit();
 
-    try c.line(0.5, 0.5, 0.55, 0.7, null);
+    try c.line(0.5, 0.5, 0.55, 0.6, null);
 
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
 
     try expectEqualStrings(
         \\⠀⠀⠀
-        \\⠀⠐⠂
+        \\⠀⠘⠀
         \\⠀⠀⠀
+    , list.items);
+}
+
+test "line completly out of canvas" {
+    var c = try Canvas.init(std.testing.allocator, 3, 3, color.Color.no_color());
+    defer c.deinit(std.testing.allocator);
+
+    var list = std.ArrayList(u8).init(std.testing.allocator);
+    defer list.deinit();
+
+    try c.line(-0.5, -0.99, -0.6, 2, null);
+
+    try list.writer().print("{}", .{c});
+    try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
+
+    try expectEqualStrings(
+        \\⠀⠀⠀
+        \\⠀⠀⠀
+        \\⠀⠀⠀
+    , list.items);
+}
+
+test "line flat out of canvas" {
+    var c = try Canvas.init(std.testing.allocator, 3, 3, color.Color.no_color());
+    defer c.deinit(std.testing.allocator);
+
+    var list = std.ArrayList(u8).init(std.testing.allocator);
+    defer list.deinit();
+
+    try c.line(-3, -1, 3, 1, null);
+
+    try list.writer().print("{}", .{c});
+    try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
+
+    try expectEqualStrings(
+        \\⠀⠀⠀
+        \\⠀⠀⠀
+        \\⡠⠔⠉
     , list.items);
 }
