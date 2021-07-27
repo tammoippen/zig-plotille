@@ -8,14 +8,30 @@ const dots = @import("./dots.zig");
 const terminfo = @import("./terminfo.zig");
 
 const XCoord = struct {
-    braille_idx: u9,
-    char_idx: u8,
+    braille_idx: i32,
+    char_idx: i32,
     dot_idx: u1,
+
+    fn with(idx: i32) XCoord {
+        return XCoord{
+            .braille_idx = idx,
+            .char_idx = @divTrunc(idx, 2),
+            .dot_idx = @intCast(u1, std.math.absInt(@rem(idx, 2)) catch unreachable), // % 2
+        };
+    }
 };
 const YCoord = struct {
-    braille_idx: u10,
-    char_idx: u8,
+    braille_idx: i32,
+    char_idx: i32,
     dot_idx: u2,
+
+    fn with(idx: i32) YCoord {
+        return YCoord{
+            .braille_idx = idx,
+            .char_idx = @divTrunc(idx, 4),
+            .dot_idx = @intCast(u2, std.math.absInt(@rem(idx, 4)) catch unreachable),
+        };
+    }
 };
 
 /// A canvas object for plotting braille dots
@@ -99,12 +115,8 @@ pub const Canvas = struct {
     /// As we have a width defined as u8, and 2 points per character
     /// we are in the range of u9.
     fn transform_x(self: Canvas, x: f64) XCoord {
-        const braille_idx = @floatToInt(u9, (x - self.xmin) / self.x_delta_pt);
-        return XCoord{
-            .braille_idx = braille_idx,
-            .char_idx = @truncate(u8, braille_idx >> 1), // / 2
-            .dot_idx = @truncate(u1, braille_idx), // % 2
-        };
+        const braille_idx = @floatToInt(i32, (x - self.xmin) / self.x_delta_pt);
+        return XCoord.with(braille_idx);
     }
 
     /// Transform an y-coordinate of the reference system to an index
@@ -112,12 +124,20 @@ pub const Canvas = struct {
     /// As we have a height defined as u8, and 4 points per character
     /// we are in the range of u0.
     fn transform_y(self: Canvas, y: f64) YCoord {
-        const braille_idx = @floatToInt(u10, (y - self.ymin) / self.y_delta_pt);
-        return YCoord{
-            .braille_idx = braille_idx,
-            .char_idx = @truncate(u8, braille_idx >> 2), // / 4
-            .dot_idx = @truncate(u2, braille_idx), // % 4
-        };
+        const braille_idx = @floatToInt(i32, (y - self.ymin) / self.y_delta_pt);
+        return YCoord.with(braille_idx);
+    }
+
+    fn set(self: *Canvas, x_coord: XCoord, y_coord: YCoord, fg_color: ?color.Color) void {
+        if (x_coord.char_idx < 0 or x_coord.char_idx >= self.width or y_coord.char_idx < 0 or y_coord.char_idx >= self.height) {
+            // out of canvas
+            return;
+        }
+        const idx = @intCast(usize, y_coord.char_idx * self.width + x_coord.char_idx);
+        self.canvas[idx].set(x_coord.dot_idx, y_coord.dot_idx);
+        if (fg_color) |c| {
+            self.canvas[idx].color.fg = c;
+        }
     }
 
     /// Put a point into the canvas at (x, y) [reference coordinate system]
@@ -130,15 +150,7 @@ pub const Canvas = struct {
         const x_coord = self.transform_x(x);
         const y_coord = self.transform_y(y);
 
-        if (x_coord.char_idx < 0 or x_coord.char_idx >= self.width or y_coord.char_idx < 0 or y_coord.char_idx >= self.height) {
-            // out of canvas
-            return;
-        }
-        const idx = y_coord.char_idx * self.width + x_coord.char_idx;
-        self.canvas[idx].set(x_coord.dot_idx, y_coord.dot_idx);
-        if (fg_color) |c| {
-            self.canvas[idx].color.fg = c;
-        }
+        self.set(x_coord, y_coord, fg_color);
     }
 
     /// Fill the complete char in the canvas at (x, y) [reference coordinate system]
@@ -154,19 +166,35 @@ pub const Canvas = struct {
             // out of canvas
             return;
         }
-        const idx = y_coord.char_idx * self.width + x_coord.char_idx;
+        const idx = @intCast(usize, y_coord.char_idx * self.width + x_coord.char_idx);
         self.canvas[idx].fill();
     }
 
-    pub fn line(self: *Canvas, x0: f64, y0: f64, x1: f64, y1: f64, color: ?color.Color) void {
-        self.point(x0, y0, color);
-        self.point(x1, y1, color);
+    pub fn line(self: *Canvas, x0: f64, y0: f64, x1: f64, y1: f64, fg_color: ?color.Color) !void {
+        const x0_coord = self.transform_x(x0);
+        const y0_coord = self.transform_y(y0);
+        const x1_coord = self.transform_x(x1);
+        const y1_coord = self.transform_y(y1);
 
-        const x_diff = x1 - x0;
-        const y_diff = y1 - y0;
+        // set start and end
+        self.set(x0_coord, y0_coord, fg_color);
+        self.set(x1_coord, y1_coord, fg_color);
 
+        // difference along the coordinates
+        const x_diff = try std.math.absInt(@as(i32, x1_coord.braille_idx) - x0_coord.braille_idx);
+        const y_diff = try std.math.absInt(@as(i32, y1_coord.braille_idx) - y0_coord.braille_idx);
 
+        // steps to go in each direction
+        const max_steps = std.math.max(x_diff, y_diff);
+        const xstep = @intToFloat(f64, x_diff) / @intToFloat(f64, max_steps);
+        const ystep = @intToFloat(f64, y_diff) / @intToFloat(f64, max_steps);
 
+        var idx: usize = 1;
+        while (idx < max_steps) : (idx += 1) {
+            const xb = x0_coord.braille_idx + @floatToInt(u9, std.math.round(xstep * @intToFloat(f64, idx)));
+            const yb = y0_coord.braille_idx + @floatToInt(u9, std.math.round(ystep * @intToFloat(f64, idx)));
+            self.set(XCoord.with(xb), YCoord.with(yb), fg_color);
+        }
     }
 
     /// Output the canvas to a writer.
@@ -213,51 +241,51 @@ test "compute x-coordinates of braille points" {
 
     {
         const coord = c.transform_x(0);
-        try expectEqual(@as(usize, 0), coord.braille_idx);
-        try expectEqual(@as(usize, 0), coord.char_idx);
-        try expectEqual(@as(usize, 0), coord.dot_idx);
+        try expectEqual(@as(i32, 0), coord.braille_idx);
+        try expectEqual(@as(i32, 0), coord.char_idx);
+        try expectEqual(@as(i32, 0), coord.dot_idx);
     }
     {
         const coord = c.transform_x(0.24);
-        try expectEqual(@as(usize, 0), coord.braille_idx);
-        try expectEqual(@as(usize, 0), coord.char_idx);
-        try expectEqual(@as(usize, 0), coord.dot_idx);
+        try expectEqual(@as(i32, 0), coord.braille_idx);
+        try expectEqual(@as(i32, 0), coord.char_idx);
+        try expectEqual(@as(i32, 0), coord.dot_idx);
     }
     {
         const coord = c.transform_x(0.25);
-        try expectEqual(@as(usize, 0), coord.braille_idx);
-        try expectEqual(@as(usize, 0), coord.char_idx);
-        try expectEqual(@as(usize, 0), coord.dot_idx);
+        try expectEqual(@as(i32, 0), coord.braille_idx);
+        try expectEqual(@as(i32, 0), coord.char_idx);
+        try expectEqual(@as(i32, 0), coord.dot_idx);
     }
     {
         const coord = c.transform_x(0.49);
-        try expectEqual(@as(usize, 0), coord.braille_idx);
-        try expectEqual(@as(usize, 0), coord.char_idx);
-        try expectEqual(@as(usize, 0), coord.dot_idx);
+        try expectEqual(@as(i32, 0), coord.braille_idx);
+        try expectEqual(@as(i32, 0), coord.char_idx);
+        try expectEqual(@as(i32, 0), coord.dot_idx);
     }
     {
         const coord = c.transform_x(0.5);
-        try expectEqual(@as(usize, 1), coord.braille_idx);
-        try expectEqual(@as(usize, 0), coord.char_idx);
-        try expectEqual(@as(usize, 1), coord.dot_idx);
+        try expectEqual(@as(i32, 1), coord.braille_idx);
+        try expectEqual(@as(i32, 0), coord.char_idx);
+        try expectEqual(@as(i32, 1), coord.dot_idx);
     }
     {
         const coord = c.transform_x(0.75);
-        try expectEqual(@as(usize, 1), coord.braille_idx);
-        try expectEqual(@as(usize, 0), coord.char_idx);
-        try expectEqual(@as(usize, 1), coord.dot_idx);
+        try expectEqual(@as(i32, 1), coord.braille_idx);
+        try expectEqual(@as(i32, 0), coord.char_idx);
+        try expectEqual(@as(i32, 1), coord.dot_idx);
     }
     {
         const coord = c.transform_x(0.99);
-        try expectEqual(@as(usize, 1), coord.braille_idx);
-        try expectEqual(@as(usize, 0), coord.char_idx);
-        try expectEqual(@as(usize, 1), coord.dot_idx);
+        try expectEqual(@as(i32, 1), coord.braille_idx);
+        try expectEqual(@as(i32, 0), coord.char_idx);
+        try expectEqual(@as(i32, 1), coord.dot_idx);
     }
     {
         const coord = c.transform_x(1);
-        try expectEqual(@as(usize, 2), coord.braille_idx);
-        try expectEqual(@as(usize, 1), coord.char_idx);
-        try expectEqual(@as(usize, 0), coord.dot_idx);
+        try expectEqual(@as(i32, 2), coord.braille_idx);
+        try expectEqual(@as(i32, 1), coord.char_idx);
+        try expectEqual(@as(i32, 0), coord.dot_idx);
     }
 }
 
@@ -267,39 +295,39 @@ test "compute y-coordinates of braille points" {
 
     {
         const coord = c.transform_y(0);
-        try expectEqual(@as(usize, 0), coord.braille_idx);
-        try expectEqual(@as(usize, 0), coord.char_idx);
-        try expectEqual(@as(usize, 0), coord.dot_idx);
+        try expectEqual(@as(i32, 0), coord.braille_idx);
+        try expectEqual(@as(i32, 0), coord.char_idx);
+        try expectEqual(@as(i32, 0), coord.dot_idx);
     }
     {
         const coord = c.transform_y(0.25);
-        try expectEqual(@as(usize, 1), coord.braille_idx);
-        try expectEqual(@as(usize, 0), coord.char_idx);
-        try expectEqual(@as(usize, 1), coord.dot_idx);
+        try expectEqual(@as(i32, 1), coord.braille_idx);
+        try expectEqual(@as(i32, 0), coord.char_idx);
+        try expectEqual(@as(i32, 1), coord.dot_idx);
     }
     {
         const coord = c.transform_y(0.5);
-        try expectEqual(@as(usize, 2), coord.braille_idx);
-        try expectEqual(@as(usize, 0), coord.char_idx);
-        try expectEqual(@as(usize, 2), coord.dot_idx);
+        try expectEqual(@as(i32, 2), coord.braille_idx);
+        try expectEqual(@as(i32, 0), coord.char_idx);
+        try expectEqual(@as(i32, 2), coord.dot_idx);
     }
     {
         const coord = c.transform_y(0.75);
-        try expectEqual(@as(usize, 3), coord.braille_idx);
-        try expectEqual(@as(usize, 0), coord.char_idx);
-        try expectEqual(@as(usize, 3), coord.dot_idx);
+        try expectEqual(@as(i32, 3), coord.braille_idx);
+        try expectEqual(@as(i32, 0), coord.char_idx);
+        try expectEqual(@as(i32, 3), coord.dot_idx);
     }
     {
         const coord = c.transform_y(0.99);
-        try expectEqual(@as(usize, 3), coord.braille_idx);
-        try expectEqual(@as(usize, 0), coord.char_idx);
-        try expectEqual(@as(usize, 3), coord.dot_idx);
+        try expectEqual(@as(i32, 3), coord.braille_idx);
+        try expectEqual(@as(i32, 0), coord.char_idx);
+        try expectEqual(@as(i32, 3), coord.dot_idx);
     }
     {
         const coord = c.transform_y(1);
-        try expectEqual(@as(usize, 4), coord.braille_idx);
-        try expectEqual(@as(usize, 1), coord.char_idx);
-        try expectEqual(@as(usize, 0), coord.dot_idx);
+        try expectEqual(@as(i32, 4), coord.braille_idx);
+        try expectEqual(@as(i32, 1), coord.char_idx);
+        try expectEqual(@as(i32, 0), coord.dot_idx);
     }
 }
 
@@ -377,9 +405,6 @@ test "format canvas with color" {
 }
 
 test "fill char in canvas" {
-    // force colors
-    terminfo.TermInfo.testing();
-
     var c = try Canvas.init(std.testing.allocator, 3, 3, color.Color.no_color());
     defer c.deinit(std.testing.allocator);
 
@@ -394,6 +419,63 @@ test "fill char in canvas" {
     try expectEqualStrings(
         \\⠀⠀⠀
         \\⠀⣿⠀
+        \\⠀⠀⠀
+    , list.items);
+}
+
+test "line in canvas" {
+    var c = try Canvas.init(std.testing.allocator, 3, 3, color.Color.no_color());
+    defer c.deinit(std.testing.allocator);
+
+    var list = std.ArrayList(u8).init(std.testing.allocator);
+    defer list.deinit();
+
+    try c.line(0, 0, 0.99, 0.99, null);
+
+    try list.writer().print("{}", .{c});
+    try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
+
+    try expectEqualStrings(
+        \\⠀⠀⡜
+        \\⠀⡜⠀
+        \\⡜⠀⠀
+    , list.items);
+}
+
+test "line in one point in canvas" {
+    var c = try Canvas.init(std.testing.allocator, 3, 3, color.Color.no_color());
+    defer c.deinit(std.testing.allocator);
+
+    var list = std.ArrayList(u8).init(std.testing.allocator);
+    defer list.deinit();
+
+    try c.line(0.5, 0.5, 0.6, 0.55, null);
+
+    try list.writer().print("{}", .{c});
+    try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
+
+    try expectEqualStrings(
+        \\⠀⠀⠀
+        \\⠀⠐⠀
+        \\⠀⠀⠀
+    , list.items);
+}
+
+test "point out of canvas" {
+    var c = try Canvas.init(std.testing.allocator, 3, 3, color.Color.no_color());
+    defer c.deinit(std.testing.allocator);
+
+    var list = std.ArrayList(u8).init(std.testing.allocator);
+    defer list.deinit();
+
+    c.point(-1, -1, null);
+
+    try list.writer().print("{}", .{c});
+    try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
+
+    try expectEqualStrings(
+        \\⠀⠀⠀
+        \\⠀⠀⠀
         \\⠀⠀⠀
     , list.items);
 }
