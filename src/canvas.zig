@@ -469,6 +469,11 @@ test "point out of canvas" {
     defer list.deinit();
 
     c.point(-1, -1, null);
+    c.point(2, 2, null);
+    c.point(0.5, 2, null);
+    c.point(0.5, -1, null);
+    c.point(2, 0.5, null);
+    c.point(-1, 0.5, null);
 
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
