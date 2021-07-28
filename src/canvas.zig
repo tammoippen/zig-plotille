@@ -248,6 +248,22 @@ pub const Canvas = struct {
         }
     }
 
+    /// Plot rectangle with bbox bottom_left to top_right [reference coordinate system].
+    ///
+    /// Parameters:
+    ///     bottom_left:   Bottom left corner of rectangle.
+    ///     top_right:     Top right corner of rectangle.
+    ///     color:         Color of the rect.
+    pub fn rect(self: *Canvas, bottom_left: Point, top_right: Point, fg_color: ?color.Color) !void {
+        assert(bottom_left.x <= top_right.x);
+        assert(bottom_left.y <= top_right.y);
+
+        try self.line(bottom_left, .{ .x = bottom_left.x, .y = top_right.y }, fg_color);
+        try self.line(.{ .x = bottom_left.x, .y = top_right.y }, top_right, fg_color);
+        try self.line(top_right, .{ .x = top_right.x, .y = bottom_left.y }, fg_color);
+        try self.line(.{ .x = top_right.x, .y = bottom_left.y }, bottom_left, fg_color);
+    }
+
     /// Output the canvas to a writer.
     pub fn format(
         self: Canvas,
@@ -685,5 +701,24 @@ test "line flat out of canvas" {
         \\⠀⠀⠀
         \\⠀⠀⠀
         \\⡠⠔⠉
+    , list.items);
+}
+
+test "simple rect in canvas" {
+    var c = try Canvas.init(std.testing.allocator, 3, 3, color.Color.no_color());
+    defer c.deinit(std.testing.allocator);
+
+    var list = std.ArrayList(u8).init(std.testing.allocator);
+    defer list.deinit();
+
+    try c.rect(.{ .x = 0.2, .y = 0.2 }, .{ .x = 0.7, .y = 0.7 }, null);
+
+    try list.writer().print("{}", .{c});
+    try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
+
+    try expectEqualStrings(
+        \\⢀⣀⡀
+        \\⢸⠀⡇
+        \\⠘⠒⠃
     , list.items);
 }
