@@ -745,6 +745,44 @@ test "simple rect in canvas" {
     , list.items);
 }
 
+test "rect through canvas horizontally" {
+    var c = try Canvas.init(std.testing.allocator, 3, 3, color.Color.no_color());
+    defer c.deinit(std.testing.allocator);
+
+    var list = std.ArrayList(u8).init(std.testing.allocator);
+    defer list.deinit();
+
+    try c.rect(.{ .x = -0.2, .y = 0.2 }, .{ .x = 1.2, .y = 0.8 }, null);
+
+    try list.writer().print("{}", .{c});
+    try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
+
+    try expectEqualStrings(
+        \\⠤⠤⠤
+        \\⠀⠀⠀
+        \\⠒⠒⠒
+    , list.items);
+}
+
+test "rect through canvas vertically" {
+    var c = try Canvas.init(std.testing.allocator, 3, 3, color.Color.no_color());
+    defer c.deinit(std.testing.allocator);
+
+    var list = std.ArrayList(u8).init(std.testing.allocator);
+    defer list.deinit();
+
+    try c.rect(.{ .x = 0.2, .y = -0.2 }, .{ .x = 0.8, .y = 1.2 }, null);
+
+    try list.writer().print("{}", .{c});
+    try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
+
+    try expectEqualStrings(
+        \\⢸⠀⡇
+        \\⢸⠀⡇
+        \\⢸⠀⡇
+    , list.items);
+}
+
 test "rect outside canvas" {
     var c = try Canvas.init(std.testing.allocator, 3, 3, color.Color.no_color());
     defer c.deinit(std.testing.allocator);
