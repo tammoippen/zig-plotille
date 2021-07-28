@@ -1,9 +1,10 @@
 const std = @import("std");
+const absFloat = std.math.absFloat;
+const absInt = std.math.absInt;
+const approxEqAbs = std.math.approxEqAbs;
+const floor = std.math.floor;
 const max = std.math.max;
 const round = std.math.round;
-const absInt = std.math.absInt;
-const absFloat = std.math.absFloat;
-const approxEqAbs = std.math.approxEqAbs;
 const signbit = std.math.signbit;
 
 const assert = std.debug.assert;
@@ -127,7 +128,7 @@ pub const Canvas = struct {
     /// As we have a width defined as u8, and 2 points per character
     /// we are in the range of u9.
     fn transform_x(self: Canvas, x: f64) XCoord {
-        const braille_idx = @floatToInt(i32, std.math.floor((x - self.xmin) / self.x_delta_pt));
+        const braille_idx = @floatToInt(i32, floor((x - self.xmin) / self.x_delta_pt));
         return XCoord.with(braille_idx);
     }
 
@@ -136,7 +137,7 @@ pub const Canvas = struct {
     /// As we have a height defined as u8, and 4 points per character
     /// we are in the range of u0.
     fn transform_y(self: Canvas, y: f64) YCoord {
-        const braille_idx = @floatToInt(i32, std.math.floor((y - self.ymin) / self.y_delta_pt));
+        const braille_idx = @floatToInt(i32, floor((y - self.ymin) / self.y_delta_pt));
         return YCoord.with(braille_idx);
     }
 
@@ -215,7 +216,6 @@ pub const Canvas = struct {
             while (idx < max_steps) : (idx += 1) {
                 const xb = x0_coord.braille_idx + @floatToInt(i32, round(xstep * @intToFloat(f64, idx)));
                 const yb = y0_coord.braille_idx + @floatToInt(i32, round(ystep * @intToFloat(f64, idx)));
-                // std.debug.print("idx{} xb{} yb{}\n", .{idx, xb, yb});
                 if (0 <= xb and xb < self.width * 2 and 0 <= yb and yb < self.height * 4) {
                     self.set(XCoord.with(xb), YCoord.with(yb), fg_color);
                 } else {
