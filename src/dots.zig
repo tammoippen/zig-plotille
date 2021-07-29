@@ -39,6 +39,7 @@ const MIN_BUFF_LEN_COLOR_DOTS = 3 // utf8 braille dots
 
 pub const Dots = extern struct {
     dots: u8 = 0,
+    char: u8 = 0,
     color: color.ColorOptions = .{},
 
     pub fn format(
@@ -58,10 +59,15 @@ pub const Dots = extern struct {
         assert(len == 3);
 
         if (self.color.hasColor()) {
-            try color.colorPrint(writer, "{s}", .{buff}, self.color);
-        } else {
+            if (self.char == 0) {
+                try color.colorPrint(writer, "{s}", .{buff}, self.color);
+            } else {
+                try color.colorPrint(writer, "{c}", .{self.char}, self.color);
+            }
+        } else if (self.char == 0) {
             try writer.print("{s}", .{buff});
-            // try writer.writeAll(" ");
+        } else {
+            try writer.print("{c}", .{self.char});
         }
     }
 
@@ -71,6 +77,7 @@ pub const Dots = extern struct {
 
     pub fn clear(self: *Dots) void {
         self.dots = 0;
+        self.char = 0;
     }
 
     pub fn set(self: *Dots, x: u8, y: u8) void {
@@ -214,5 +221,63 @@ test "colored dots" {
     try std.fmt.format(fbs.writer(), "{s}", .{d});
     try expectEqual(fbs.pos, 36);
     try expectEqualStrings("\x1b[38;2;1;22;133;48;5;123m⡀\x1b[39;49m", fbs.getWritten());
+    fbs.reset();
+}
+
+test "set / unset char" {
+    var buff: [100]u8 = undefined;
+    var fbs = std.io.fixedBufferStream(&buff);
+
+    var d = Dots{};
+    d.char = 'x';
+
+    try std.fmt.format(fbs.writer(), "{s}", .{d});
+    try expectEqualStrings("x", fbs.getWritten());
+    fbs.reset();
+
+    d.clear();
+    try std.fmt.format(fbs.writer(), "{s}", .{d});
+    try expectEqualStrings("⠀", fbs.getWritten());
+    fbs.reset();
+}
+
+test "color char" {
+    terminfo.TermInfo.testing();
+    var buff: [100]u8 = undefined;
+    var fbs = std.io.fixedBufferStream(&buff);
+
+    var d = Dots{};
+    d.char = 'x';
+    d.color.fg = color.Color.by_rgb(111, 222, 255);
+
+    try std.fmt.format(fbs.writer(), "{s}", .{d});
+    try expectEqualStrings("\x1b[38;2;111;222;255mx\x1b[39;49m", fbs.getWritten());
+    fbs.reset();
+}
+
+test "set char and dots" {
+    var buff: [100]u8 = undefined;
+    var fbs = std.io.fixedBufferStream(&buff);
+
+    var d = Dots{};
+    d.char = 'x';
+
+    try std.fmt.format(fbs.writer(), "{s}", .{d});
+    try expectEqualStrings("x", fbs.getWritten());
+    fbs.reset();
+
+    d.set(0, 1);
+    try std.fmt.format(fbs.writer(), "{s}", .{d});
+    try expectEqualStrings("x", fbs.getWritten());
+    fbs.reset();
+
+    d.char = 0;
+    try std.fmt.format(fbs.writer(), "{s}", .{d});
+    try expectEqualStrings("⠄", fbs.getWritten());
+    fbs.reset();
+
+    d.char = 'o';
+    try std.fmt.format(fbs.writer(), "{s}", .{d});
+    try expectEqualStrings("o", fbs.getWritten());
     fbs.reset();
 }
