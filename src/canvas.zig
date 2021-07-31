@@ -95,7 +95,7 @@ pub const Canvas = struct {
             .x_delta_pt = 0,
             .y_delta_pt = 0,
             .bg = bg,
-            .canvas = try allocator.alloc(dots.Dots, width * height),
+            .canvas = try allocator.alloc(dots.Dots, @as(u32, width) * @as(u32, height)),
         };
         for (result.canvas) |*dot| {
             dot.* = dots.Dots{};
@@ -119,8 +119,8 @@ pub const Canvas = struct {
         self.ymin = ymin;
         self.xmax = xmax;
         self.ymax = ymax;
-        self.x_delta_pt = absFloat((xmax - xmin) / @intToFloat(f64, self.width * 2)); // 2 points in left
-        self.y_delta_pt = absFloat((ymax - ymin) / @intToFloat(f64, self.height * 4)); // 4 points in up
+        self.x_delta_pt = absFloat((xmax - xmin) / @intToFloat(f64, @as(u32, self.width) * 2)); // 2 points in left
+        self.y_delta_pt = absFloat((ymax - ymin) / @intToFloat(f64, @as(u32, self.height) * 4)); // 4 points in up
     }
 
     /// Transform an x-coordinate of the reference system to an index
@@ -209,14 +209,14 @@ pub const Canvas = struct {
         const ystep = @intToFloat(f64, y_diff) / @intToFloat(f64, max_steps);
 
         if (max_steps > 0) {
-            const x_start = start_idx(x0_coord.braille_idx, xstep, self.width * 2);
-            var y_start = start_idx(y0_coord.braille_idx, ystep, self.height * 4);
+            const x_start = start_idx(x0_coord.braille_idx, xstep, @as(i32, self.width) * 2);
+            var y_start = start_idx(y0_coord.braille_idx, ystep, @as(i32, self.height) * 4);
 
             var idx: usize = max(1, max(x_start, y_start));
             while (idx < max_steps) : (idx += 1) {
                 const xb = x0_coord.braille_idx + @floatToInt(i32, round(xstep * @intToFloat(f64, idx)));
                 const yb = y0_coord.braille_idx + @floatToInt(i32, round(ystep * @intToFloat(f64, idx)));
-                if (0 <= xb and xb < self.width * 2 and 0 <= yb and yb < self.height * 4) {
+                if (0 <= xb and xb < @as(u32, self.width) * 2 and 0 <= yb and yb < @as(u32, self.height) * 4) {
                     self.set(XCoord.with(xb), YCoord.with(yb), fg_color);
                 } else {
                     return;
@@ -278,7 +278,7 @@ pub const Canvas = struct {
         while (h_idx >= 0) : (h_idx -= 1) {
             var w_idx: u9 = 0;
             while (w_idx < self.width) : (w_idx += 1) {
-                const idx: usize = @intCast(usize, h_idx * self.width) + w_idx;
+                const idx: usize = @intCast(usize, h_idx) * @as(usize, self.width) + w_idx;
                 var d = self.canvas[idx];
                 d.color.bg = self.bg;
                 try writer.print("{}", .{d});
@@ -300,6 +300,18 @@ test "init and deinit Canvas" {
     try expectEqual(@as(f64, 1.0), c.xmax);
     try expectEqual(@as(f64, 1.0), c.ymax);
     try expectEqual(@as(f64, 0.025), c.y_delta_pt);
+}
+
+test "init and deinit large Canvas" {
+    const c = try Canvas.init(std.testing.allocator, 255, 255, color.Color.by_name(.blue));
+    defer c.deinit(std.testing.allocator);
+
+    try expectEqual(@as(f64, 0.0), c.xmin);
+    try expectEqual(@as(f64, 0.0), c.ymin);
+    try expectEqual(@as(f64, 1.0 / 510.0), c.x_delta_pt);
+    try expectEqual(@as(f64, 1.0), c.xmax);
+    try expectEqual(@as(f64, 1.0), c.ymax);
+    try expectEqual(@as(f64, 1.0 / 1020.0), c.y_delta_pt);
 }
 
 test "compute x-coordinates of braille points" {
@@ -800,4 +812,17 @@ test "rect outside canvas" {
         \\⠀⠀⠀
         \\⠀⠀⠀
     , list.items);
+}
+
+test "rect in large Canvas" {
+    var c = try Canvas.init(std.testing.allocator, 255, 255, color.Color.no_color());
+    defer c.deinit(std.testing.allocator);
+
+    var list = std.ArrayList(u8).init(std.testing.allocator);
+    defer list.deinit();
+
+    try c.rect(.{ .x = -0.2, .y = -0.2 }, .{ .x = 1.2, .y = 1.2 }, null);
+
+    try list.writer().print("{}", .{c});
+    try expectEqual(@as(usize, 195329), list.items.len); // 3 chars per unicode, 2 linebreaks
 }
