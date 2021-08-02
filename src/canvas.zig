@@ -156,12 +156,44 @@ pub const Canvas = struct {
         }
     }
 
+    /// Put a text into the canvas at (x, y) [reference coordinate system]
+    ///
+    /// Parameters:
+    ///     x:      x-coordinate on reference system.
+    ///     y:      y-coordinate on reference system.
+    ///     string:   The text to put into the canvas.
+    ///     color:  Color of the text.
+    pub fn text(self: *Canvas, p: Point, string: []const u8, fg_color: ?color.Color) void {
+        const x_coord = self.transform_x(p.x);
+        const y_coord = self.transform_y(p.y);
+
+        if (self.width < x_coord.char_idx or y_coord.char_idx < 0 or y_coord.char_idx >= self.height) {
+            return;
+        }
+
+        var idx: i32 = 0;
+        if (x_coord.char_idx < 0) {
+            idx -= x_coord.char_idx;
+        }
+        while (idx < @as(i32, self.width) - x_coord.char_idx) : (idx += 1) {
+            if (string.len <= idx) {
+                return;
+            }
+            const char_idx = @intCast(usize, y_coord.char_idx * self.width + x_coord.char_idx + idx);
+            self.canvas[char_idx].char = string[@intCast(usize, idx)];
+            if (fg_color) |c| {
+                self.canvas[char_idx].color.fg = c;
+            }
+        }
+    }
+
     /// Put a point into the canvas at (x, y) [reference coordinate system]
     ///
     /// Parameters:
     ///     x:      x-coordinate on reference system.
     ///     y:      y-coordinate on reference system.
     ///     color:  Color of the point.
+    ///     char:   A character to put into the point.
     pub fn point(self: *Canvas, p: Point, fg_color: ?color.Color, char: ?u8) void {
         const x_coord = self.transform_x(p.x);
         const y_coord = self.transform_y(p.y);
@@ -192,6 +224,7 @@ pub const Canvas = struct {
     ///     x0, y0:  Point 0
     ///     x1, y1:  Point 1
     ///     color:   Color of the line.
+    ///     char:    A character to put at the start and end of the line.
     pub fn line(self: *Canvas, p0: Point, p1: Point, fg_color: ?color.Color, char: ?u8) !void {
         const x0_coord = self.transform_x(p0.x);
         const y0_coord = self.transform_y(p0.y);
@@ -257,6 +290,7 @@ pub const Canvas = struct {
     ///     bottom_left:   Bottom left corner of rectangle.
     ///     top_right:     Top right corner of rectangle.
     ///     color:         Color of the rect.
+    ///     char:          A character to put into the corners of the rect.
     pub fn rect(self: *Canvas, bottom_left: Point, top_right: Point, fg_color: ?color.Color, char: ?u8) !void {
         assert(bottom_left.x <= top_right.x);
         assert(bottom_left.y <= top_right.y);
@@ -900,4 +934,97 @@ test "rect in large Canvas" {
 
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 195329), list.items.len); // 3 chars per unicode, 2 linebreaks
+}
+
+test "text inside canvas" {
+    var c = try Canvas.init(std.testing.allocator, 10, 3, color.Color.no_color());
+    defer c.deinit(std.testing.allocator);
+
+    var list = std.ArrayList(u8).init(std.testing.allocator);
+    defer list.deinit();
+
+    c.text(.{ .x = 0.1, .y = 0.5 }, "Hello", null);
+
+    try list.writer().print("{}", .{c});
+    try expectEqual(@as(usize, 82), list.items.len); // 3 chars per unicode, 2 linebreaks, -10 unicode u8
+    try expectEqualStrings(
+        \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\⠀Hello⠀⠀⠀⠀
+        \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+    , list.items);
+}
+
+test "text inside canvas too large" {
+    var c = try Canvas.init(std.testing.allocator, 10, 3, color.Color.no_color());
+    defer c.deinit(std.testing.allocator);
+
+    var list = std.ArrayList(u8).init(std.testing.allocator);
+    defer list.deinit();
+
+    c.text(.{ .x = 0.1, .y = 0.5 }, "Hello World, how are you?", null);
+
+    try list.writer().print("{}", .{c});
+    try expectEqual(@as(usize, 74), list.items.len); // 3 chars per unicode, 2 linebreaks, -18 unicode u8
+    try expectEqualStrings(
+        \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\⠀Hello Wor
+        \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+    , list.items);
+}
+
+test "text inside canvas move out left" {
+    var c = try Canvas.init(std.testing.allocator, 10, 3, color.Color.no_color());
+    defer c.deinit(std.testing.allocator);
+
+    var list = std.ArrayList(u8).init(std.testing.allocator);
+    defer list.deinit();
+
+    // 5 chars back
+    c.text(.{ .x = -0.5, .y = 0.5 }, "Hello World, how are you?", null);
+
+    try list.writer().print("{}", .{c});
+    try expectEqual(@as(usize, 72), list.items.len); // 3 chars per unicode, 2 linebreaks, -20 unicode u8
+    try expectEqualStrings(
+        \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\ World, ho
+        \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+    , list.items);
+}
+
+test "text below canvas" {
+    var c = try Canvas.init(std.testing.allocator, 10, 3, color.Color.no_color());
+    defer c.deinit(std.testing.allocator);
+
+    var list = std.ArrayList(u8).init(std.testing.allocator);
+    defer list.deinit();
+
+    // 5 chars back
+    c.text(.{ .x = 0.1, .y = -0.5 }, "Hello", null);
+
+    try list.writer().print("{}", .{c});
+    try expectEqual(@as(usize, 92), list.items.len); // 3 chars per unicode, 2 linebreaks
+    try expectEqualStrings(
+        \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+    , list.items);
+}
+
+test "text above canvas" {
+    var c = try Canvas.init(std.testing.allocator, 10, 3, color.Color.no_color());
+    defer c.deinit(std.testing.allocator);
+
+    var list = std.ArrayList(u8).init(std.testing.allocator);
+    defer list.deinit();
+
+    // 5 chars back
+    c.text(.{ .x = 0.1, .y = 1.5 }, "Hello", null);
+
+    try list.writer().print("{}", .{c});
+    try expectEqual(@as(usize, 92), list.items.len); // 3 chars per unicode, 2 linebreaks
+    try expectEqualStrings(
+        \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+    , list.items);
 }
