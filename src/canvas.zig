@@ -141,7 +141,7 @@ pub const Canvas = struct {
         return YCoord.with(braille_idx);
     }
 
-    fn set(self: *Canvas, x_coord: XCoord, y_coord: YCoord, fg_color: ?color.Color) void {
+    fn set(self: *Canvas, x_coord: XCoord, y_coord: YCoord, fg_color: ?color.Color, char: ?u8) void {
         if (x_coord.char_idx < 0 or x_coord.char_idx >= self.width or y_coord.char_idx < 0 or y_coord.char_idx >= self.height) {
             // out of canvas
             return;
@@ -151,6 +151,9 @@ pub const Canvas = struct {
         if (fg_color) |c| {
             self.canvas[idx].color.fg = c;
         }
+        if (char) |c| {
+            self.canvas[idx].char = c;
+        }
     }
 
     /// Put a point into the canvas at (x, y) [reference coordinate system]
@@ -159,11 +162,11 @@ pub const Canvas = struct {
     ///     x:      x-coordinate on reference system.
     ///     y:      y-coordinate on reference system.
     ///     color:  Color of the point.
-    pub fn point(self: *Canvas, p: Point, fg_color: ?color.Color) void {
+    pub fn point(self: *Canvas, p: Point, fg_color: ?color.Color, char: ?u8) void {
         const x_coord = self.transform_x(p.x);
         const y_coord = self.transform_y(p.y);
 
-        self.set(x_coord, y_coord, fg_color);
+        self.set(x_coord, y_coord, fg_color, char);
     }
 
     /// Fill the complete char in the canvas at (x, y) [reference coordinate system]
@@ -189,15 +192,15 @@ pub const Canvas = struct {
     ///     x0, y0:  Point 0
     ///     x1, y1:  Point 1
     ///     color:   Color of the line.
-    pub fn line(self: *Canvas, p0: Point, p1: Point, fg_color: ?color.Color) !void {
+    pub fn line(self: *Canvas, p0: Point, p1: Point, fg_color: ?color.Color, char: ?u8) !void {
         const x0_coord = self.transform_x(p0.x);
         const y0_coord = self.transform_y(p0.y);
         const x1_coord = self.transform_x(p1.x);
         const y1_coord = self.transform_y(p1.y);
 
         // set start and end
-        self.set(x0_coord, y0_coord, fg_color);
-        self.set(x1_coord, y1_coord, fg_color);
+        self.set(x0_coord, y0_coord, fg_color, char);
+        self.set(x1_coord, y1_coord, fg_color, char);
 
         // difference along the coordinates
         const x_diff = x1_coord.braille_idx - x0_coord.braille_idx;
@@ -217,7 +220,7 @@ pub const Canvas = struct {
                 const xb = x0_coord.braille_idx + @floatToInt(i32, round(xstep * @intToFloat(f64, idx)));
                 const yb = y0_coord.braille_idx + @floatToInt(i32, round(ystep * @intToFloat(f64, idx)));
                 if (0 <= xb and xb < @as(u32, self.width) * 2 and 0 <= yb and yb < @as(u32, self.height) * 4) {
-                    self.set(XCoord.with(xb), YCoord.with(yb), fg_color);
+                    self.set(XCoord.with(xb), YCoord.with(yb), fg_color, null);
                 } else {
                     return;
                 }
@@ -254,14 +257,14 @@ pub const Canvas = struct {
     ///     bottom_left:   Bottom left corner of rectangle.
     ///     top_right:     Top right corner of rectangle.
     ///     color:         Color of the rect.
-    pub fn rect(self: *Canvas, bottom_left: Point, top_right: Point, fg_color: ?color.Color) !void {
+    pub fn rect(self: *Canvas, bottom_left: Point, top_right: Point, fg_color: ?color.Color, char: ?u8) !void {
         assert(bottom_left.x <= top_right.x);
         assert(bottom_left.y <= top_right.y);
 
-        try self.line(bottom_left, .{ .x = bottom_left.x, .y = top_right.y }, fg_color);
-        try self.line(.{ .x = bottom_left.x, .y = top_right.y }, top_right, fg_color);
-        try self.line(top_right, .{ .x = top_right.x, .y = bottom_left.y }, fg_color);
-        try self.line(.{ .x = top_right.x, .y = bottom_left.y }, bottom_left, fg_color);
+        try self.line(bottom_left, .{ .x = bottom_left.x, .y = top_right.y }, fg_color, char);
+        try self.line(.{ .x = bottom_left.x, .y = top_right.y }, top_right, fg_color, char);
+        try self.line(top_right, .{ .x = top_right.x, .y = bottom_left.y }, fg_color, char);
+        try self.line(.{ .x = top_right.x, .y = bottom_left.y }, bottom_left, fg_color, char);
     }
 
     /// Output the canvas to a writer.
@@ -417,16 +420,16 @@ test "simple format canvas" {
     var list = std.ArrayList(u8).init(std.testing.allocator);
     defer list.deinit();
 
-    c.point(.{ .x = 0, .y = 0 }, null);
-    c.point(.{ .x = 0, .y = 0.5 }, null);
-    c.point(.{ .x = 0, .y = 0.99 }, null);
-    c.point(.{ .x = 0.5, .y = 0.99 }, null);
+    c.point(.{ .x = 0, .y = 0 }, null, null);
+    c.point(.{ .x = 0, .y = 0.5 }, null, null);
+    c.point(.{ .x = 0, .y = 0.99 }, null, null);
+    c.point(.{ .x = 0.5, .y = 0.99 }, null, null);
     // intentionally leave right bottom blank
-    // c.point(.{.x=0.99, .y=0.99}, null);
-    c.point(.{ .x = 0.99, .y = 0.5 }, null);
-    c.point(.{ .x = 0.99, .y = 0 }, null);
-    c.point(.{ .x = 0.5, .y = 0 }, null);
-    c.point(.{ .x = 0.5, .y = 0.5 }, null);
+    // c.point(.{.x=0.99, .y=0.99}, null, null);
+    c.point(.{ .x = 0.99, .y = 0.5 }, null, null);
+    c.point(.{ .x = 0.99, .y = 0 }, null, null);
+    c.point(.{ .x = 0.5, .y = 0 }, null, null);
+    c.point(.{ .x = 0.5, .y = 0.5 }, null, null);
 
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 309), list.items.len); // 3 chars per unicode + 9 linebreaks
@@ -444,6 +447,40 @@ test "simple format canvas" {
     , list.items);
 }
 
+test "points with chars in canvas" {
+    var c = try Canvas.init(std.testing.allocator, 10, 10, color.Color.no_color());
+    defer c.deinit(std.testing.allocator);
+
+    var list = std.ArrayList(u8).init(std.testing.allocator);
+    defer list.deinit();
+
+    c.point(.{ .x = 0, .y = 0 }, null, 'x');
+    c.point(.{ .x = 0, .y = 0.5 }, null, 'o');
+    c.point(.{ .x = 0, .y = 0.99 }, null, 'z');
+    c.point(.{ .x = 0.5, .y = 0.99 }, null, 'u');
+    // intentionally leave right bottom blank
+    // c.point(.{.x=0.99, .y=0.99}, null, 'a');
+    c.point(.{ .x = 0.99, .y = 0.5 }, null, 'c');
+    c.point(.{ .x = 0.99, .y = 0 }, null, 'h');
+    c.point(.{ .x = 0.5, .y = 0 }, null, 'v');
+    c.point(.{ .x = 0.5, .y = 0.5 }, null, 'b');
+
+    try list.writer().print("{}", .{c});
+    try expectEqual(@as(usize, 293), list.items.len); // 3 chars per unicode + 9 linebreaks - 8 * 2 chars
+    try expectEqualStrings(
+        \\z⠀⠀⠀⠀u⠀⠀⠀⠀
+        \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\o⠀⠀⠀⠀b⠀⠀⠀c
+        \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\x⠀⠀⠀⠀v⠀⠀⠀h
+    , list.items);
+}
+
 test "format canvas with color" {
     // force colors
     terminfo.TermInfo.testing();
@@ -454,16 +491,16 @@ test "format canvas with color" {
     var list = std.ArrayList(u8).init(std.testing.allocator);
     defer list.deinit();
 
-    c.point(.{ .x = 0, .y = 0 }, color.Color.by_name(.red));
-    c.point(.{ .x = 0, .y = 0.5 }, color.Color.by_name(.black));
-    c.point(.{ .x = 0, .y = 0.99 }, color.Color.by_name(.black));
-    c.point(.{ .x = 0.5, .y = 0.99 }, color.Color.by_name(.black));
+    c.point(.{ .x = 0, .y = 0 }, color.Color.by_name(.red), null);
+    c.point(.{ .x = 0, .y = 0.5 }, color.Color.by_name(.black), null);
+    c.point(.{ .x = 0, .y = 0.99 }, color.Color.by_name(.black), null);
+    c.point(.{ .x = 0.5, .y = 0.99 }, color.Color.by_name(.black), null);
     // intentionally leave right bottom blank
-    // c.point(.{.x=0.99, .y=0.99}, color.Color.by_name(.black));
-    c.point(.{ .x = 0.99, .y = 0.5 }, color.Color.by_name(.black));
-    c.point(.{ .x = 0.99, .y = 0 }, color.Color.by_lookup(123));
-    c.point(.{ .x = 0.5, .y = 0 }, color.Color.by_name(.black));
-    c.point(.{ .x = 0.5, .y = 0.5 }, color.Color.by_name(.blue));
+    // c.point(.{.x=0.99, .y=0.99}, color.Color.by_name(.black), null);
+    c.point(.{ .x = 0.99, .y = 0.5 }, color.Color.by_name(.black), null);
+    c.point(.{ .x = 0.99, .y = 0 }, color.Color.by_lookup(123), null);
+    c.point(.{ .x = 0.5, .y = 0 }, color.Color.by_name(.black), null);
+    c.point(.{ .x = 0.5, .y = 0.5 }, color.Color.by_name(.blue), null);
 
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 100 * (14 + 3) // 3 chars per unicode, 14 for bg and reset
@@ -509,7 +546,7 @@ test "line in canvas" {
     var list = std.ArrayList(u8).init(std.testing.allocator);
     defer list.deinit();
 
-    try c.line(.{ .x = 0, .y = 0 }, .{ .x = 0.99, .y = 0.99 }, null);
+    try c.line(.{ .x = 0, .y = 0 }, .{ .x = 0.99, .y = 0.99 }, null, null);
 
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
@@ -521,6 +558,25 @@ test "line in canvas" {
     , list.items);
 }
 
+test "line in canvas with chars" {
+    var c = try Canvas.init(std.testing.allocator, 3, 3, color.Color.no_color());
+    defer c.deinit(std.testing.allocator);
+
+    var list = std.ArrayList(u8).init(std.testing.allocator);
+    defer list.deinit();
+
+    try c.line(.{ .x = 0, .y = 0 }, .{ .x = 0.99, .y = 0.99 }, null, 'X');
+
+    try list.writer().print("{}", .{c});
+    try expectEqual(@as(usize, 25), list.items.len); // 3 chars per unicode, 2 linebreaks, - 4 unicode u8
+
+    try expectEqualStrings(
+        \\⠀⠀X
+        \\⠀⡜⠀
+        \\X⠀⠀
+    , list.items);
+}
+
 test "line in one point in canvas" {
     var c = try Canvas.init(std.testing.allocator, 3, 3, color.Color.no_color());
     defer c.deinit(std.testing.allocator);
@@ -528,7 +584,7 @@ test "line in one point in canvas" {
     var list = std.ArrayList(u8).init(std.testing.allocator);
     defer list.deinit();
 
-    try c.line(.{ .x = 0.5, .y = 0.5 }, .{ .x = 0.6, .y = 0.55 }, null);
+    try c.line(.{ .x = 0.5, .y = 0.5 }, .{ .x = 0.6, .y = 0.55 }, null, null);
 
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
@@ -547,15 +603,15 @@ test "point out of canvas" {
     var list = std.ArrayList(u8).init(std.testing.allocator);
     defer list.deinit();
 
-    c.point(.{ .x = -1, .y = -1 }, null);
-    c.point(.{ .x = 2, .y = 2 }, null);
-    c.point(.{ .x = 0.5, .y = 2 }, null);
-    c.point(.{ .x = 0.5, .y = -1 }, null);
-    c.point(.{ .x = 2, .y = 0.5 }, null);
-    c.point(.{ .x = -1, .y = 0.5 }, null);
-    c.point(.{ .x = -0.2, .y = -0.2 }, null);
-    c.point(.{ .x = -0.1, .y = -0.02 }, null);
-    c.point(.{ .x = 1, .y = 1 }, null);
+    c.point(.{ .x = -1, .y = -1 }, null, null);
+    c.point(.{ .x = 2, .y = 2 }, null, null);
+    c.point(.{ .x = 0.5, .y = 2 }, null, null);
+    c.point(.{ .x = 0.5, .y = -1 }, null, null);
+    c.point(.{ .x = 2, .y = 0.5 }, null, null);
+    c.point(.{ .x = -1, .y = 0.5 }, null, null);
+    c.point(.{ .x = -0.2, .y = -0.2 }, null, null);
+    c.point(.{ .x = -0.1, .y = -0.02 }, null, null);
+    c.point(.{ .x = 1, .y = 1 }, null, null);
 
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
@@ -574,7 +630,7 @@ test "horizontal line out of canvas" {
     var list = std.ArrayList(u8).init(std.testing.allocator);
     defer list.deinit();
 
-    try c.line(.{ .x = -0.99, .y = 0.5 }, .{ .x = 2, .y = 0.5 }, null);
+    try c.line(.{ .x = -0.99, .y = 0.5 }, .{ .x = 2, .y = 0.5 }, null, null);
 
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
@@ -593,7 +649,7 @@ test "vertical line out of canvas" {
     var list = std.ArrayList(u8).init(std.testing.allocator);
     defer list.deinit();
 
-    try c.line(.{ .x = 0.5, .y = -0.99 }, .{ .x = 0.5, .y = 2 }, null);
+    try c.line(.{ .x = 0.5, .y = -0.99 }, .{ .x = 0.5, .y = 2 }, null, null);
 
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
@@ -612,7 +668,7 @@ test "line out of canvas reversed" {
     var list = std.ArrayList(u8).init(std.testing.allocator);
     defer list.deinit();
 
-    try c.line(.{ .x = 2, .y = 0.5 }, .{ .x = -0.99, .y = 0.5 }, null);
+    try c.line(.{ .x = 2, .y = 0.5 }, .{ .x = -0.99, .y = 0.5 }, null, null);
 
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
@@ -631,7 +687,7 @@ test "vertical line out of canvas reversed" {
     var list = std.ArrayList(u8).init(std.testing.allocator);
     defer list.deinit();
 
-    try c.line(.{ .x = 0.5, .y = 2 }, .{ .x = 0.5, .y = -0.99 }, null);
+    try c.line(.{ .x = 0.5, .y = 2 }, .{ .x = 0.5, .y = -0.99 }, null, null);
 
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
@@ -650,7 +706,7 @@ test "line in canvas small y" {
     var list = std.ArrayList(u8).init(std.testing.allocator);
     defer list.deinit();
 
-    try c.line(.{ .x = 0.5, .y = 0.5 }, .{ .x = 0.7, .y = 0.55 }, null);
+    try c.line(.{ .x = 0.5, .y = 0.5 }, .{ .x = 0.7, .y = 0.55 }, null, null);
 
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
@@ -669,7 +725,7 @@ test "line in canvas small x" {
     var list = std.ArrayList(u8).init(std.testing.allocator);
     defer list.deinit();
 
-    try c.line(.{ .x = 0.5, .y = 0.5 }, .{ .x = 0.55, .y = 0.6 }, null);
+    try c.line(.{ .x = 0.5, .y = 0.5 }, .{ .x = 0.55, .y = 0.6 }, null, null);
 
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
@@ -688,7 +744,7 @@ test "line completly out of canvas" {
     var list = std.ArrayList(u8).init(std.testing.allocator);
     defer list.deinit();
 
-    try c.line(.{ .x = -0.5, .y = -0.99 }, .{ .x = -0.6, .y = 2 }, null);
+    try c.line(.{ .x = -0.5, .y = -0.99 }, .{ .x = -0.6, .y = 2 }, null, null);
 
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
@@ -707,7 +763,7 @@ test "line flat out of canvas" {
     var list = std.ArrayList(u8).init(std.testing.allocator);
     defer list.deinit();
 
-    try c.line(.{ .x = -3, .y = -1 }, .{ .x = 3, .y = 1 }, null);
+    try c.line(.{ .x = -3, .y = -1 }, .{ .x = 3, .y = 1 }, null, null);
 
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
@@ -726,7 +782,7 @@ test "line vertical outside canvas" {
     var list = std.ArrayList(u8).init(std.testing.allocator);
     defer list.deinit();
 
-    try c.line(.{ .x = -0.2, .y = -0.2 }, .{ .x = -0.2, .y = 1.2 }, null);
+    try c.line(.{ .x = -0.2, .y = -0.2 }, .{ .x = -0.2, .y = 1.2 }, null, null);
 
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
@@ -745,7 +801,7 @@ test "simple rect in canvas" {
     var list = std.ArrayList(u8).init(std.testing.allocator);
     defer list.deinit();
 
-    try c.rect(.{ .x = 0.2, .y = 0.2 }, .{ .x = 0.7, .y = 0.7 }, null);
+    try c.rect(.{ .x = 0.2, .y = 0.2 }, .{ .x = 0.7, .y = 0.7 }, null, null);
 
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
@@ -757,6 +813,25 @@ test "simple rect in canvas" {
     , list.items);
 }
 
+test "simple rect in canvas with chars" {
+    var c = try Canvas.init(std.testing.allocator, 3, 3, color.Color.no_color());
+    defer c.deinit(std.testing.allocator);
+
+    var list = std.ArrayList(u8).init(std.testing.allocator);
+    defer list.deinit();
+
+    try c.rect(.{ .x = 0.2, .y = 0.2 }, .{ .x = 0.7, .y = 0.7 }, null, 'O');
+
+    try list.writer().print("{}", .{c});
+    try expectEqual(@as(usize, 21), list.items.len); // 3 chars per unicode, 2 linebreaks - 8 unicode u8
+
+    try expectEqualStrings(
+        \\O⣀O
+        \\⢸⠀⡇
+        \\O⠒O
+    , list.items);
+}
+
 test "rect through canvas horizontally" {
     var c = try Canvas.init(std.testing.allocator, 3, 3, color.Color.no_color());
     defer c.deinit(std.testing.allocator);
@@ -764,7 +839,7 @@ test "rect through canvas horizontally" {
     var list = std.ArrayList(u8).init(std.testing.allocator);
     defer list.deinit();
 
-    try c.rect(.{ .x = -0.2, .y = 0.2 }, .{ .x = 1.2, .y = 0.8 }, null);
+    try c.rect(.{ .x = -0.2, .y = 0.2 }, .{ .x = 1.2, .y = 0.8 }, null, null);
 
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
@@ -783,7 +858,7 @@ test "rect through canvas vertically" {
     var list = std.ArrayList(u8).init(std.testing.allocator);
     defer list.deinit();
 
-    try c.rect(.{ .x = 0.2, .y = -0.2 }, .{ .x = 0.8, .y = 1.2 }, null);
+    try c.rect(.{ .x = 0.2, .y = -0.2 }, .{ .x = 0.8, .y = 1.2 }, null, null);
 
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
@@ -802,7 +877,7 @@ test "rect outside canvas" {
     var list = std.ArrayList(u8).init(std.testing.allocator);
     defer list.deinit();
 
-    try c.rect(.{ .x = -0.2, .y = -0.2 }, .{ .x = 1.2, .y = 1.2 }, null);
+    try c.rect(.{ .x = -0.2, .y = -0.2 }, .{ .x = 1.2, .y = 1.2 }, null, null);
 
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
@@ -821,7 +896,7 @@ test "rect in large Canvas" {
     var list = std.ArrayList(u8).init(std.testing.allocator);
     defer list.deinit();
 
-    try c.rect(.{ .x = -0.2, .y = -0.2 }, .{ .x = 1.2, .y = 1.2 }, null);
+    try c.rect(.{ .x = -0.2, .y = -0.2 }, .{ .x = 1.2, .y = 1.2 }, null, null);
 
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 195329), list.items.len); // 3 chars per unicode, 2 linebreaks
