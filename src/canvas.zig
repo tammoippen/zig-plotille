@@ -128,7 +128,14 @@ pub const Canvas = struct {
     /// As we have a width defined as u8, and 2 points per character
     /// we are in the range of u9.
     fn transform_x(self: Canvas, x: f64) XCoord {
-        const braille_idx = @floatToInt(i32, floor((x - self.xmin) / self.x_delta_pt));
+        const flt_idx = floor((x - self.xmin) / self.x_delta_pt);
+        if (flt_idx > 0x7FFFFFFF) {
+            return XCoord.with(0x7FFFFFFF);
+        }
+        if (flt_idx < -0x80000000) {
+            return XCoord.with(-0x80000000);
+        }
+        const braille_idx = @floatToInt(i32, flt_idx);
         return XCoord.with(braille_idx);
     }
 
@@ -137,7 +144,14 @@ pub const Canvas = struct {
     /// As we have a height defined as u8, and 4 points per character
     /// we are in the range of u0.
     fn transform_y(self: Canvas, y: f64) YCoord {
-        const braille_idx = @floatToInt(i32, floor((y - self.ymin) / self.y_delta_pt));
+        const flt_idx = floor((y - self.ymin) / self.y_delta_pt);
+        if (flt_idx > 0x7FFFFFFF) {
+            return YCoord.with(0x7FFFFFFF);
+        }
+        if (flt_idx < -0x80000000) {
+            return YCoord.with(-0x80000000);
+        }
+        const braille_idx = @floatToInt(i32, flt_idx);
         return YCoord.with(braille_idx);
     }
 
@@ -1026,5 +1040,42 @@ test "text above canvas" {
         \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
         \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
         \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+    , list.items);
+}
+
+test "points with very large coordinates" {
+    var c = try Canvas.init(std.testing.allocator, 3, 3, color.Color.no_color());
+    defer c.deinit(std.testing.allocator);
+
+    var list = std.ArrayList(u8).init(std.testing.allocator);
+    defer list.deinit();
+
+    c.point(.{ .x = 1e200, .y = 1e200 }, null, null);
+
+    try list.writer().print("{}", .{c});
+    try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
+
+    try expectEqualStrings(
+        \\⠀⠀⠀
+        \\⠀⠀⠀
+        \\⠀⠀⠀
+    , list.items);
+}
+test "points with very small coordinates" {
+    var c = try Canvas.init(std.testing.allocator, 3, 3, color.Color.no_color());
+    defer c.deinit(std.testing.allocator);
+
+    var list = std.ArrayList(u8).init(std.testing.allocator);
+    defer list.deinit();
+
+    c.point(.{ .x = -1e200, .y = -1e200 }, null, null);
+
+    try list.writer().print("{}", .{c});
+    try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
+
+    try expectEqualStrings(
+        \\⠀⠀⠀
+        \\⠀⠀⠀
+        \\⠀⠀⠀
     , list.items);
 }
