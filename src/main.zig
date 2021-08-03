@@ -4,9 +4,11 @@ pub const color = @import("./color.zig");
 pub const dots = @import("./dots.zig");
 pub const terminfo = @import("./terminfo.zig");
 pub const canvas = @import("./canvas.zig");
+pub const hist = @import("./hist.zig");
 
 comptime {
     _ = canvas;
+    _ = hist;
 }
 
 // C API
