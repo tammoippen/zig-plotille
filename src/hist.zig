@@ -20,6 +20,8 @@ pub const Histogram = struct {
         const delta = x.max - x.min;
         const xwidth = delta / @intToFloat(f64, bins);
         var h = Histogram{ .counts = try ArrayList(u32).initCapacity(allocator, bins), .bins = try ArrayList(f64).initCapacity(allocator, bins + 1) };
+        errdefer h.counts.deinit();
+        errdefer h.bins.deinit();
 
         // count values into bins
         try h.counts.appendNTimes(0, bins);
