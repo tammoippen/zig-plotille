@@ -12,24 +12,32 @@ pub fn build(b: *std.build.Builder) !void {
     const mode = b.standardReleaseOptions();
 
     const strip = b.option(bool, "strip", "Omit debug symbols") orelse false;
+    const dynamic = b.option(bool, "dynamic", "Force output to be dynamically linked") orelse false;
+    const emit_h = b.option(bool, "emit-h", "Generate a C header file (.h)") orelse false;
     const filter = b.option([]const u8, "test-filter", "Skip tests that do not match filter");
 
-    const lib = b.addStaticLibrary("zig-plotille", "src/main.zig");
-    lib.setTarget(target);
-    lib.setBuildMode(mode);
-    lib.strip = strip;
-    // lib.emit_h = true;
-    lib.install();
+    const name = "zig-plotille";
+    const entry = "src/main.zig";
+    const version = b.version(1, 0, 0);
 
-    const shared_lib = b.addSharedLibrary("zig-plotille", "src/main.zig", b.version(1, 0, 0));
-    shared_lib.setTarget(target);
-    shared_lib.setBuildMode(mode);
-    shared_lib.strip = strip;
-    // shared_lib.emit_h = true;
-    shared_lib.install();
+    if (!dynamic) {
+        const lib = b.addStaticLibrary(name, entry);
+        lib.setTarget(target);
+        lib.setBuildMode(mode);
+        lib.strip = strip;
+        lib.emit_h = emit_h;
+        lib.install();
+    } else {
+        const shared_lib = b.addSharedLibrary(name, entry, version);
+        shared_lib.setTarget(target);
+        shared_lib.setBuildMode(mode);
+        shared_lib.strip = strip;
+        shared_lib.emit_h = emit_h;
+        shared_lib.install();
+    }
 
     const test_step = b.step("test", "Run library tests");
-    const tests = b.addTest("src/main.zig");
+    const tests = b.addTest(entry);
     tests.setBuildMode(mode);
     tests.strip = strip;
     tests.setFilter(filter);
@@ -39,7 +47,7 @@ pub fn build(b: *std.build.Builder) !void {
     const example_names = [_][]const u8{ "names", "lookup", "hsl", "terminfo", "house", "hist" };
     inline for (example_names) |example| {
         const exe = b.addExecutable(example, "./examples/" ++ example ++ ".zig");
-        exe.addPackagePath("zig-plotille", "src/main.zig");
+        exe.addPackagePath(name, entry);
         exe.setTarget(target);
         exe.setBuildMode(mode);
         exe.strip = strip;
