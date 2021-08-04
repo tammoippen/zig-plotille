@@ -26,6 +26,8 @@ pub fn build(b: *std.build.Builder) !void {
     const test_step = b.step("test", "Run library tests");
     const tests = b.addTest("src/main.zig");
     tests.setBuildMode(mode);
+    const filter = b.option([]const u8, "test-filter", "Skip tests that do not match filter");
+    tests.setFilter(filter);
     test_step.dependOn(&tests.step);
 
     const example_step = b.step("examples", "Build example exe's.");
