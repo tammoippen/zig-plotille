@@ -5,7 +5,7 @@ fmt:
 	black examples/*.py
 
 tests:
-	zig build test examples install
+	zig build test examples run install
 	python3 examples/test_terminfo.py -v
 
 clean:

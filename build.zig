@@ -44,6 +44,8 @@ pub fn build(b: *std.build.Builder) !void {
     test_step.dependOn(&tests.step);
 
     const example_step = b.step("examples", "Build example exe's.");
+    const example_run_step = b.step("run", "Run example exe's.");
+    example_run_step.dependOn(example_step);
     const example_names = [_][]const u8{ "names", "lookup", "hsl", "terminfo", "house", "hist" };
     inline for (example_names) |example| {
         const exe = b.addExecutable(example, "./examples/" ++ example ++ ".zig");
@@ -51,21 +53,21 @@ pub fn build(b: *std.build.Builder) !void {
         exe.setTarget(target);
         exe.setBuildMode(mode);
         exe.strip = strip;
-        exe.install();
         example_step.dependOn(&exe.step);
+        example_step.dependOn(&b.addInstallArtifact(exe).step);
 
         const exe_run = exe.run();
-        example_step.dependOn(&exe_run.step);
+        example_run_step.dependOn(&exe_run.step);
         if (std.mem.eql(u8, example, "hsl")) {
             const ranges = exe.run();
             const ranges_args = [_][]const u8{ "45", "90" };
             ranges.addArgs(&ranges_args);
-            example_step.dependOn(&ranges.step);
+            example_run_step.dependOn(&ranges.step);
 
             const short = exe.run();
             const short_args = [_][]const u8{ "--short", "0", "45", "90", "135", "180", "225", "270", "315", "360" };
             short.addArgs(&short_args);
-            example_step.dependOn(&short.step);
+            example_run_step.dependOn(&short.step);
         }
     }
 }
