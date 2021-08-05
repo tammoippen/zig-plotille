@@ -13,7 +13,6 @@ pub const Histogram = struct {
     counts: ArrayList(u32),
     bins: ArrayList(f64),
     delta: f64,
-    // comptime fmt: ?[]const u8,
 
     /// Deinitialize with deinit.
     pub fn init(allocator: *Allocator, values: []const f64, bins: u8) !Histogram {
@@ -80,8 +79,8 @@ pub const Histogram = struct {
         var widx: usize = 0;
         for (self.counts.items) |count, idx| {
             if (fmt.len != 0) {
-                const fmt2 = comptime fmt[0..1] ++ ":" ++ fmt[1..];
-                try writer.print("[{" ++ fmt2 ++ "}, {" ++ fmt2 ++ "}) | ", .{ self.bins.items[idx], self.bins.items[idx + 1] });
+                const fmt_with_colon = comptime fmt[0..1] ++ ":" ++ fmt[1..];
+                try writer.print("[{" ++ fmt_with_colon ++ "}, {" ++ fmt_with_colon ++ "}) | ", .{ self.bins.items[idx], self.bins.items[idx + 1] });
             } else {
                 if (self.delta < 1 or self.delta > 1000) {
                     try writer.print("[{e:<8.1}, {e:<8.1}) | ", .{ self.bins.items[idx], self.bins.items[idx + 1] });
