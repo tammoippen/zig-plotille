@@ -64,7 +64,7 @@ pub fn main() !void {
         const stdin = std.io.getStdIn().reader();
         const in = try stdin.readAllAlloc(allocator, 1 << 20);
         defer allocator.free(in);
-        var it = std.mem.tokenize(in, " \r\n\t");
+        var it = std.mem.tokenize(u8, in, " \r\n\t");
         while (it.next()) |arg| {
             const val = std.fmt.parseFloat(f64, arg) catch {
                 std.debug.print("Cannot parse '{s}' as float.\n", .{arg});
