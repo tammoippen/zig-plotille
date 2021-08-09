@@ -120,8 +120,8 @@ const Extrema = struct {
             xmin = 0;
             xmax = 1;
         } else {
-            xmin = math.inf_f64;
-            xmax = -math.inf_f64;
+            xmin = values[0];
+            xmax = values[0];
             for (values) |value| {
                 if (value < xmin) {
                     xmin = value;
