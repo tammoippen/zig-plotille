@@ -70,7 +70,10 @@ pub const ColorMode = enum(c_uint) {
     }
 };
 
-export const ESC = '\x1b';
+const ESC = "\x1b";
+const START = ESC ++ "[";
+const FULL_RESET = START ++ "0m";
+const COLOR_RESET = START ++ "39;49m";
 
 pub const ColorName = enum(c_uint) {
     black = 0,
@@ -344,7 +347,7 @@ pub fn colorPrint(writer: anytype, comptime fmt: []const u8, args: anytype, opti
         return;
     }
 
-    try writer.print("{c}[", .{ESC});
+    try writer.writeAll(START);
 
     if (options.fg.mode != .none) {
         switch (options.fg.mode) {
@@ -370,9 +373,9 @@ pub fn colorPrint(writer: anytype, comptime fmt: []const u8, args: anytype, opti
     try writer.writeAll("m");
     try writer.print(fmt, args);
     if (options.reset_all) {
-        try writer.print("{c}[0m", .{ESC});
+        try writer.writeAll(FULL_RESET);
     } else {
-        try writer.print("{c}[39;49m", .{ESC});
+        try writer.writeAll(COLOR_RESET);
     }
 }
 
