@@ -367,7 +367,7 @@ test "working test" {
 
     try fig.plot(&[_]f64{ 0, 1 }, &[_]f64{ 0, 1 }, .{ .lc = color.Color.by_name(.red), .label = "xxx" });
     try fig.scatter(&[_]f64{ 0.1, 0.9 }, &[_]f64{ 0.9, 0.1 }, .{ .lc = color.Color.by_name(.blue), .label = "yyy", .marker = 'x' });
-    try fig.histogram(&[_]f64{ 0.1, 0.1, 0.2, 0.4, 0.5 }, 5, color.Color.by_name(.yellow));
+    try fig.histogram(&[_]f64{ 0.1, 0.1, 0.2, 0.4, 0.5 }, 25, color.Color.by_name(.yellow));
     try fig.text(0.6, 1.65, "Hello", color.Color.by_name(.magenta));
 
     fig.xmin = 0;
