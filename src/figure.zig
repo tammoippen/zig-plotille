@@ -316,6 +316,11 @@ test "working test" {
     try fig.scatter(&[_]f64{ 0.1, 0.9 }, &[_]f64{ 0.9, 0.1 }, .{ .lc = color.Color.by_name(.blue), .label = "yyy", .marker = 'x' });
     try fig.histogram(&[_]f64{ 0.1, 0.1, 0.2, 0.4, 0.5 }, 5, color.Color.by_name(.yellow));
 
+    fig.xmin = 0;
+    fig.xmax = 1.1;
+    fig.ymin = 0;
+    fig.ymax = 3;
+
     try fig.prepare();
     std.debug.print("\n{}\n", .{fig});
 }
