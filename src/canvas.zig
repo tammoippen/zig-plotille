@@ -327,16 +327,21 @@ pub const Canvas = struct {
         _ = fmt;
         var h_idx: i9 = self.height - 1;
         while (h_idx >= 0) : (h_idx -= 1) {
-            var w_idx: u9 = 0;
-            while (w_idx < self.width) : (w_idx += 1) {
-                const idx: usize = @intCast(usize, h_idx) * @as(usize, self.width) + w_idx;
-                var d = self.canvas[idx];
-                d.color.bg = self.bg;
-                try writer.print("{}", .{d});
-            }
-            if (h_idx > 0) {
-                try writer.writeAll("\n");
-            }
+            try self.printRow(h_idx, writer);
+        }
+    }
+
+    pub fn printRow(self: Canvas, row: i9, writer: anytype) !void {
+        assert(row >= 0);
+        var w_idx: u9 = 0;
+        while (w_idx < self.width) : (w_idx += 1) {
+            const idx: usize = @intCast(usize, row) * @as(usize, self.width) + w_idx;
+            var d = self.canvas[idx];
+            d.color.bg = self.bg;
+            try writer.print("{}", .{d});
+        }
+        if (row > 0) {
+            try writer.writeAll("\n");
         }
     }
 };
