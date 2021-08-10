@@ -29,6 +29,7 @@ const Figure = struct {
     y_label: []const u8,
 
     _canvas: ?canvas.Canvas,
+    _plots: std.ArrayList(Plot),
 
     /// Allocator for all the stuff.
     allocator: *mem.Allocator,
@@ -49,6 +50,7 @@ const Figure = struct {
             .x_label = try allocator.dupe(u8, "X"),
             .y_label = try allocator.dupe(u8, "Y"),
             ._canvas = null,
+            ._plots = std.ArrayList(Plot).init(allocator),
             .allocator = allocator,
         };
     }
@@ -56,9 +58,35 @@ const Figure = struct {
     pub fn deinit(self: *Figure) void {
         self.allocator.free(self.x_label);
         self.allocator.free(self.y_label);
+        for (self._plots.items) |*p| {
+            p.deinit(self.allocator);
+        }
+        self._plots.deinit();
         if (self._canvas) |cvs| {
             cvs.deinit(self.allocator);
         }
+    }
+
+    pub fn plot(self: *Figure, xs: []const f64, ys: []const f64, opts: struct {
+        lc: color.Color = color.Color.no_color(),
+        label: []const u8 = "Plot",
+        marker: ?u8 = null,
+    }) !void {
+        var p = try Plot.init(self.allocator, xs, ys, opts.lc, true, opts.label, opts.marker);
+        errdefer p.deinit(self.allocator);
+
+        try self._plots.append(p);
+    }
+
+    pub fn scatter(self: *Figure, xs: []const f64, ys: []const f64, opts: struct {
+        lc: color.Color = color.Color.no_color(),
+        label: []const u8 = "Scatter",
+        marker: ?u8 = null,
+    }) !void {
+        var p = try Plot.init(self.allocator, xs, ys, opts.lc, false, opts.label, opts.marker);
+        errdefer p.deinit(self.allocator);
+
+        try self._plots.append(p);
     }
 
     /// Create the canvas and print the plots into the canvas.
@@ -68,6 +96,10 @@ const Figure = struct {
         }
         self._canvas = try canvas.Canvas.init(self.allocator, self.width, self.height, self.bg_color);
         self._canvas.?.setReferenceSystem(self.xmin, self.ymin, self.xmax, self.ymax);
+
+        for (self._plots.items) |p| {
+            try p.write(&self._canvas.?);
+        }
     }
 
     /// Output the figure to a writer.
@@ -85,10 +117,13 @@ const Figure = struct {
         // TODO reference system?
 
         var row: i9 = self.height + 1;
-        while (row > 0) : (row -= 1) {
+        while (row >= 0) : (row -= 1) {
             try self.printYAxis(row, writer);
             if (row < self.height) {
                 try self._canvas.?.printRow(row, writer);
+                if (row == 0) {
+                    try writer.writeAll(line_separator);
+                }
             } else {
                 try writer.writeAll(line_separator);
             }
@@ -135,11 +170,74 @@ const Figure = struct {
             try writer.print("{d: <9.3} ", .{value});
         }
     }
+
+    const Plot = struct {
+        xs: []const f64,
+        ys: []const f64,
+        lc: color.Color,
+        interpolate: bool,
+        label: []const u8,
+        marker: ?u8,
+
+        /// Deinitialize with `deinit`.
+        fn init(
+            allocator: *mem.Allocator,
+            xs: []const f64,
+            ys: []const f64,
+            lc: color.Color,
+            interp: bool,
+            label: []const u8,
+            marker: ?u8,
+        ) !Plot {
+            assert(xs.len == ys.len);
+            assert(xs.len > 0);
+            return Plot{
+                .xs = try mem.dupe(allocator, f64, xs),
+                .ys = try mem.dupe(allocator, f64, ys),
+                .lc = lc,
+                .interpolate = interp,
+                .label = try mem.dupe(allocator, u8, label),
+                .marker = marker,
+            };
+        }
+
+        fn deinit(self: *Plot, allocator: *mem.Allocator) void {
+            allocator.free(self.xs);
+            allocator.free(self.ys);
+            allocator.free(self.label);
+        }
+
+        fn write(self: Plot, cvs: *canvas.Canvas) !void {
+            assert(self.xs.len == self.ys.len);
+            if (self.xs.len == 0) {
+                return;
+            }
+            // first point
+            cvs.point(.{ .x = self.xs[0], .y = self.ys[0] }, self.lc, self.marker);
+
+            var idx: usize = 1;
+            while (idx < self.xs.len) : (idx += 1) {
+                if (self.interpolate) {
+                    try cvs.line(
+                        .{ .x = self.xs[idx - 1], .y = self.ys[idx - 1] },
+                        .{ .x = self.xs[idx], .y = self.ys[idx] },
+                        self.lc,
+                        self.marker,
+                    );
+                } else {
+                    cvs.point(.{ .x = self.xs[idx], .y = self.ys[idx] }, self.lc, self.marker);
+                }
+            }
+        }
+    };
 };
 
 test "working test" {
     var fig = try Figure.init(std.testing.allocator, 30, 10, null);
     defer fig.deinit();
+
+    try fig.plot(&[_]f64{ 0, 1 }, &[_]f64{ 0, 1 }, .{ .lc = color.Color.by_name(.red), .label = "xxx" });
+    try fig.scatter(&[_]f64{ 0.1, 0.9 }, &[_]f64{ 0.9, 0.1 }, .{ .lc = color.Color.by_name(.blue), .label = "yyy", .marker = 'x' });
 
     try fig.prepare();
     std.debug.print("\n{}\n", .{fig});
