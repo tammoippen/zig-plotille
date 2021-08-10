@@ -47,6 +47,10 @@ const Point = struct {
     x: f64,
     y: f64,
 };
+const PointDistance = struct {
+    x: isize,
+    y: isize,
+};
 
 /// A canvas object for plotting braille dots
 ///
@@ -154,6 +158,18 @@ pub const Canvas = struct {
         }
         const braille_idx = @floatToInt(i32, flt_idx);
         return YCoord.with(braille_idx);
+    }
+
+    pub fn dotsBetween(self: Canvas, p0: Point, p1: Point) PointDistance {
+        const x0_coord = self.transform_x(p0.x);
+        const y0_coord = self.transform_y(p0.y);
+        const x1_coord = self.transform_x(p1.x);
+        const y1_coord = self.transform_y(p1.y);
+
+        return .{
+            .x = x1_coord.braille_idx - x0_coord.braille_idx,
+            .y = y1_coord.braille_idx - y0_coord.braille_idx,
+        };
     }
 
     fn set(self: *Canvas, x_coord: XCoord, y_coord: YCoord, fg_color: ?color.Color, char: ?u8) void {
