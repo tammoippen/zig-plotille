@@ -32,6 +32,7 @@ const Figure = struct {
     _canvas: ?canvas.Canvas,
     _plots: std.ArrayList(Plot),
     _histograms: std.ArrayList(Histogram),
+    _texts: std.ArrayList(Text),
 
     /// Allocator for all the stuff.
     allocator: *mem.Allocator,
@@ -54,6 +55,7 @@ const Figure = struct {
             ._canvas = null,
             ._plots = std.ArrayList(Plot).init(allocator),
             ._histograms = std.ArrayList(Histogram).init(allocator),
+            ._texts = std.ArrayList(Text).init(allocator),
             .allocator = allocator,
         };
     }
@@ -69,6 +71,10 @@ const Figure = struct {
             h.deinit();
         }
         self._histograms.deinit();
+        for (self._texts.items) |*t| {
+            t.deinit(self.allocator);
+        }
+        self._texts.deinit();
         if (self._canvas) |cvs| {
             cvs.deinit(self.allocator);
         }
@@ -108,6 +114,18 @@ const Figure = struct {
         try self._histograms.append(h);
     }
 
+    pub fn text(self: *Figure, x: f64, y: f64, str: []const u8, lc: ?color.Color) !void {
+        var t = try Text.init(
+            self.allocator,
+            x, y,
+            str,
+            if (lc) |c| c else color.Color.no_color(),
+        );
+        errdefer t.deinit(self.allocator);
+
+        try self._texts.append(t);
+    }
+
     /// Create the canvas and print the plots into the canvas.
     pub fn prepare(self: *Figure) !void {
         if (self._canvas) |cvs| {
@@ -121,6 +139,9 @@ const Figure = struct {
         }
         for (self._plots.items) |p| {
             try p.write(&self._canvas.?);
+        }
+        for (self._texts.items) |t| {
+            try t.write(&self._canvas.?);
         }
     }
 
@@ -257,6 +278,7 @@ const Figure = struct {
         histogram: hist.Histogram,
         lc: color.Color,
 
+        /// Deinitialize with `deinit`.
         fn init(
             allocator: *mem.Allocator,
             xs: []const f64,
@@ -283,7 +305,6 @@ const Figure = struct {
             if (distances.x > 0) {
                 x_diff = @intCast(usize, distances.x);
             }
-            std.debug.print("\n{any}\n{}\n", .{ distances, x_diff });
 
             var idx: usize = 0;
             while (idx < self.histogram.counts.items.len) : (idx += 1) {
@@ -306,6 +327,38 @@ const Figure = struct {
             }
         }
     };
+
+    const Text = struct {
+        x: f64,
+        y: f64,
+        str: []const u8,
+        lc: color.Color,
+
+        /// Deinitialize with `deinit`.
+        fn init(
+            allocator: *mem.Allocator,
+            x: f64,
+            y: f64,
+            str: []const u8,
+            lc: color.Color,
+        ) !Text {
+            assert(str.len > 0);
+            return Text{
+                .x = x,
+                .y = y,
+                .str = try allocator.dupe(u8, str),
+                .lc = lc,
+            };
+        }
+
+        fn deinit(self: *Text, allocator: *mem.Allocator) void {
+            allocator.free(self.str);
+        }
+
+        fn write(self: Text, cvs: *canvas.Canvas) !void {
+            cvs.text(.{ .x = self.x, .y = self.y }, self.str, self.lc);
+        }
+    };
 };
 
 test "working test" {
@@ -315,11 +368,13 @@ test "working test" {
     try fig.plot(&[_]f64{ 0, 1 }, &[_]f64{ 0, 1 }, .{ .lc = color.Color.by_name(.red), .label = "xxx" });
     try fig.scatter(&[_]f64{ 0.1, 0.9 }, &[_]f64{ 0.9, 0.1 }, .{ .lc = color.Color.by_name(.blue), .label = "yyy", .marker = 'x' });
     try fig.histogram(&[_]f64{ 0.1, 0.1, 0.2, 0.4, 0.5 }, 5, color.Color.by_name(.yellow));
+    try fig.text(0.6, 1.65, "Hello", color.Color.by_name(.magenta));
 
     fig.xmin = 0;
     fig.xmax = 1.1;
     fig.ymin = 0;
     fig.ymax = 3;
+    fig.width = 45;
 
     try fig.prepare();
     std.debug.print("\n{}\n", .{fig});
