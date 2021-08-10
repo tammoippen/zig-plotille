@@ -9,6 +9,8 @@ const expectEqual = testing.expectEqual;
 const expectEqualSlices = testing.expectEqualSlices;
 const expectEqualStrings = testing.expectEqualStrings;
 
+usingnamespace @import("./utils.zig");
+
 pub const Histogram = struct {
     counts: ArrayList(u32),
     bins: ArrayList(f64),
@@ -74,7 +76,7 @@ pub const Histogram = struct {
 
         try writer.writeAll("        bucket       | ");
         try writer.writeByteNTimes('_', width);
-        try writer.writeAll(" Total Counts\n");
+        try writer.writeAll(" Total Counts" ++ line_separator);
 
         var widx: usize = 0;
         for (self.counts.items) |count, idx| {
@@ -99,7 +101,7 @@ pub const Histogram = struct {
             while (widx < width - height / 8 + @boolToInt(height % 8 == 0)) : (widx += 1) {
                 try writer.writeAll("\u{2800}");
             }
-            try writer.print(" {}\n", .{count});
+            try writer.print(" {}" ++ line_separator, .{count});
         }
 
         widx = 0;

@@ -1,4 +1,3 @@
-// const builtin = @import("builtin");
 const std = @import("std");
 const assert = std.debug.assert;
 const math = std.math;
@@ -6,8 +5,7 @@ const mem = std.mem;
 
 const color = @import("./color.zig");
 const canvas = @import("./canvas.zig");
-
-const line_separator = if (std.Target.current.os.tag == std.Target.Os.Tag.windows) "\r\n" else "\n";
+usingnamespace @import("./utils.zig");
 
 const Figure = struct {
     /// The number of characters for the width (columns) of the canvas.
