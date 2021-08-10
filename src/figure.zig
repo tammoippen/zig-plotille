@@ -2,10 +2,12 @@ const std = @import("std");
 const assert = std.debug.assert;
 const math = std.math;
 const mem = std.mem;
+const expectEqualStrings = std.testing.expectEqualStrings;
 
 const color = @import("./color.zig");
 const canvas = @import("./canvas.zig");
 const hist = @import("./hist.zig");
+const terminfo = @import("./terminfo.zig");
 usingnamespace @import("./utils.zig");
 
 const Figure = struct {
@@ -117,7 +119,8 @@ const Figure = struct {
     pub fn text(self: *Figure, x: f64, y: f64, str: []const u8, lc: ?color.Color) !void {
         var t = try Text.init(
             self.allocator,
-            x, y,
+            x,
+            y,
             str,
             if (lc) |c| c else color.Color.no_color(),
         );
@@ -367,7 +370,7 @@ test "working test" {
 
     try fig.plot(&[_]f64{ 0, 1 }, &[_]f64{ 0, 1 }, .{ .lc = color.Color.by_name(.red), .label = "xxx" });
     try fig.scatter(&[_]f64{ 0.1, 0.9 }, &[_]f64{ 0.9, 0.1 }, .{ .lc = color.Color.by_name(.blue), .label = "yyy", .marker = 'x' });
-    try fig.histogram(&[_]f64{ 0.1, 0.1, 0.2, 0.4, 0.5 }, 25, color.Color.by_name(.yellow));
+    try fig.histogram(&[_]f64{ 0.1, 0.1, 0.2, 0.4, 0.5 }, 10, color.Color.by_name(.yellow));
     try fig.text(0.6, 1.65, "Hello", color.Color.by_name(.magenta));
 
     fig.xmin = 0;
@@ -377,5 +380,36 @@ test "working test" {
     fig.width = 45;
 
     try fig.prepare();
+
+    var list = std.ArrayList(u8).init(std.testing.allocator);
+    defer list.deinit();
+
+    // no colors
+    terminfo.TermInfo.set(.{
+        .no_color = true,
+        .force_color = false,
+        .stdout_tty = false,
+        .suggested_color_mode = .none,
+    });
+    try list.writer().print("{}", .{fig});
+    try expectEqualStrings(
+        \\    Y      ^
+        \\3.000      | 
+        \\2.700      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\2.400      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\2.100      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\1.800      | ⠀⠀⠀⠀⣶⡆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\1.500      | ⠀⠀⠀⠀⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀Hello⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\1.200      | ⠀⠀⠀⠀⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.900      | ⠀⠀⠀⠀x⡇⠀⣤⡄⠀⠀⠀⠀⠀⠀⢠⣤⠀⢠⣤⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣀⣀⠤⠤⠀⠀⠀⠀
+        \\0.600      | ⠀⠀⠀⠀⣿⡇⠀⣿⡇⠀⠀⠀⠀⠀⠀⢸⣿⠀⢸⣿⠀⠀⠀⢀⣀⣀⡠⠤⠤⠤⠒⠒⠒⠉⠉⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.300      | ⠀⠀⠀⠀⣿⡇⠀⣿⡇⠀⠀⣀⣀⣀⡠⢼⣿⠔⢺⣿⠊⠉⠉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.000      | ⣀⣀⠤⠤⣿⡗⠒⣿⡏⠉⠉⠀⠀⠀⠀⢸⣿⠀⢸⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀x⠀⠀⠀⠀⠀⠀⠀⠀
+        \\-----------|-|---------|---------|---------|---------|------> (X)
+        \\           | 0.000     0.244     0.489     0.733     0.978     
+    , list.items);
+
+    // force colors
+    terminfo.TermInfo.testing();
     std.debug.print("\n{}\n", .{fig});
 }
