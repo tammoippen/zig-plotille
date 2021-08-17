@@ -362,6 +362,19 @@ const Figure = struct {
             cvs.text(.{ .x = self.x, .y = self.y }, self.str, self.lc);
         }
     };
+
+    const Span = struct {
+        /// Lower left corner of the span.
+        xmin: f64,
+        ymin: f64,
+        /// Upper right corner of the span.
+        xmax: f64,
+        ymax: f64,
+        /// Color of the span.
+        lc: color.Color,
+
+        fn write(self: Span, cvs: *canvas.Canvas)
+    };
 };
 
 test "working test" {
