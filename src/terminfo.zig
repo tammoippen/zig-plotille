@@ -49,6 +49,15 @@ pub const TermInfo = struct {
         };
     }
 
+    pub fn disable_color() void {
+        info = TermInfo{
+            .no_color = true,
+            .force_color = false,
+            .stdout_tty = false,
+            .suggested_color_mode = .none,
+        };
+    }
+
     /// Read out environment variables, hence the allocator.
     pub fn detect(allocator: *std.mem.Allocator) !void {
         const stdout_tty = std.io.getStdOut().isTty();

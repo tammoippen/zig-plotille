@@ -35,6 +35,7 @@ const Figure = struct {
     _plots: std.ArrayList(Plot),
     _histograms: std.ArrayList(Histogram),
     _texts: std.ArrayList(Text),
+    _spans: std.ArrayList(Span),
 
     /// Allocator for all the stuff.
     allocator: *mem.Allocator,
@@ -58,6 +59,7 @@ const Figure = struct {
             ._plots = std.ArrayList(Plot).init(allocator),
             ._histograms = std.ArrayList(Histogram).init(allocator),
             ._texts = std.ArrayList(Text).init(allocator),
+            ._spans = std.ArrayList(Span).init(allocator),
             .allocator = allocator,
         };
     }
@@ -80,6 +82,7 @@ const Figure = struct {
         if (self._canvas) |cvs| {
             cvs.deinit(self.allocator);
         }
+        self._spans.deinit();
     }
 
     pub fn plot(self: *Figure, xs: []const f64, ys: []const f64, opts: struct {
@@ -129,6 +132,42 @@ const Figure = struct {
         try self._texts.append(t);
     }
 
+    pub fn axvline(self: *Figure, x: f64, opts: struct {
+        lc: color.Color = color.Color.no_color(),
+        ymin: f64 = 0,
+        ymax: f64 = 1,
+    }) !void {
+        assert(0 <= x and x <= 1);
+        assert(0 <= opts.ymin and opts.ymin <= 1);
+        assert(0 <= opts.ymax and opts.ymax <= 1);
+        assert(opts.ymin <= opts.ymax);
+        try self._spans.append(Span{
+            .xmin = x,
+            .xmax = x,
+            .ymin = opts.ymin,
+            .ymax = opts.ymax,
+            .lc = opts.lc,
+        });
+    }
+
+    pub fn axhline(self: *Figure, y: f64, opts: struct {
+        lc: color.Color = color.Color.no_color(),
+        xmin: f64 = 0,
+        xmax: f64 = 1,
+    }) !void {
+        assert(0 <= y and y <= 1);
+        assert(0 <= opts.xmin and opts.xmin <= 1);
+        assert(0 <= opts.xmax and opts.xmax <= 1);
+        assert(opts.xmin <= opts.xmax);
+        try self._spans.append(Span{
+            .xmin = opts.xmin,
+            .xmax = opts.xmax,
+            .ymin = y,
+            .ymax = y,
+            .lc = opts.lc,
+        });
+    }
+
     /// Create the canvas and print the plots into the canvas.
     pub fn prepare(self: *Figure) !void {
         if (self._canvas) |cvs| {
@@ -137,6 +176,9 @@ const Figure = struct {
         self._canvas = try canvas.Canvas.init(self.allocator, self.width, self.height, self.bg_color);
         self._canvas.?.setReferenceSystem(self.xmin, self.ymin, self.xmax, self.ymax);
 
+        for (self._spans.items) |s| {
+            try s.write(&self._canvas.?);
+        }
         for (self._histograms.items) |h| {
             try h.write(&self._canvas.?);
         }
@@ -374,13 +416,38 @@ const Figure = struct {
         lc: color.Color,
 
         fn write(self: Span, cvs: *canvas.Canvas) !void {
-            _ = self;
-            _ = cvs;
+            assert(0 <= self.xmin and self.xmin <= 1);
+            assert(0 <= self.ymin and self.ymin <= 1);
+            assert(0 <= self.xmax and self.xmax <= 1);
+            assert(0 <= self.ymax and self.ymax <= 1);
+            assert(self.xmin <= self.xmax);
+            assert(self.ymin <= self.ymax);
+
+            const xmax_inside = cvs.xmin + (@intToFloat(f64, cvs.width) * 2 - 1) * cvs.x_delta_pt;
+            const xdelta = xmax_inside - cvs.xmin;
+            const ymax_inside = cvs.ymin + (@intToFloat(f64, cvs.height) * 4 - 1) * cvs.y_delta_pt;
+            const ydelta = ymax_inside - cvs.ymin;
+            assert(xdelta > 0);
+            assert(ydelta > 0);
+
+            try cvs.rect(
+                .{
+                    .x = cvs.xmin + self.xmin * xdelta,
+                    .y = cvs.ymin + self.ymin * ydelta,
+                },
+                .{
+                    .x = cvs.xmin + self.xmax * xdelta,
+                    .y = cvs.ymin + self.ymax * ydelta,
+                },
+                self.lc,
+                null,
+            );
         }
     };
 };
 
 test "working test" {
+    terminfo.TermInfo.disable_color();
     var fig = try Figure.init(std.testing.allocator, 30, 10, null);
     defer fig.deinit();
 
@@ -400,13 +467,6 @@ test "working test" {
     var list = std.ArrayList(u8).init(std.testing.allocator);
     defer list.deinit();
 
-    // no colors
-    terminfo.TermInfo.set(.{
-        .no_color = true,
-        .force_color = false,
-        .stdout_tty = false,
-        .suggested_color_mode = .none,
-    });
     try list.writer().print("{}", .{fig});
     try expectEqualStrings(
         \\    Y      ^
@@ -428,4 +488,190 @@ test "working test" {
     // force colors
     terminfo.TermInfo.testing();
     std.debug.print("\n{}\n", .{fig});
+}
+
+test "figure with axvline center" {
+    terminfo.TermInfo.disable_color();
+    var fig = try Figure.init(std.testing.allocator, 30, 10, null);
+    defer fig.deinit();
+
+    try fig.axvline(0.5, .{});
+
+    try fig.prepare();
+
+    var list = std.ArrayList(u8).init(std.testing.allocator);
+    defer list.deinit();
+
+    try list.writer().print("{}", .{fig});
+    try expectEqualStrings(
+        \\    Y      ^
+        \\1.000      | 
+        \\0.900      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.800      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.700      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.600      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.500      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.400      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.300      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.200      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.100      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.000      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\-----------|-|---------|---------|---------|-> (X)
+        \\           | 0.000     0.333     0.667     1.000     
+    , list.items);
+}
+
+test "figure with axvline left" {
+    terminfo.TermInfo.disable_color();
+    var fig = try Figure.init(std.testing.allocator, 30, 10, null);
+    defer fig.deinit();
+
+    try fig.axvline(0, .{});
+
+    try fig.prepare();
+
+    var list = std.ArrayList(u8).init(std.testing.allocator);
+    defer list.deinit();
+
+    try list.writer().print("{}", .{fig});
+    try expectEqualStrings(
+        \\    Y      ^
+        \\1.000      | 
+        \\0.900      | ⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.800      | ⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.700      | ⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.600      | ⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.500      | ⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.400      | ⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.300      | ⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.200      | ⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.100      | ⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.000      | ⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\-----------|-|---------|---------|---------|-> (X)
+        \\           | 0.000     0.333     0.667     1.000     
+    , list.items);
+}
+
+test "figure with axvline right" {
+    terminfo.TermInfo.disable_color();
+    var fig = try Figure.init(std.testing.allocator, 30, 10, null);
+    defer fig.deinit();
+
+    try fig.axvline(1, .{});
+
+    try fig.prepare();
+
+    var list = std.ArrayList(u8).init(std.testing.allocator);
+    defer list.deinit();
+
+    try list.writer().print("{}", .{fig});
+    try expectEqualStrings(
+        \\    Y      ^
+        \\1.000      | 
+        \\0.900      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸
+        \\0.800      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸
+        \\0.700      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸
+        \\0.600      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸
+        \\0.500      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸
+        \\0.400      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸
+        \\0.300      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸
+        \\0.200      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸
+        \\0.100      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸
+        \\0.000      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸
+        \\-----------|-|---------|---------|---------|-> (X)
+        \\           | 0.000     0.333     0.667     1.000     
+    , list.items);
+}
+
+test "figure with axhline center" {
+    terminfo.TermInfo.disable_color();
+    var fig = try Figure.init(std.testing.allocator, 30, 10, null);
+    defer fig.deinit();
+
+    try fig.axhline(0.5, .{});
+
+    try fig.prepare();
+
+    var list = std.ArrayList(u8).init(std.testing.allocator);
+    defer list.deinit();
+
+    try list.writer().print("{}", .{fig});
+    try expectEqualStrings(
+        \\    Y      ^
+        \\1.000      | 
+        \\0.900      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.800      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.700      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.600      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.500      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.400      | ⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉
+        \\0.300      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.200      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.100      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.000      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\-----------|-|---------|---------|---------|-> (X)
+        \\           | 0.000     0.333     0.667     1.000     
+    , list.items);
+}
+
+test "figure with axhline bottom" {
+    terminfo.TermInfo.disable_color();
+    var fig = try Figure.init(std.testing.allocator, 30, 10, null);
+    defer fig.deinit();
+
+    try fig.axhline(0, .{});
+
+    try fig.prepare();
+
+    var list = std.ArrayList(u8).init(std.testing.allocator);
+    defer list.deinit();
+
+    try list.writer().print("{}", .{fig});
+    try expectEqualStrings(
+        \\    Y      ^
+        \\1.000      | 
+        \\0.900      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.800      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.700      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.600      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.500      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.400      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.300      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.200      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.100      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.000      | ⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀
+        \\-----------|-|---------|---------|---------|-> (X)
+        \\           | 0.000     0.333     0.667     1.000     
+    , list.items);
+}
+
+test "figure with axhline top" {
+    terminfo.TermInfo.disable_color();
+    var fig = try Figure.init(std.testing.allocator, 30, 10, null);
+    defer fig.deinit();
+
+    try fig.axhline(1, .{});
+
+    try fig.prepare();
+
+    var list = std.ArrayList(u8).init(std.testing.allocator);
+    defer list.deinit();
+
+    try list.writer().print("{}", .{fig});
+    try expectEqualStrings(
+        \\    Y      ^
+        \\1.000      | 
+        \\0.900      | ⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉
+        \\0.800      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.700      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.600      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.500      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.400      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.300      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.200      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.100      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\0.000      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        \\-----------|-|---------|---------|---------|-> (X)
+        \\           | 0.000     0.333     0.667     1.000     
+    , list.items);
 }
