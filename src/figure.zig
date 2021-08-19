@@ -373,7 +373,10 @@ const Figure = struct {
         /// Color of the span.
         lc: color.Color,
 
-        fn write(self: Span, cvs: *canvas.Canvas)
+        fn write(self: Span, cvs: *canvas.Canvas) !void {
+            _ = self;
+            _ = cvs;
+        }
     };
 };
 
