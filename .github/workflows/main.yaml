@@ -1,0 +1,31 @@
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{matrix.os}}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: goto-bus-stop/setup-zig@v1
+        with:
+          version: master
+      - run: zig build test examples run install
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+      - run: python3 examples/test_terminfo.py -v
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: goto-bus-stop/setup-zig@v1
+        with:
+          version: master
+      - run: zig fmt --check .
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+      - run: |
+          python3 -m pip install black
+          black --check examples/*.py
