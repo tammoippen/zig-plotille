@@ -8,7 +8,7 @@ const color = @import("./color.zig");
 const canvas = @import("./canvas.zig");
 const hist = @import("./hist.zig");
 const terminfo = @import("./terminfo.zig");
-usingnamespace @import("./utils.zig");
+const utils = @import("./utils.zig");
 
 const Figure = struct {
     /// The number of characters for the width (columns) of the canvas.
@@ -250,10 +250,10 @@ const Figure = struct {
             if (row < self.height) {
                 try self._canvas.?.printRow(row, writer);
                 if (row == 0) {
-                    try writer.writeAll(line_separator);
+                    try writer.writeAll(utils.line_separator);
                 }
             } else {
-                try writer.writeAll(line_separator);
+                try writer.writeAll(utils.line_separator);
             }
         }
         try self.printXAxis(writer);
@@ -288,7 +288,7 @@ const Figure = struct {
         try writer.writeAll("|");
         try writer.writeByteNTimes('-', self.width % 10);
 
-        try writer.print("-> ({s})" ++ line_separator, .{self.x_label});
+        try writer.print("-> ({s})" ++ utils.line_separator, .{self.x_label});
 
         try writer.writeByteNTimes(' ', 11);
         try writer.writeAll("| ");
