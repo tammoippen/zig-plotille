@@ -251,10 +251,11 @@ test "write simple Histogram" {
 
 test "write random Histogram" {
     var prng = std.rand.DefaultPrng.init(12345);
+    const random = prng.random();
     var values: [1000]f64 = undefined;
     var i: usize = 0;
     while (i < 1000) : (i += 1) {
-        values[i] = prng.random.floatNorm(f64);
+        values[i] = random.floatNorm(f64);
     }
     var h = try Histogram.init(testing.allocator, &values, 10);
     defer h.deinit();
@@ -282,10 +283,11 @@ test "write random Histogram" {
 
 test "write large random Histogram" {
     var prng = std.rand.DefaultPrng.init(32345);
+    const random = prng.random();
     var values: [1000]f64 = undefined;
     var i: usize = 0;
     while (i < 1000) : (i += 1) {
-        values[i] = 1_000_000 * prng.random.floatNorm(f64);
+        values[i] = 1_000_000 * random.floatNorm(f64);
     }
     var h = try Histogram.init(testing.allocator, &values, 10);
     defer h.deinit();
@@ -313,10 +315,11 @@ test "write large random Histogram" {
 
 test "write small random Histogram" {
     var prng = std.rand.DefaultPrng.init(42);
+    const random = prng.random();
     var values: [1000]f64 = undefined;
     var i: usize = 0;
     while (i < 1000) : (i += 1) {
-        values[i] = prng.random.float(f64) / 1_000_000;
+        values[i] = random.float(f64) / 1_000_000;
     }
     var h = try Histogram.init(testing.allocator, &values, 10);
     defer h.deinit();
