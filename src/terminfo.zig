@@ -59,7 +59,7 @@ pub const TermInfo = struct {
     }
 
     /// Read out environment variables, hence the allocator.
-    pub fn detect(allocator: *std.mem.Allocator) !void {
+    pub fn detect(allocator: std.mem.Allocator) !void {
         const stdout_tty = std.io.getStdOut().isTty();
         const no_color = isNoColorSet(allocator);
         const force_color = try forceColors(allocator);
@@ -74,13 +74,13 @@ pub const TermInfo = struct {
     }
 
     /// free on its own
-    fn isNoColorSet(allocator: *std.mem.Allocator) bool {
+    fn isNoColorSet(allocator: std.mem.Allocator) bool {
         // on windows needs allocator to put key into utf16
         // https://no-color.org/
         return std.process.hasEnvVar(allocator, "NO_COLOR") catch unreachable;
     }
     /// free on its own
-    fn forceColors(allocator: *std.mem.Allocator) !?bool {
+    fn forceColors(allocator: std.mem.Allocator) !?bool {
         // https://nodejs.org/api/tty.html#tty_writestream_getcolordepth_env
         var force_color: ?bool = null;
 
@@ -98,7 +98,7 @@ pub const TermInfo = struct {
         return force_color;
     }
     /// free on its own
-    fn getColorMode(allocator: *std.mem.Allocator) !color.ColorMode {
+    fn getColorMode(allocator: std.mem.Allocator) !color.ColorMode {
         if (isWindowsTerminal(allocator) or isDomTerm(allocator) or isKittyTerm(allocator)) {
             return .rgb;
         }
@@ -175,7 +175,7 @@ pub const TermInfo = struct {
         return .none;
     }
     /// free on its own
-    fn isWindowsTerminal(allocator: *std.mem.Allocator) bool {
+    fn isWindowsTerminal(allocator: std.mem.Allocator) bool {
         // on windows needs allocator to put key into utf16
         // https://github.com/microsoft/terminal/issues/1040#issuecomment-496691842
         const opt_wt_session = std.process.getEnvVarOwned(allocator, "WT_SESSION") catch |err| switch (err) {
@@ -191,20 +191,20 @@ pub const TermInfo = struct {
         }
     }
     /// free on its own
-    fn isDomTerm(allocator: *std.mem.Allocator) bool {
+    fn isDomTerm(allocator: std.mem.Allocator) bool {
         // on windows needs allocator to put key into utf16
         // https://domterm.org/Detecting-domterm-terminal.html
         return std.process.hasEnvVar(allocator, "DOMTERM") catch unreachable;
     }
     /// free on its own
-    fn isKittyTerm(allocator: *std.mem.Allocator) bool {
+    fn isKittyTerm(allocator: std.mem.Allocator) bool {
         // on windows needs allocator to put key into utf16
         // https://github.com/kovidgoyal/kitty/issues/957#issuecomment-420318828
         return std.process.hasEnvVar(allocator, "KITTY_WINDOW_ID") catch unreachable;
     }
     /// free on its own
     /// assumes that TERM_PROGRAM lower == iterm.app
-    fn checkiTerm(allocator: *std.mem.Allocator) !color.ColorMode {
+    fn checkiTerm(allocator: std.mem.Allocator) !color.ColorMode {
         const opt_version = try getEnvVar(allocator, "TERM_PROGRAM_VERSION");
         if (opt_version) |version| {
             defer allocator.free(version);
@@ -222,7 +222,7 @@ pub const TermInfo = struct {
     }
     /// free returned string
     /// Get optional and lowercase string.
-    fn getEnvVar(allocator: *std.mem.Allocator, name: []const u8) !?[]const u8 {
+    fn getEnvVar(allocator: std.mem.Allocator, name: []const u8) !?[]const u8 {
         const opt_value = std.process.getEnvVarOwned(allocator, name) catch |err| switch (err) {
             error.EnvironmentVariableNotFound => null,
             else => return err,

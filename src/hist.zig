@@ -17,7 +17,7 @@ pub const Histogram = struct {
     delta: f64,
 
     /// Deinitialize with deinit.
-    pub fn init(allocator: *Allocator, values: []const f64, bins: usize) !Histogram {
+    pub fn init(allocator: Allocator, values: []const f64, bins: usize) !Histogram {
         assert(bins > 0);
 
         const x = Extrema.of(values);

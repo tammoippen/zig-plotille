@@ -38,10 +38,10 @@ const Figure = struct {
     _spans: std.ArrayList(Span),
 
     /// Allocator for all the stuff.
-    allocator: *mem.Allocator,
+    allocator: mem.Allocator,
 
     /// Deinitialize with `deinit`.
-    pub fn init(allocator: *mem.Allocator, width: u8, height: u8, bg: ?color.Color) !Figure {
+    pub fn init(allocator: mem.Allocator, width: u8, height: u8, bg: ?color.Color) !Figure {
         assert(width > 0);
         assert(height > 0);
         return Figure{
@@ -309,7 +309,7 @@ const Figure = struct {
 
         /// Deinitialize with `deinit`.
         fn init(
-            allocator: *mem.Allocator,
+            allocator: mem.Allocator,
             xs: []const f64,
             ys: []const f64,
             lc: color.Color,
@@ -320,16 +320,16 @@ const Figure = struct {
             assert(xs.len == ys.len);
             assert(xs.len > 0);
             return Plot{
-                .xs = try mem.dupe(allocator, f64, xs),
-                .ys = try mem.dupe(allocator, f64, ys),
+                .xs = try allocator.dupe(f64, xs),
+                .ys = try allocator.dupe(f64, ys),
                 .lc = lc,
                 .interpolate = interp,
-                .label = try mem.dupe(allocator, u8, label),
+                .label = try allocator.dupe(u8, label),
                 .marker = marker,
             };
         }
 
-        fn deinit(self: *Plot, allocator: *mem.Allocator) void {
+        fn deinit(self: *Plot, allocator: mem.Allocator) void {
             allocator.free(self.xs);
             allocator.free(self.ys);
             allocator.free(self.label);
@@ -365,7 +365,7 @@ const Figure = struct {
 
         /// Deinitialize with `deinit`.
         fn init(
-            allocator: *mem.Allocator,
+            allocator: mem.Allocator,
             xs: []const f64,
             bins: usize,
             lc: ?color.Color,
@@ -421,7 +421,7 @@ const Figure = struct {
 
         /// Deinitialize with `deinit`.
         fn init(
-            allocator: *mem.Allocator,
+            allocator: mem.Allocator,
             x: f64,
             y: f64,
             str: []const u8,
@@ -436,7 +436,7 @@ const Figure = struct {
             };
         }
 
-        fn deinit(self: *Text, allocator: *mem.Allocator) void {
+        fn deinit(self: *Text, allocator: mem.Allocator) void {
             allocator.free(self.str);
         }
 

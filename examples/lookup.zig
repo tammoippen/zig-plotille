@@ -5,7 +5,7 @@ const plt = @import("zig-plotille");
 pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
-    const allocator = &arena.allocator;
+    const allocator = arena.allocator();
 
     // detect terminal information
     try plt.terminfo.TermInfo.detect(allocator);

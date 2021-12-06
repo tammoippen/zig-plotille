@@ -86,7 +86,7 @@ pub const Canvas = struct {
     canvas: []dots.Dots,
 
     /// Deinitialize with `deinit`.
-    pub fn init(allocator: *std.mem.Allocator, width: u8, height: u8, bg: color.Color) !Canvas {
+    pub fn init(allocator: std.mem.Allocator, width: u8, height: u8, bg: color.Color) !Canvas {
         assert(width > 0);
         assert(height > 0);
         var result = Canvas{
@@ -110,7 +110,7 @@ pub const Canvas = struct {
     }
 
     /// Release all allocated memory.
-    pub fn deinit(self: Canvas, allocator: *std.mem.Allocator) void {
+    pub fn deinit(self: Canvas, allocator: std.mem.Allocator) void {
         allocator.free(self.canvas);
     }
 
