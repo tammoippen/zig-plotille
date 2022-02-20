@@ -12,9 +12,9 @@ const utils = @import("./utils.zig");
 
 const Figure = struct {
     /// The number of characters for the width (columns) of the canvas.
-    width: u8,
+    width: u16,
     /// The number of characters for the hight (rows) of the canvas.
-    height: u8,
+    height: u16,
     /// Lower left corner of reference system.
     xmin: f64,
     ymin: f64,
@@ -41,7 +41,7 @@ const Figure = struct {
     allocator: mem.Allocator,
 
     /// Deinitialize with `deinit`.
-    pub fn init(allocator: mem.Allocator, width: u8, height: u8, bg: ?color.Color) !Figure {
+    pub fn init(allocator: mem.Allocator, width: u16, height: u16, bg: ?color.Color) !Figure {
         assert(width > 0);
         assert(height > 0);
         return Figure{
@@ -244,7 +244,7 @@ const Figure = struct {
         assert(self._canvas.?.height == self.height);
         // TODO reference system?
 
-        var row: i9 = self.height + 1;
+        var row: i17 = self.height + 1;
         while (row >= 0) : (row -= 1) {
             try self.printYAxis(row, writer);
             if (row < self.height) {

@@ -67,9 +67,9 @@ const PointDistance = struct {
 /// the reference system, they are not plotted.
 pub const Canvas = struct {
     /// The number of characters for the width (columns) of the canvas.
-    width: u8,
+    width: u16,
     /// The number of characters for the hight (rows) of the canvas.
-    height: u8,
+    height: u16,
     /// Lower left corner of reference system.
     xmin: f64,
     ymin: f64,
@@ -86,7 +86,7 @@ pub const Canvas = struct {
     canvas: []dots.Dots,
 
     /// Deinitialize with `deinit`.
-    pub fn init(allocator: std.mem.Allocator, width: u8, height: u8, bg: color.Color) !Canvas {
+    pub fn init(allocator: std.mem.Allocator, width: u16, height: u16, bg: color.Color) !Canvas {
         assert(width > 0);
         assert(height > 0);
         var result = Canvas{
@@ -130,8 +130,8 @@ pub const Canvas = struct {
 
     /// Transform an x-coordinate of the reference system to an index
     /// of a braille point and char index.
-    /// As we have a width defined as u8, and 2 points per character
-    /// we are in the range of u9.
+    /// As we have a width defined as u16, and 2 points per character
+    /// we are in the range of u17.
     fn transform_x(self: Canvas, x: f64) XCoord {
         const flt_idx = floor((x - self.xmin) / self.x_delta_pt);
         if (flt_idx > 0x7FFFFFFF) {
@@ -146,8 +146,8 @@ pub const Canvas = struct {
 
     /// Transform an y-coordinate of the reference system to an index
     /// of a braille point and char index.
-    /// As we have a height defined as u8, and 4 points per character
-    /// we are in the range of u0.
+    /// As we have a height defined as u16, and 4 points per character
+    /// we are in the range of u18.
     fn transform_y(self: Canvas, y: f64) YCoord {
         const flt_idx = floor((y - self.ymin) / self.y_delta_pt);
         if (flt_idx > 0x7FFFFFFF) {
@@ -342,15 +342,15 @@ pub const Canvas = struct {
         // ignored options -> conform to signature
         _ = options;
         _ = fmt;
-        var h_idx: i9 = self.height - 1;
+        var h_idx: i18 = self.height - 1;
         while (h_idx >= 0) : (h_idx -= 1) {
             try self.printRow(h_idx, writer);
         }
     }
 
-    pub fn printRow(self: Canvas, row: i9, writer: anytype) !void {
+    pub fn printRow(self: Canvas, row: i18, writer: anytype) !void {
         assert(row >= 0);
-        var w_idx: u9 = 0;
+        var w_idx: u18 = 0;
         while (w_idx < self.width) : (w_idx += 1) {
             const idx: usize = @intCast(usize, row) * @as(usize, self.width) + w_idx;
             var d = self.canvas[idx];
@@ -1100,4 +1100,30 @@ test "points with very small coordinates" {
         \\⠀⠀⠀
         \\⠀⠀⠀
     , list.items);
+}
+
+test "canvas with large height" {
+    var c = try Canvas.init(std.testing.allocator, 128, 65535, color.Color.no_color());
+    defer c.deinit(std.testing.allocator);
+
+    var list = std.ArrayList(u8).init(std.testing.allocator);
+    defer list.deinit();
+
+    try c.line(.{ .x = 0, .y = 0 }, .{ .x = 1, .y = 1 }, null, null);
+
+    try list.writer().print("{}", .{c});
+    try expectEqual(@as(usize, 25_230_974), list.items.len); // 3 chars per unicode, 65534 linebreaks
+}
+
+test "canvas with large width" {
+    var c = try Canvas.init(std.testing.allocator, 65535, 128, color.Color.no_color());
+    defer c.deinit(std.testing.allocator);
+
+    var list = std.ArrayList(u8).init(std.testing.allocator);
+    defer list.deinit();
+
+    try c.line(.{ .x = 0, .y = 0 }, .{ .x = 1, .y = 1 }, null, null);
+
+    try list.writer().print("{}", .{c});
+    try expectEqual(@as(usize, 25_165_567), list.items.len); // 3 chars per unicode, 127 linebreaks
 }
