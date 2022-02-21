@@ -1,9 +1,8 @@
 import json
-import os
-import pty
 import subprocess
-import tempfile
 import unittest
+
+import pexpect
 
 
 class TestTermInfoOutput(unittest.TestCase):
@@ -21,18 +20,10 @@ class TestTermInfoOutput(unittest.TestCase):
         self.assertEqual(out, result, res.stderr)
 
     def test_tty(self):
-        with tempfile.TemporaryFile() as fp:
+        resp = pexpect.run("./zig-out/bin/terminfo", timeout=5)
 
-            def read(fd):
-                data = os.read(fd, 1024)
-                fp.write(data)
-                return data
-
-            pty.spawn("./zig-out/bin/terminfo", read)
-
-            fp.seek(0)
-            out = json.loads(fp.read())
-            self.assertTrue(out["stdout_tty"])
+        out = json.loads(resp)
+        self.assertTrue(out["stdout_tty"])
 
     def test_empty(self):
         self.run_subprocess(

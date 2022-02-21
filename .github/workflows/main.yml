@@ -22,7 +22,9 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: 3.9
-      - run: python3 examples/test_terminfo.py -v
+      - run: |
+          python3 -m pip install pexpect
+          python3 examples/test_terminfo.py -v
 
   lint:
     runs-on: ubuntu-latest
