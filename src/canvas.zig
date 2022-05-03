@@ -1,10 +1,7 @@
 const std = @import("std");
-const absFloat = std.math.absFloat;
 const absInt = std.math.absInt;
 const approxEqAbs = std.math.approxEqAbs;
-const floor = std.math.floor;
 const max = std.math.max;
-const round = std.math.round;
 const signbit = std.math.signbit;
 
 const assert = std.debug.assert;
@@ -124,8 +121,8 @@ pub const Canvas = struct {
         self.ymin = ymin;
         self.xmax = xmax;
         self.ymax = ymax;
-        self.x_delta_pt = absFloat((xmax - xmin) / @intToFloat(f64, @as(u32, self.width) * 2)); // 2 points in left
-        self.y_delta_pt = absFloat((ymax - ymin) / @intToFloat(f64, @as(u32, self.height) * 4)); // 4 points in up
+        self.x_delta_pt = @fabs((xmax - xmin) / @intToFloat(f64, @as(u32, self.width) * 2)); // 2 points in left
+        self.y_delta_pt = @fabs((ymax - ymin) / @intToFloat(f64, @as(u32, self.height) * 4)); // 4 points in up
     }
 
     /// Transform an x-coordinate of the reference system to an index
@@ -133,7 +130,7 @@ pub const Canvas = struct {
     /// As we have a width defined as u16, and 2 points per character
     /// we are in the range of u17.
     fn transform_x(self: Canvas, x: f64) XCoord {
-        const flt_idx = floor((x - self.xmin) / self.x_delta_pt);
+        const flt_idx = @floor((x - self.xmin) / self.x_delta_pt);
         if (flt_idx > 0x7FFFFFFF) {
             return XCoord.with(0x7FFFFFFF);
         }
@@ -149,7 +146,7 @@ pub const Canvas = struct {
     /// As we have a height defined as u16, and 4 points per character
     /// we are in the range of u18.
     fn transform_y(self: Canvas, y: f64) YCoord {
-        const flt_idx = floor((y - self.ymin) / self.y_delta_pt);
+        const flt_idx = @floor((y - self.ymin) / self.y_delta_pt);
         if (flt_idx > 0x7FFFFFFF) {
             return YCoord.with(0x7FFFFFFF);
         }
@@ -281,8 +278,8 @@ pub const Canvas = struct {
 
             var idx: usize = max(1, max(x_start, y_start));
             while (idx < max_steps) : (idx += 1) {
-                const xb = x0_coord.braille_idx + @floatToInt(i32, round(xstep * @intToFloat(f64, idx)));
-                const yb = y0_coord.braille_idx + @floatToInt(i32, round(ystep * @intToFloat(f64, idx)));
+                const xb = x0_coord.braille_idx + @floatToInt(i32, @round(xstep * @intToFloat(f64, idx)));
+                const yb = y0_coord.braille_idx + @floatToInt(i32, @round(ystep * @intToFloat(f64, idx)));
                 if (0 <= xb and xb < @as(u32, self.width) * 2 and 0 <= yb and yb < @as(u32, self.height) * 4) {
                     self.set(XCoord.with(xb), YCoord.with(yb), fg_color, null);
                 } else {

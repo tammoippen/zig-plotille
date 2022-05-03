@@ -1,6 +1,5 @@
 const std = @import("std");
 const assert = std.debug.assert;
-const math = std.math;
 const mem = std.mem;
 const expectEqualStrings = std.testing.expectEqualStrings;
 
@@ -263,7 +262,7 @@ const Figure = struct {
         assert(self.ymin < self.ymax);
         assert(0 <= idx);
         assert(idx <= self.height + 1);
-        const y_delta = math.absFloat(self.ymax - self.ymin) / @intToFloat(f64, self.height);
+        const y_delta = @fabs(self.ymax - self.ymin) / @intToFloat(f64, self.height);
 
         const value: f64 = @intToFloat(f64, idx) * y_delta + self.ymin;
         if (idx <= self.height) {
@@ -277,7 +276,7 @@ const Figure = struct {
 
     fn printXAxis(self: Figure, writer: anytype) !void {
         assert(self.xmin < self.xmax);
-        const x_delta = math.absFloat(self.xmax - self.xmin) / @intToFloat(f64, self.width);
+        const x_delta = @fabs(self.xmax - self.xmin) / @intToFloat(f64, self.width);
 
         try writer.writeByteNTimes('-', 11);
         try writer.writeAll("|-");
