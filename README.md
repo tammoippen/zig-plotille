@@ -12,3 +12,4 @@ Draw in the terminal.
 Re-implementation of the (python) [plotille](https://github.com/tammoippen/plotille) with the intention to (at some point) provide a C-API as well.
 
 For usage (for now) have a look at the examples/ and also in the code (tests).
+
