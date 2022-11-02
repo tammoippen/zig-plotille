@@ -3,7 +3,7 @@
 
 #include "zig-plotille.h"
 
-// clang-12 $PWD/zig-out/lib/libzig-plotille.a samples/dots.c -I. -o samples/dots
+// zig cc zig-out/lib/libzig-plotille.a examples/dots.c -o examples/dots
 
 
 int main(int argc, char const *argv[])
