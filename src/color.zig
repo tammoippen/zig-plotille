@@ -448,7 +448,7 @@ test "color in names mode" {
 const FG_LOOKUP_NUM = "38;5;";
 const BG_LOOKUP_NUM = "48;5;";
 
-fn lookups(color_lookup: ?u8, is_fg: bool, writer: anytype) !void {
+fn lookups(color_lookup: u8, is_fg: bool, writer: anytype) !void {
     if (is_fg) {
         try writer.print("{s}{}", .{ FG_LOOKUP_NUM, color_lookup });
     } else {
