@@ -85,15 +85,10 @@ pub const TermInfo = struct {
         var force_color: ?bool = null;
 
         // on issues, ignore force_color
-        const opt_force_color_str = std.process.getEnvVarOwned(allocator, "FORCE_COLOR") catch |err| switch (err) {
-            error.EnvironmentVariableNotFound => null,
-            else => return err,
-        };
-
+        const opt_force_color_str = try getEnvVar(allocator, "FORCE_COLOR");
         if (opt_force_color_str) |force_color_str| {
             defer allocator.free(force_color_str);
-            const fc_lower = try std.ascii.allocLowerString(allocator, force_color_str);
-            force_color = !(std.mem.eql(u8, fc_lower, "0") or std.mem.eql(u8, fc_lower, "false") or std.mem.eql(u8, fc_lower, "none"));
+            force_color = !(std.mem.eql(u8, force_color_str, "0") or std.mem.eql(u8, force_color_str, "false") or std.mem.eql(u8, force_color_str, "none"));
         }
         return force_color;
     }
@@ -178,16 +173,13 @@ pub const TermInfo = struct {
     fn isWindowsTerminal(allocator: std.mem.Allocator) bool {
         // on windows needs allocator to put key into utf16
         // https://github.com/microsoft/terminal/issues/1040#issuecomment-496691842
-        const opt_wt_session = std.process.getEnvVarOwned(allocator, "WT_SESSION") catch |err| switch (err) {
-            error.EnvironmentVariableNotFound => null,
-            // oom or utf8 errors, hence var is set and more than on char
-            else => return true,
-        };
-        if (opt_wt_session) |wt_session| {
+        if (std.process.getEnvVarOwned(allocator, "WT_SESSION")) |wt_session| {
             defer allocator.free(wt_session);
             return wt_session.len > 0;
-        } else {
-            return false;
+        } else |err| switch (err) {
+            error.EnvironmentVariableNotFound => return false,
+            // oom or utf8 errors, hence var is set and more than on char
+            else => return true,
         }
     }
     /// free on its own
@@ -223,15 +215,13 @@ pub const TermInfo = struct {
     /// free returned string
     /// Get optional and lowercase string.
     fn getEnvVar(allocator: std.mem.Allocator, name: []const u8) !?[]const u8 {
-        const opt_value = std.process.getEnvVarOwned(allocator, name) catch |err| switch (err) {
-            error.EnvironmentVariableNotFound => null,
-            else => return err,
-        };
-        if (opt_value) |value| {
+        if (std.process.getEnvVarOwned(allocator, name)) |value| {
             defer allocator.free(value);
             return try std.ascii.allocLowerString(allocator, value);
+        } else |err| switch (err) {
+            error.EnvironmentVariableNotFound => return null,
+            else => |e| return e,
         }
-        return null;
     }
 };
 
