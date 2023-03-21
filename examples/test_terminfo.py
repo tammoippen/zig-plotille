@@ -291,7 +291,6 @@ class TestTermInfoOutput(unittest.TestCase):
                 )
 
     def test_term_empty(self):
-
         self.run_subprocess(
             "TERM",
             "",

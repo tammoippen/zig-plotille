@@ -79,7 +79,7 @@ pub const Histogram = struct {
         try writer.writeAll(" Total Counts" ++ utils.line_separator);
 
         var widx: usize = 0;
-        for (self.counts.items) |count, idx| {
+        for (self.counts.items, 0..) |count, idx| {
             if (fmt.len != 0) {
                 const fmt_with_colon = comptime fmt[0..1] ++ ":" ++ fmt[1..];
                 try writer.print("[{" ++ fmt_with_colon ++ "}, {" ++ fmt_with_colon ++ "}) | ", .{ self.bins.items[idx], self.bins.items[idx + 1] });
