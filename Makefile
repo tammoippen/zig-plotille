@@ -11,8 +11,12 @@ tests:
 clean:
 	rm -rf zig-cache zig-out
 
-samples/dots.exe: samples/dots.c
-	$(CC) $(PWD)/zig-out/lib/libzig-plotille.a samples/dots.c -I. -o samples/dots.exe
+examples/dots.exe: examples/dots.c
+	$(CC) $(PWD)/zig-out/lib/libzig-plotille.a \
+		examples/dots.c \
+		-I. \
+		-I$(HOME)/repos/zig/build/install/lib/zig \
+		-o examples/dots.exe
 
 gen-headers:
 	# do not forget to uncomment the `lib.emit_h = true;` part
