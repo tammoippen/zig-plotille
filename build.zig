@@ -32,16 +32,18 @@ pub fn build(b: *std.Build) !void {
             .root_module = module,
             .version = version,
         });
-        // lib.emit_h = emit_h;
-        b.installArtifact(lib);
+        const installed_lib = b.addInstallArtifact(lib, .{});
+        // installed_lib.emitted_h = lib.getEmittedH();
+        b.getInstallStep().dependOn(&installed_lib.step);
     } else {
-        const shared_lib = b.addSharedLibrary(.{
+        const lib = b.addSharedLibrary(.{
             .name = name,
             .root_module = module,
             .version = version,
         });
-        // shared_lib.emit_h = emit_h;
-        b.installArtifact(shared_lib);
+        const installed_lib = b.addInstallArtifact(lib, .{});
+        // installed_lib.emitted_h = lib.getEmittedH();
+        b.getInstallStep().dependOn(&installed_lib.step);
     }
 
     const test_step = b.step("test", "Run library tests");
