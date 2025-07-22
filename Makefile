@@ -2,7 +2,7 @@
 
 fmt:
 	zig fmt .
-	ruff format examples/*.py
+	uvx ruff format examples/*.py
 
 tests:
 	zig build --summary all test examples run install

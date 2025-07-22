@@ -19,12 +19,11 @@ jobs:
         with:
           version: master
       - run: zig build test examples run install
-      - uses: actions/setup-python@v2
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
         with:
-          python-version: 3.9
-      - run: |
-          python3 -m pip install pexpect
-          python3 examples/test_terminfo.py -v
+          version: "0.8.1"
+      - run: ./examples/test_terminfo.py -v
 
   lint:
     runs-on: ubuntu-latest
@@ -34,9 +33,8 @@ jobs:
         with:
           version: master
       - run: zig fmt --check .
-      - uses: actions/setup-python@v2
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
         with:
-          python-version: 3.9
-      - run: |
-          python3 -m pip install black
-          black --check examples/*.py
+          version: "0.8.1"
+      - run: uvx ruff format --check .
