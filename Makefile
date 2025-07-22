@@ -2,7 +2,7 @@
 
 fmt:
 	zig fmt .
-	black examples/*.py
+	ruff format examples/*.py
 
 tests:
 	zig build test examples run install

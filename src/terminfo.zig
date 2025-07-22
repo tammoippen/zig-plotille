@@ -12,8 +12,8 @@ const rgb_level = [_][]const u8{ "24bit", "24bits", "direct", "truecolor" };
 const lookup_level = [_][]const u8{ "256", "256color", "256colors" };
 const rgb_term = [_][]const u8{"alacritty"};
 const lookup_term = [_][]const u8{
-// TODO: on win 10, cygwin supports .rgb
-"cygwin"};
+    // TODO: on win 10, cygwin supports .rgb
+    "cygwin"};
 const names_term = [_][]const u8{ "xterm", "vt100", "vt220", "screen", "color", "linux", "ansi", "rxvt", "konsole" };
 
 pub const TermInfo = struct {

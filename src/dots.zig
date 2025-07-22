@@ -33,9 +33,9 @@ const xy2dot = [_][2]u8{
 };
 
 const MIN_BUFF_LEN_COLOR_DOTS = 3 // utf8 braille dots
-+ 2 * 16 // rgb uses most chars, e.g. 38;2;123;123;123
-+ 3 // ansi-code start marker ESC[ .. m
-+ 8; // ansi-code end marker ESC[39;49m
+    + 2 * 16 // rgb uses most chars, e.g. 38;2;123;123;123
+    + 3 // ansi-code start marker ESC[ .. m
+    + 8; // ansi-code end marker ESC[39;49m
 
 pub const Dots = extern struct {
     dots: u8 = 0,
