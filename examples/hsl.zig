@@ -65,7 +65,7 @@ pub fn main() !void {
 
         if (short) {
             const bg = plt.color.Color.by_hsl(hue, 1.0, 0.5);
-            try writer.print("{s:>5} ", .{arg[0..std.math.min(arg.len, 5)]});
+            try writer.print("{s:>5} ", .{arg[0..@min(arg.len, 5)]});
             try plt.color.colorPrint(writer, "{s}", .{space}, .{ .bg = bg });
             try writer.print(" {x:0<2}{x:0<2}{x:0<2}\n", .{ bg.rgb[0], bg.rgb[1], bg.rgb[2] });
             continue;

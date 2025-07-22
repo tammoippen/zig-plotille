@@ -262,9 +262,9 @@ const Figure = struct {
         assert(self.ymin < self.ymax);
         assert(0 <= idx);
         assert(idx <= self.height + 1);
-        const y_delta = @fabs(self.ymax - self.ymin) / @intToFloat(f64, self.height);
+        const y_delta = @abs(self.ymax - self.ymin) / @as(f64, @floatFromInt(self.height));
 
-        const value: f64 = @intToFloat(f64, idx) * y_delta + self.ymin;
+        const value: f64 = @as(f64, @floatFromInt(idx)) * y_delta + self.ymin;
         if (idx <= self.height) {
             // print canvas and max values
             try writer.print("{d: <10.3} | ", .{value});
@@ -276,7 +276,7 @@ const Figure = struct {
 
     fn printXAxis(self: Figure, writer: anytype) !void {
         assert(self.xmin < self.xmax);
-        const x_delta = @fabs(self.xmax - self.xmin) / @intToFloat(f64, self.width);
+        const x_delta = @abs(self.xmax - self.xmin) / @as(f64, @floatFromInt(self.width));
 
         try writer.writeByteNTimes('-', 11);
         try writer.writeAll("|-");
@@ -293,7 +293,7 @@ const Figure = struct {
         try writer.writeAll("| ");
         col = 0;
         while (col < self.width / 10 + 1) : (col += 1) {
-            const value = @intToFloat(f64, col) * 10 * x_delta + self.xmin;
+            const value = @as(f64, @floatFromInt(col)) * 10 * x_delta + self.xmin;
             try writer.print("{d: <9.3} ", .{value});
         }
     }
@@ -387,7 +387,7 @@ const Figure = struct {
             );
             var x_diff: usize = 1;
             if (distances.x > 0) {
-                x_diff = @intCast(usize, distances.x);
+                x_diff = @intCast(distances.x);
             }
 
             var idx: usize = 0;
@@ -397,12 +397,12 @@ const Figure = struct {
                 }
                 var col: usize = 0;
                 while (col < x_diff) : (col += 1) {
-                    const x = self.histogram.bins.items[idx] + @intToFloat(f64, col) * cvs.x_delta_pt;
+                    const x = self.histogram.bins.items[idx] + @as(f64, @floatFromInt(col)) * cvs.x_delta_pt;
 
                     if (cvs.xmin <= x and x <= cvs.xmax) {
                         try cvs.line(
                             .{ .x = x, .y = 0.0 },
-                            .{ .x = x, .y = @intToFloat(f64, self.histogram.counts.items[idx]) },
+                            .{ .x = x, .y = @floatFromInt(self.histogram.counts.items[idx]) },
                             self.lc,
                             null,
                         );
@@ -462,9 +462,9 @@ const Figure = struct {
             assert(self.xmin <= self.xmax);
             assert(self.ymin <= self.ymax);
 
-            const xmax_inside = cvs.xmin + (@intToFloat(f64, cvs.width) * 2 - 1) * cvs.x_delta_pt;
+            const xmax_inside = cvs.xmin + (@as(f64, @floatFromInt(cvs.width)) * 2 - 1) * cvs.x_delta_pt;
             const xdelta = xmax_inside - cvs.xmin;
-            const ymax_inside = cvs.ymin + (@intToFloat(f64, cvs.height) * 4 - 1) * cvs.y_delta_pt;
+            const ymax_inside = cvs.ymin + (@as(f64, @floatFromInt(cvs.height)) * 4 - 1) * cvs.y_delta_pt;
             const ydelta = ymax_inside - cvs.ymin;
             assert(xdelta > 0);
             assert(ydelta > 0);

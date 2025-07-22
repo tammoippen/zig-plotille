@@ -20,7 +20,7 @@ pub fn main() !void {
     try writer.print("- Standard colors (can be modified in terminal):\n    ", .{});
     var idx: u16 = 0;
     while (idx <= 7) : (idx += 1) {
-        const bg = plt.color.Color.by_lookup(@truncate(u8, idx));
+        const bg = plt.color.Color.by_lookup(@truncate(idx));
         const int_str = try std.fmt.bufPrint(int_buff[0..], "{:4}", .{idx});
         try plt.color.colorPrint(std.io.getStdOut().writer(), "{s}", .{int_str}, .{ .fg = fg_white, .bg = bg });
     }
@@ -28,7 +28,7 @@ pub fn main() !void {
 
     try writer.print("- High-intensity colors (can be modified in terminal):\n    ", .{});
     while (idx <= 15) : (idx += 1) {
-        const bg = plt.color.Color.by_lookup(@truncate(u8, idx));
+        const bg = plt.color.Color.by_lookup(@truncate(idx));
         const int_str = try std.fmt.bufPrint(int_buff[0..], "{:4}", .{idx});
         try plt.color.colorPrint(std.io.getStdOut().writer(), "{s}", .{int_str}, .{ .fg = fg_black, .bg = bg });
     }
@@ -46,7 +46,7 @@ pub fn main() !void {
         if ((idx - 16) % 36 == 0) {
             try writer.print("\n    ", .{});
         }
-        const bg = plt.color.Color.by_lookup(@truncate(u8, idx));
+        const bg = plt.color.Color.by_lookup(@truncate(idx));
         const int_str = try std.fmt.bufPrint(int_buff[0..], "{:4}", .{idx});
         if ((idx - 16) % 36 >= 18) {
             try plt.color.colorPrint(std.io.getStdOut().writer(), "{s}", .{int_str}, .{ .fg = fg_black, .bg = bg });
@@ -58,7 +58,7 @@ pub fn main() !void {
 
     try writer.print("- Grayscale colors:\n    ", .{});
     while (idx <= 255) : (idx += 1) {
-        const bg = plt.color.Color.by_lookup(@truncate(u8, idx));
+        const bg = plt.color.Color.by_lookup(@truncate(idx));
         const int_str = try std.fmt.bufPrint(int_buff[0..], "{:4}", .{idx});
         if (idx < 244) {
             try plt.color.colorPrint(std.io.getStdOut().writer(), "{s}", .{int_str}, .{ .fg = fg_white, .bg = bg });

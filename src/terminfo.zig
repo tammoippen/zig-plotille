@@ -131,7 +131,7 @@ pub const TermInfo = struct {
         if (opt_term) |term| {
             defer allocator.free(term);
 
-            var iter = std.mem.split(u8, term, "-");
+            var iter = std.mem.splitSequence(u8, term, "-");
             const opt_term_part = iter.next();
             const opt_level_part = if (opt_term_part != null) iter.next() else null;
 
@@ -201,7 +201,7 @@ pub const TermInfo = struct {
         if (opt_version) |version| {
             defer allocator.free(version);
             // get major version
-            var iter = std.mem.split(u8, version, ".");
+            var iter = std.mem.splitSequence(u8, version, ".");
             const first = iter.next();
             if (first) |major_str| {
                 const major = try std.fmt.parseUnsigned(u8, major_str, 10);

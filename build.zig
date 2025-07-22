@@ -1,6 +1,6 @@
 const std = @import("std");
 
-pub fn build(b: *std.build.Builder) !void {
+pub fn build(b: *std.Build) !void {
     // Standard target options allows the person running `zig build` to choose
     // what target to build for. Here we do not override the defaults, which
     // means any target is allowed, and the default is native. Other options
@@ -13,49 +13,45 @@ pub fn build(b: *std.build.Builder) !void {
 
     const strip = b.option(bool, "strip", "Omit debug symbols") orelse false;
     const dynamic = b.option(bool, "dynamic", "Force output to be dynamically linked") orelse false;
-    const emit_h = b.option(bool, "emit-h", "Generate a C header file (.h)") orelse false;
+    // const emit_h = b.option(bool, "emit-h", "Generate a C header file (.h)") orelse false;
     const filter = b.option([]const u8, "test-filter", "Skip tests that do not match filter");
 
     const name = "zig-plotille";
-    const entry = "src/main.zig";
-    const version = try std.builtin.Version.parse("1.0.0");
-    const module = b.addModule(name, .{ .source_file = .{ .path = entry } });
+    const entry = b.path("src/main.zig");
+    const version = try std.SemanticVersion.parse("1.0.0");
+    const module = b.addModule(name, .{
+        .root_source_file = entry,
+        .target = target,
+        .optimize = mode,
+        .strip = strip,
+    });
 
     if (!dynamic) {
         const lib = b.addStaticLibrary(.{
             .name = name,
-            .root_source_file = .{ .path = entry },
-            .target = target,
-            .optimize = mode,
+            .root_module = module,
             .version = version,
         });
-        lib.strip = strip;
-        lib.emit_h = emit_h;
-        lib.install();
+        // lib.emit_h = emit_h;
+        b.installArtifact(lib);
     } else {
         const shared_lib = b.addSharedLibrary(.{
             .name = name,
-            .root_source_file = .{ .path = entry },
-            .target = target,
-            .optimize = mode,
+            .root_module = module,
             .version = version,
         });
-        shared_lib.strip = strip;
-        shared_lib.emit_h = emit_h;
-        shared_lib.install();
+        // shared_lib.emit_h = emit_h;
+        b.installArtifact(shared_lib);
     }
 
     const test_step = b.step("test", "Run library tests");
     const tests = b.addTest(.{
         .name = name,
-        .root_source_file = .{ .path = entry },
-        .target = target,
-        .optimize = mode,
-        .version = version,
+        .root_module = module,
+        .filter = filter,
     });
-    tests.strip = strip;
-    tests.setFilter(filter);
-    test_step.dependOn(&tests.step);
+    const run_tests = b.addRunArtifact(tests);
+    test_step.dependOn(&run_tests.step);
 
     const example_step = b.step("examples", "Build example exe's.");
     const example_run_step = b.step("run", "Run example exe's.");
@@ -64,26 +60,25 @@ pub fn build(b: *std.build.Builder) !void {
     inline for (example_names) |example| {
         const exe = b.addExecutable(.{
             .name = example,
-            .root_source_file = .{ .path = "./examples/" ++ example ++ ".zig" },
+            .root_source_file = b.path("./examples/" ++ example ++ ".zig"),
             .target = target,
             .optimize = mode,
             .version = version,
+            .strip = strip,
         });
-        // exe.addPackagePath(name, entry);
-        exe.addModule(name, module);
-        exe.strip = strip;
+        exe.root_module.addImport(name, module);
         example_step.dependOn(&exe.step);
-        example_step.dependOn(&b.addInstallArtifact(exe).step);
+        example_step.dependOn(&b.addInstallArtifact(exe, .{}).step);
 
-        const exe_run = exe.run();
+        const exe_run = b.addRunArtifact(exe);
         example_run_step.dependOn(&exe_run.step);
         if (std.mem.eql(u8, example, "hsl")) {
-            const ranges = exe.run();
+            const ranges = b.addRunArtifact(exe);
             const ranges_args = [_][]const u8{ "45", "90" };
             ranges.addArgs(&ranges_args);
             example_run_step.dependOn(&ranges.step);
 
-            const short = exe.run();
+            const short = b.addRunArtifact(exe);
             const short_args = [_][]const u8{ "--short", "0", "45", "90", "135", "180", "225", "270", "315", "360" };
             short.addArgs(&short_args);
             example_run_step.dependOn(&short.step);

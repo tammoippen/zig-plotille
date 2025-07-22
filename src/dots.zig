@@ -55,7 +55,7 @@ pub const Dots = extern struct {
         var buff: [3]u8 = undefined;
         var v: u21 = 0x2800;
         v += self.dots;
-        var len = unicode.utf8Encode(v, &buff) catch unreachable;
+        const len = unicode.utf8Encode(v, &buff) catch unreachable;
         assert(len == 3);
 
         if (self.color.hasColor()) {

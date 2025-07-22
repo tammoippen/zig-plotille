@@ -64,8 +64,7 @@ pub const ColorMode = enum(c_uint) {
     lookup,
     rgb,
 
-    pub fn jsonStringify(self: ColorMode, options: std.json.StringifyOptions, out_stream: anytype) @TypeOf(out_stream).Error!void {
-        _ = options;
+    pub fn jsonStringify(self: ColorMode, out_stream: anytype) !void {
         try out_stream.print("\"{s}\"", .{@tagName(self)});
     }
 };
@@ -230,7 +229,7 @@ pub const Color = extern struct {
             .mode = .rgb,
             .name = .invalid,
             .lookup = 0,
-            .rgb = [_]u8{ @floatToInt(u8, r * 255), @floatToInt(u8, g * 255), @floatToInt(u8, b * 255) },
+            .rgb = [_]u8{ @intFromFloat(r * 255), @intFromFloat(g * 255), @intFromFloat(b * 255) },
         };
     }
     fn hue_to_rgb(p: f64, q: f64, t: f64) f64 {
@@ -381,10 +380,10 @@ pub fn colorPrint(writer: anytype, comptime fmt: []const u8, args: anytype, opti
 
 fn names(color_name: ColorName, is_fg: bool, writer: anytype) !void {
     if (is_fg) {
-        const fg_code = FGColors[@enumToInt(color_name)];
+        const fg_code = FGColors[@intFromEnum(color_name)];
         try writer.writeAll(fg_code);
     } else {
-        const bg_code = BGColors[@enumToInt(color_name)];
+        const bg_code = BGColors[@intFromEnum(color_name)];
         try writer.writeAll(bg_code);
     }
 }

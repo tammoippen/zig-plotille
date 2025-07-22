@@ -5,8 +5,8 @@ fmt:
 	ruff format examples/*.py
 
 tests:
-	zig build test examples run install
-	python3 examples/test_terminfo.py -v
+	zig build --summary all test examples run install
+	./examples/test_terminfo.py -v
 
 clean:
 	rm -rf zig-cache zig-out

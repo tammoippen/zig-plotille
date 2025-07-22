@@ -17,7 +17,7 @@ pub fn main() !void {
         if (color_value == plt.color.ColorName.invalid) {
             continue;
         }
-        try writer.print("{:^5}", .{@enumToInt(color_value)});
+        try writer.print("{:^5}", .{@intFromEnum(color_value)});
     }
     try writer.print("\n", .{});
     for (std.enums.values(plt.color.ColorName)) |bg_value| {
@@ -26,7 +26,7 @@ pub fn main() !void {
         }
 
         const bg = plt.color.Color.by_name(bg_value);
-        try writer.print("{:2}{s:^20} ", .{ @enumToInt(bg_value), @tagName(bg_value) });
+        try writer.print("{:2}{s:^20} ", .{ @intFromEnum(bg_value), @tagName(bg_value) });
         for (std.enums.values(plt.color.ColorName)) |fg_value| {
             if (fg_value == plt.color.ColorName.invalid) {
                 continue;

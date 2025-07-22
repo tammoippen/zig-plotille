@@ -1,9 +1,6 @@
 const std = @import("std");
-const absInt = std.math.absInt;
 const approxEqAbs = std.math.approxEqAbs;
-const max = std.math.max;
 const signbit = std.math.signbit;
-
 const assert = std.debug.assert;
 const expectEqual = std.testing.expectEqual;
 const expectEqualStrings = std.testing.expectEqualStrings;
@@ -22,7 +19,7 @@ const XCoord = struct {
         return XCoord{
             .braille_idx = idx,
             .char_idx = @divFloor(idx, 2),
-            .dot_idx = @intCast(u1, absInt(@rem(idx, 2)) catch unreachable), // % 2
+            .dot_idx = @intCast(@abs(@rem(idx, 2))), // % 2
         };
     }
 };
@@ -35,7 +32,7 @@ const YCoord = struct {
         return YCoord{
             .braille_idx = idx,
             .char_idx = @divFloor(idx, 4),
-            .dot_idx = @intCast(u2, absInt(@rem(idx, 4)) catch unreachable),
+            .dot_idx = @intCast(@abs(@rem(idx, 4))),
         };
     }
 };
@@ -121,8 +118,10 @@ pub const Canvas = struct {
         self.ymin = ymin;
         self.xmax = xmax;
         self.ymax = ymax;
-        self.x_delta_pt = @fabs((xmax - xmin) / @intToFloat(f64, @as(u32, self.width) * 2)); // 2 points in left
-        self.y_delta_pt = @fabs((ymax - ymin) / @intToFloat(f64, @as(u32, self.height) * 4)); // 4 points in up
+        const width_points: f64 = @floatFromInt(@as(u32, self.width) * 2);
+        self.x_delta_pt = @abs((xmax - xmin) / width_points); // 2 points in left
+        const height_points: f64 = @floatFromInt(@as(u32, self.height) * 4);
+        self.y_delta_pt = @abs((ymax - ymin) / height_points); // 4 points in up
     }
 
     /// Transform an x-coordinate of the reference system to an index
@@ -137,7 +136,7 @@ pub const Canvas = struct {
         if (flt_idx < -0x80000000) {
             return XCoord.with(-0x80000000);
         }
-        const braille_idx = @floatToInt(i32, flt_idx);
+        const braille_idx: i32 = @intFromFloat(flt_idx);
         return XCoord.with(braille_idx);
     }
 
@@ -153,7 +152,7 @@ pub const Canvas = struct {
         if (flt_idx < -0x80000000) {
             return YCoord.with(-0x80000000);
         }
-        const braille_idx = @floatToInt(i32, flt_idx);
+        const braille_idx: i32 = @intFromFloat(flt_idx);
         return YCoord.with(braille_idx);
     }
 
@@ -174,7 +173,7 @@ pub const Canvas = struct {
             // out of canvas
             return;
         }
-        const idx = @intCast(usize, y_coord.char_idx * self.width + x_coord.char_idx);
+        const idx: usize = @intCast(y_coord.char_idx * self.width + x_coord.char_idx);
         self.canvas[idx].set(x_coord.dot_idx, y_coord.dot_idx);
         if (fg_color) |c| {
             self.canvas[idx].color.fg = c;
@@ -207,8 +206,9 @@ pub const Canvas = struct {
             if (string.len <= idx) {
                 return;
             }
-            const char_idx = @intCast(usize, y_coord.char_idx * self.width + x_coord.char_idx + idx);
-            self.canvas[char_idx].char = string[@intCast(usize, idx)];
+            const char_idx: usize = @intCast(y_coord.char_idx * self.width + x_coord.char_idx + idx);
+            const str_idx: usize = @intCast(idx);
+            self.canvas[char_idx].char = string[str_idx];
             if (fg_color) |c| {
                 self.canvas[char_idx].color.fg = c;
             }
@@ -242,7 +242,7 @@ pub const Canvas = struct {
             // out of canvas
             return;
         }
-        const idx = @intCast(usize, y_coord.char_idx * self.width + x_coord.char_idx);
+        const idx: usize = @intCast(y_coord.char_idx * self.width + x_coord.char_idx);
         self.canvas[idx].fill();
     }
 
@@ -268,18 +268,18 @@ pub const Canvas = struct {
         const y_diff = y1_coord.braille_idx - y0_coord.braille_idx;
 
         // steps to go in each direction
-        const max_steps = max(try absInt(x_diff), try absInt(y_diff));
-        const xstep = @intToFloat(f64, x_diff) / @intToFloat(f64, max_steps);
-        const ystep = @intToFloat(f64, y_diff) / @intToFloat(f64, max_steps);
+        const max_steps = @max(@abs(x_diff), @abs(y_diff));
+        const xstep = @as(f64, @floatFromInt(x_diff)) / @as(f64, @floatFromInt(max_steps));
+        const ystep = @as(f64, @floatFromInt(y_diff)) / @as(f64, @floatFromInt(max_steps));
 
         if (max_steps > 0) {
             const x_start = start_idx(x0_coord.braille_idx, xstep, @as(i32, self.width) * 2);
-            var y_start = start_idx(y0_coord.braille_idx, ystep, @as(i32, self.height) * 4);
+            const y_start = start_idx(y0_coord.braille_idx, ystep, @as(i32, self.height) * 4);
 
-            var idx: usize = max(1, max(x_start, y_start));
+            var idx: usize = @max(1, @max(x_start, y_start));
             while (idx < max_steps) : (idx += 1) {
-                const xb = x0_coord.braille_idx + @floatToInt(i32, @round(xstep * @intToFloat(f64, idx)));
-                const yb = y0_coord.braille_idx + @floatToInt(i32, @round(ystep * @intToFloat(f64, idx)));
+                const xb = x0_coord.braille_idx + @as(i32, @intFromFloat(@round(xstep * @as(f64, @floatFromInt(idx)))));
+                const yb = y0_coord.braille_idx + @as(i32, @intFromFloat(@round(ystep * @as(f64, @floatFromInt(idx)))));
                 if (0 <= xb and xb < @as(u32, self.width) * 2 and 0 <= yb and yb < @as(u32, self.height) * 4) {
                     self.set(XCoord.with(xb), YCoord.with(yb), fg_color, null);
                 } else {
@@ -305,10 +305,10 @@ pub const Canvas = struct {
             return 0; // TODO error?
         }
         if (c < 0) {
-            return @floatToInt(usize, @intToFloat(f64, -c) / step);
+            return @intFromFloat(@as(f64, @floatFromInt(-c)) / step);
         } else {
             assert(c >= c_max);
-            return @floatToInt(usize, @intToFloat(f64, -(c - c_max + 1)) / step);
+            return @intFromFloat(@as(f64, @floatFromInt(-(c - c_max + 1))) / step);
         }
     }
 
@@ -349,7 +349,7 @@ pub const Canvas = struct {
         assert(row >= 0);
         var w_idx: u18 = 0;
         while (w_idx < self.width) : (w_idx += 1) {
-            const idx: usize = @intCast(usize, row) * @as(usize, self.width) + w_idx;
+            const idx: usize = @as(usize, @intCast(row)) * @as(usize, self.width) + w_idx;
             var d = self.canvas[idx];
             d.color.bg = self.bg;
             try writer.print("{}", .{d});
