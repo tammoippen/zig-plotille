@@ -1,1 +1,8 @@
-.{ .name = "plotille", .version = "0.0.1", .dependencies = .{} }
+.{
+    .name = .plotille,
+    .version = "0.0.1",
+    .minimum_zig_version = "0.14.1",
+    .dependencies = .{},
+    .paths = .{""},
+    .fingerprint = 0x83e7a85968b5658b,
+}
