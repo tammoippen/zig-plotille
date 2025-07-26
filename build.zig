@@ -18,7 +18,7 @@ pub fn build(b: *std.Build) !void {
 
     const name = "plotille";
     const entry = b.path("src/main.zig");
-    const version = try std.SemanticVersion.parse("1.0.0");
+    const version = try std.SemanticVersion.parse("0.0.1");
     const module = b.addModule(name, .{
         .root_source_file = entry,
         .target = target,
