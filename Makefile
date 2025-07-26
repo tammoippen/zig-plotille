@@ -5,8 +5,9 @@ fmt:
 	uvx ruff format examples/*.py
 
 tests:
-	zig build --summary all test examples run install
+	zig build --summary all test examples run
 	./examples/test_terminfo.py -v
+	(cd house; zig build run)
 
 clean:
 	rm -rf zig-cache zig-out

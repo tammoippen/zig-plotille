@@ -58,7 +58,7 @@ pub fn build(b: *std.Build) !void {
     const example_step = b.step("examples", "Build example exe's.");
     const example_run_step = b.step("run", "Run example exe's.");
     example_run_step.dependOn(example_step);
-    const example_names = [_][]const u8{ "names", "lookup", "hsl", "terminfo", "house", "hist" };
+    const example_names = [_][]const u8{ "names", "lookup", "hsl", "terminfo", "hist" };
     inline for (example_names) |example| {
         const exe = b.addExecutable(.{
             .name = example,

@@ -1,5 +1,5 @@
 .{
-    .name = .external,
+    .name = .house,
     .version = "0.0.1",
     .minimum_zig_version = "0.14.1",
     .dependencies = .{
@@ -9,5 +9,5 @@
         },
     },
     .paths = .{""},
-    .fingerprint = 0x5852a1b8b01b7108,
+    .fingerprint = 0x67d5399d6c3b1b69,
 }
