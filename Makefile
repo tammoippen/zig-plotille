@@ -12,7 +12,7 @@ clean:
 	rm -rf zig-cache zig-out
 
 examples/dots.exe: examples/dots.c
-	$(CC) $(PWD)/zig-out/lib/libzig-plotille.a \
+	$(CC) $(PWD)/zig-out/lib/libplotille.a \
 		examples/dots.c \
 		-I. \
 		-I$(HOME)/repos/zig/build/install/lib/zig \

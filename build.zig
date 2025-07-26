@@ -16,7 +16,7 @@ pub fn build(b: *std.Build) !void {
     // const emit_h = b.option(bool, "emit-h", "Generate a C header file (.h)") orelse false;
     const filter = b.option([]const u8, "test-filter", "Skip tests that do not match filter");
 
-    const name = "zig-plotille";
+    const name = "plotille";
     const entry = b.path("src/main.zig");
     const version = try std.SemanticVersion.parse("1.0.0");
     const module = b.addModule(name, .{

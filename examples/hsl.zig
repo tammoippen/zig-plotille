@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const plt = @import("zig-plotille");
+const plt = @import("plotille");
 
 fn usage() void {
     std.debug.print(

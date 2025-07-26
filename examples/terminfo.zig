@@ -1,7 +1,7 @@
 const std = @import("std");
 const json = std.json;
 
-const plt = @import("zig-plotille");
+const plt = @import("plotille");
 const TermInfo = plt.terminfo.TermInfo;
 
 pub fn main() !void {

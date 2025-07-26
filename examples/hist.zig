@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const plt = @import("zig-plotille");
+const plt = @import("plotille");
 const TermInfo = plt.terminfo.TermInfo;
 
 fn usage() void {

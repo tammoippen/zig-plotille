@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const plt = @import("zig-plotille");
+const plt = @import("plotille");
 
 pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
