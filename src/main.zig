@@ -261,3 +261,217 @@ export fn canvas_str(c: CCanvas, buf: [*]u8, len: usize) usize {
     }
     return 0;
 }
+
+// figure
+
+const CFigure = extern struct {
+    width: u16,
+    height: u16,
+    xmin: f64,
+    ymin: f64,
+    xmax: f64,
+    ymax: f64,
+    origin: bool,
+    bg_color: color.Color,
+    x_label: ?[*:0]const u8,
+    y_label: ?[*:0]const u8,
+    _internal: ?*anyopaque,
+};
+
+export fn figure_init(width: u16, height: u16, bg_color: color.Color, out: *CFigure) bool {
+    const allocator = std.heap.c_allocator;
+
+    // Allocate the figure on the heap
+    const figure_ptr = allocator.create(figure.Figure) catch return false;
+    const bg_opt = if (bg_color.mode == .none) null else bg_color;
+    figure_ptr.* = figure.Figure.init(allocator, width, height, bg_opt) catch {
+        allocator.destroy(figure_ptr);
+        return false;
+    };
+
+    // Set up the C-compatible structure
+    out.width = figure_ptr.width;
+    out.height = figure_ptr.height;
+    out.xmin = figure_ptr.xmin;
+    out.ymin = figure_ptr.ymin;
+    out.xmax = figure_ptr.xmax;
+    out.ymax = figure_ptr.ymax;
+    out.origin = figure_ptr.origin;
+    out.bg_color = figure_ptr.bg_color;
+    out.x_label = @ptrCast(figure_ptr.x_label.ptr);
+    out.y_label = @ptrCast(figure_ptr.y_label.ptr);
+    out._internal = figure_ptr;
+
+    return true;
+}
+
+export fn figure_free(f: *CFigure) void {
+    const allocator = std.heap.c_allocator;
+
+    if (f._internal) |internal| {
+        const figure_ptr: *figure.Figure = @ptrCast(@alignCast(internal));
+        figure_ptr.deinit();
+        allocator.destroy(figure_ptr);
+    }
+
+    // Reset the structure
+    f.* = std.mem.zeroes(CFigure);
+}
+
+export fn figure_set_labels(f: *CFigure, x_label: [*:0]const u8, y_label: [*:0]const u8) bool {
+    if (f._internal) |internal| {
+        const figure_ptr: *figure.Figure = @ptrCast(@alignCast(internal));
+        const allocator = figure_ptr.allocator;
+
+        // Free old labels
+        allocator.free(figure_ptr.x_label);
+        allocator.free(figure_ptr.y_label);
+
+        // Allocate new labels
+        figure_ptr.x_label = allocator.dupe(u8, std.mem.span(x_label)) catch return false;
+        figure_ptr.y_label = allocator.dupe(u8, std.mem.span(y_label)) catch return false;
+
+        // Update C structure pointers
+        f.x_label = @ptrCast(figure_ptr.x_label.ptr);
+        f.y_label = @ptrCast(figure_ptr.y_label.ptr);
+
+        return true;
+    }
+    return false;
+}
+
+export fn figure_set_limits(f: *CFigure, xmin: f64, ymin: f64, xmax: f64, ymax: f64) void {
+    if (f._internal) |internal| {
+        const figure_ptr: *figure.Figure = @ptrCast(@alignCast(internal));
+        figure_ptr.xmin = xmin;
+        figure_ptr.ymin = ymin;
+        figure_ptr.xmax = xmax;
+        figure_ptr.ymax = ymax;
+
+        // Update C structure
+        f.xmin = xmin;
+        f.ymin = ymin;
+        f.xmax = xmax;
+        f.ymax = ymax;
+    }
+}
+
+export fn figure_plot(f: *CFigure, xs: [*]const f64, ys: [*]const f64, len: usize, plot_color: color.Color, label: ?[*:0]const u8, marker: u8) bool {
+    if (f._internal) |internal| {
+        const figure_ptr: *figure.Figure = @ptrCast(@alignCast(internal));
+        const label_str = if (label) |l| std.mem.span(l) else "Plot";
+        const marker_opt = if (marker == 0) null else marker;
+
+        figure_ptr.plot(xs[0..len], ys[0..len], .{
+            .lc = plot_color,
+            .label = label_str,
+            .marker = marker_opt,
+        }) catch return false;
+
+        return true;
+    }
+    return false;
+}
+
+export fn figure_scatter(f: *CFigure, xs: [*]const f64, ys: [*]const f64, len: usize, plot_color: color.Color, label: ?[*:0]const u8, marker: u8) bool {
+    if (f._internal) |internal| {
+        const figure_ptr: *figure.Figure = @ptrCast(@alignCast(internal));
+        const label_str = if (label) |l| std.mem.span(l) else "Scatter";
+        const marker_char = if (marker == 0) null else marker;
+
+        figure_ptr.scatter(xs[0..len], ys[0..len], .{
+            .lc = plot_color,
+            .label = label_str,
+            .marker = marker_char,
+        }) catch return false;
+
+        return true;
+    }
+    return false;
+}
+
+export fn figure_histogram(f: *CFigure, values: [*]const f64, len: usize, bins: usize, hist_color: color.Color) bool {
+    if (f._internal) |internal| {
+        const figure_ptr: *figure.Figure = @ptrCast(@alignCast(internal));
+        const color_opt = if (hist_color.mode == .none) null else hist_color;
+
+        figure_ptr.histogram(values[0..len], bins, color_opt) catch return false;
+        return true;
+    }
+    return false;
+}
+
+export fn figure_text(f: *CFigure, x: f64, y: f64, text: [*:0]const u8, text_color: color.Color) bool {
+    if (f._internal) |internal| {
+        const figure_ptr: *figure.Figure = @ptrCast(@alignCast(internal));
+        const color_opt = if (text_color.mode == .none) null else text_color;
+
+        figure_ptr.text(x, y, std.mem.span(text), color_opt) catch return false;
+        return true;
+    }
+    return false;
+}
+
+export fn figure_axvline(f: *CFigure, x: f64, line_color: color.Color, ymin: f64, ymax: f64) bool {
+    if (f._internal) |internal| {
+        const figure_ptr: *figure.Figure = @ptrCast(@alignCast(internal));
+
+        figure_ptr.axvline(x, .{
+            .lc = line_color,
+            .ymin = ymin,
+            .ymax = ymax,
+        }) catch return false;
+
+        return true;
+    }
+    return false;
+}
+
+export fn figure_axhline(f: *CFigure, y: f64, line_color: color.Color, xmin: f64, xmax: f64) bool {
+    if (f._internal) |internal| {
+        const figure_ptr: *figure.Figure = @ptrCast(@alignCast(internal));
+
+        figure_ptr.axhline(y, .{
+            .lc = line_color,
+            .xmin = xmin,
+            .xmax = xmax,
+        }) catch return false;
+
+        return true;
+    }
+    return false;
+}
+
+export fn figure_axvspan(f: *CFigure, xmin: f64, xmax: f64, ymin: f64, ymax: f64, line_color: color.Color) bool {
+    if (f._internal) |internal| {
+        const figure_ptr: *figure.Figure = @ptrCast(@alignCast(internal));
+
+        figure_ptr.axvspan(xmin, xmax, .{
+            .lc = line_color,
+            .ymin = ymin,
+            .ymax = ymax,
+        }) catch return false;
+
+        return true;
+    }
+    return false;
+}
+
+export fn figure_prepare(f: *CFigure) bool {
+    if (f._internal) |internal| {
+        const figure_ptr: *figure.Figure = @ptrCast(@alignCast(internal));
+        figure_ptr.prepare() catch return false;
+        return true;
+    }
+    return false;
+}
+
+export fn figure_str(f: CFigure, buf: [*]u8, len: usize) usize {
+    if (f._internal) |internal| {
+        const figure_ptr: *const figure.Figure = @ptrCast(@alignCast(internal));
+        var fbs = std.io.fixedBufferStream(buf[0..len]);
+        std.fmt.format(fbs.writer(), "{}", .{figure_ptr.*}) catch return 0;
+        return fbs.pos;
+    }
+    return 0;
+}

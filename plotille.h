@@ -142,6 +142,21 @@ typedef struct {
     void *_internal;         /* Internal pointer for memory management (do not modify) */
 } Canvas;
 
+/**
+ * C-compatible Figure structure for creating plots with multiple data series
+ */
+typedef struct {
+    uint16_t width;          /* Width in characters */
+    uint16_t height;         /* Height in characters */
+    double xmin, ymin;       /* Lower left corner of reference system */
+    double xmax, ymax;       /* Upper right corner of reference system */
+    bool origin;             /* Whether to print the origin */
+    Color bg_color;          /* Background color */
+    const char *x_label;     /* X-axis label (null-terminated) */
+    const char *y_label;     /* Y-axis label (null-terminated) */
+    void *_internal;         /* Internal pointer for memory management (do not modify) */
+} Figure;
+
 // ============================================================================
 // Exported Functions
 // ============================================================================
@@ -343,6 +358,141 @@ void canvas_text(Canvas *canvas, Point p, const char *text, Color fg_color);
  * @return Number of bytes written to buffer, or 0 if buffer too small
  */
 size_t canvas_str(Canvas canvas, uint8_t *buf, size_t len);
+
+/**
+ * Initialize a figure with specified dimensions and background color
+ * @param width Width in characters
+ * @param height Height in characters
+ * @param bg_color Background color (pass color_no_color() for default)
+ * @param out Pointer to Figure structure to initialize
+ * @return true if initialization succeeded, false on error
+ */
+bool figure_init(uint16_t width, uint16_t height, Color bg_color, Figure *out);
+
+/**
+ * Free memory allocated for a figure
+ * @param figure Pointer to the Figure structure to free
+ */
+void figure_free(Figure *figure);
+
+/**
+ * Set axis labels for the figure
+ * @param figure Pointer to the Figure structure
+ * @param x_label X-axis label (will be copied)
+ * @param y_label Y-axis label (will be copied)
+ * @return true if successful, false on error
+ */
+bool figure_set_labels(Figure *figure, const char *x_label, const char *y_label);
+
+/**
+ * Set the reference coordinate system for the figure
+ * @param figure Pointer to the Figure structure
+ * @param xmin Minimum x coordinate
+ * @param ymin Minimum y coordinate
+ * @param xmax Maximum x coordinate
+ * @param ymax Maximum y coordinate
+ */
+void figure_set_limits(Figure *figure, double xmin, double ymin, double xmax, double ymax);
+
+/**
+ * Add a line plot to the figure
+ * @param figure Pointer to the Figure structure
+ * @param xs Array of x coordinates
+ * @param ys Array of y coordinates
+ * @param len Number of points
+ * @param color Line color (pass color_no_color() for default)
+ * @param label Plot label (will be copied, pass NULL for default)
+ * @param marker Character marker for points (0 for no marker)
+ * @return true if successful, false on error
+ */
+bool figure_plot(Figure *figure, const double *xs, const double *ys, size_t len,
+                 Color color, const char *label, uint8_t marker);
+
+/**
+ * Add a scatter plot to the figure
+ * @param figure Pointer to the Figure structure
+ * @param xs Array of x coordinates
+ * @param ys Array of y coordinates
+ * @param len Number of points
+ * @param color Point color (pass color_no_color() for default)
+ * @param label Plot label (will be copied, pass NULL for default)
+ * @param marker Character marker for points (0 for default)
+ * @return true if successful, false on error
+ */
+bool figure_scatter(Figure *figure, const double *xs, const double *ys, size_t len,
+                    Color color, const char *label, uint8_t marker);
+
+/**
+ * Add a histogram to the figure
+ * @param figure Pointer to the Figure structure
+ * @param values Array of values to create histogram from
+ * @param len Number of values
+ * @param bins Number of bins
+ * @param color Histogram color (pass color_no_color() for default)
+ * @return true if successful, false on error
+ */
+bool figure_histogram(Figure *figure, const double *values, size_t len, size_t bins, Color color);
+
+/**
+ * Add text annotation to the figure
+ * @param figure Pointer to the Figure structure
+ * @param x X coordinate in reference system
+ * @param y Y coordinate in reference system
+ * @param text Text to display (will be copied)
+ * @param color Text color (pass color_no_color() for default)
+ * @return true if successful, false on error
+ */
+bool figure_text(Figure *figure, double x, double y, const char *text, Color color);
+
+/**
+ * Add vertical line to the figure
+ * @param figure Pointer to the Figure structure
+ * @param x X coordinate for the vertical line (0.0 to 1.0, relative)
+ * @param color Line color (pass color_no_color() for default)
+ * @param ymin Minimum y coordinate (0.0 to 1.0, relative)
+ * @param ymax Maximum y coordinate (0.0 to 1.0, relative)
+ * @return true if successful, false on error
+ */
+bool figure_axvline(Figure *figure, double x, Color color, double ymin, double ymax);
+
+/**
+ * Add horizontal line to the figure
+ * @param figure Pointer to the Figure structure
+ * @param y Y coordinate for the horizontal line (0.0 to 1.0, relative)
+ * @param color Line color (pass color_no_color() for default)
+ * @param xmin Minimum x coordinate (0.0 to 1.0, relative)
+ * @param xmax Maximum x coordinate (0.0 to 1.0, relative)
+ * @return true if successful, false on error
+ */
+bool figure_axhline(Figure *figure, double y, Color color, double xmin, double xmax);
+
+/**
+ * Add vertical span to the figure
+ * @param figure Pointer to the Figure structure
+ * @param xmin Minimum x coordinate  (0.0 to 1.0, relative)
+ * @param xmax Maximum x coordinate  (0.0 to 1.0, relative)
+ * @param ymin Minimum y coordinate (0.0 to 1.0, relative)
+ * @param ymax Maximum y coordinate (0.0 to 1.0, relative)
+ * @param color Span color (pass color_no_color() for default)
+ * @return true if successful, false on error
+ */
+bool figure_axvspan(Figure *figure, double xmin, double xmax, double ymin, double ymax, Color color);
+
+/**
+ * Prepare the figure for rendering (must be called before figure_str)
+ * @param figure Pointer to the Figure structure
+ * @return true if successful, false on error
+ */
+bool figure_prepare(Figure *figure);
+
+/**
+ * Convert figure to string representation
+ * @param figure Figure structure to convert
+ * @param buf Buffer to write the string representation to
+ * @param len Length of the buffer
+ * @return Number of bytes written to buffer, or 0 if buffer too small
+ */
+size_t figure_str(Figure figure, uint8_t *buf, size_t len);
 
 // ============================================================================
 // Helper Functions and Constants
