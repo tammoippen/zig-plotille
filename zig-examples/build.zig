@@ -24,7 +24,7 @@ pub fn build(b: *std.Build) !void {
         const exe_run = b.addRunArtifact(exe);
         run_step.dependOn(&exe_run.step);
 
-        if (std.mem.eql(u8, example, "hsl")) {
+        if (std.ascii.eqlIgnoreCase(example, "hsl")) {
             const ranges = b.addRunArtifact(exe);
             const ranges_args = [_][]const u8{ "45", "90" };
             ranges.addArgs(&ranges_args);
@@ -34,6 +34,13 @@ pub fn build(b: *std.Build) !void {
             const short_args = [_][]const u8{ "--short", "0", "45", "90", "135", "180", "225", "270", "315", "360" };
             short.addArgs(&short_args);
             run_step.dependOn(&short.step);
+        }
+
+        if (std.ascii.eqlIgnoreCase(example, "hist")) {
+            const ranges = b.addRunArtifact(exe);
+            const ranges_args = [_][]const u8{ "10.4", "100", "200" };
+            ranges.addArgs(&ranges_args);
+            run_step.dependOn(&ranges.step);
         }
     }
 }

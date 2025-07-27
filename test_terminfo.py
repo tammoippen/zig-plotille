@@ -13,6 +13,8 @@ import unittest
 
 import pexpect
 
+terminfo = "./zig-examples/zig-out/bin/terminfo"
+
 
 class TestTermInfoOutput(unittest.TestCase):
     def run_subprocess(self, names, vals, result):
@@ -21,7 +23,7 @@ class TestTermInfoOutput(unittest.TestCase):
             vals = [vals]
         assert len(names) == len(vals)
         env = {k: v for k, v in zip(names, vals)}
-        res = subprocess.run(["./zig-out/bin/terminfo"], capture_output=True, env=env)
+        res = subprocess.run([terminfo], capture_output=True, env=env)
         self.assertEqual(res.returncode, 0)
         self.assertEqual(res.stderr, b"", res.stderr)
 
@@ -29,7 +31,7 @@ class TestTermInfoOutput(unittest.TestCase):
         self.assertEqual(out, result, res.stderr)
 
     def test_tty(self):
-        resp = pexpect.run("./zig-out/bin/terminfo", timeout=5)
+        resp = pexpect.run(terminfo, timeout=5)
 
         out = json.loads(resp)
         self.assertTrue(out["stdout_tty"])

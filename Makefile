@@ -6,8 +6,8 @@ fmt:
 
 tests:
 	zig build test
-	./test_terminfo.py -v
 	(cd zig-examples; zig build run)
+	./test_terminfo.py -v
 
 clean:
 	rm -rf zig-cache zig-out
