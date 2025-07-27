@@ -17,7 +17,7 @@ OBJS=$(SRCS:.c=.exe)
 
 c: $(OBJS)
 
-c-examples/%.exe: c-examples/%.c
+c-examples/%.exe: c-examples/%.c plotille.h $(PWD)/zig-out/lib/libplotille.a
 	$(CC) $(PWD)/zig-out/lib/libplotille.a \
 		$< \
 		-I$(PWD) \

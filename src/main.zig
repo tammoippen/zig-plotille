@@ -65,14 +65,9 @@ export fn color_by_hsl(h: f64, s: f64, l: f64) color.Color {
     return color.Color.by_hsl(h, s, l);
 }
 
-export fn color_print(buf: [*]u8, len: usize, text: [*:0]const u8, options: color.ColorOptions) usize {
+export fn color_str(buf: [*]u8, len: usize, text: [*:0]const u8, options: color.ColorOptions) usize {
     var fbs = std.io.fixedBufferStream(buf[0..len]);
-    color.colorPrint(fbs.writer(), "{s}", .{text}, options) catch |err| switch (err) {
-        error.NoSpaceLeft => return 0,
-    };
-    fbs.writer().writeByte(0) catch |err| switch (err) {
-        error.NoSpaceLeft => return 0,
-    };
+    color.colorPrint(fbs.writer(), "{s}", .{text}, options) catch return 0;
     return fbs.pos;
 }
 
@@ -87,12 +82,63 @@ export fn get_terminfo(out: *terminfo.TermInfo) bool {
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
-    terminfo.TermInfo.detect(allocator) catch |err| switch (err) {
-        error.Overflow => return false,
-        error.OutOfMemory => return false,
-        error.InvalidWtf8 => return false,
-        error.InvalidCharacter => return false,
-    };
+    terminfo.TermInfo.detect(allocator) catch return false;
     out.* = terminfo.TermInfo.get();
     return true;
+}
+
+// hist
+
+const CHistogram = extern struct {
+    counts: ?[*]u32,
+    bins: ?[*]f64,
+    bins_count: usize,
+    bins_capacity: usize,
+    delta: f64,
+    // Keep a pointer to the original histogram for cleanup
+    _internal: ?*anyopaque,
+};
+
+export fn hist_init(values: [*]const f64, values_len: usize, bins: usize, out: *CHistogram) bool {
+    const allocator = std.heap.c_allocator;
+
+    // Allocate the histogram on the heap
+    const hist_ptr = allocator.create(hist.Histogram) catch return false;
+    hist_ptr.* = hist.Histogram.init(allocator, values[0..values_len], bins) catch {
+        allocator.destroy(hist_ptr);
+        return false;
+    };
+
+    // Set up the C-compatible structure
+    out.counts = hist_ptr.counts.items.ptr;
+    out.bins = hist_ptr.bins.items.ptr;
+    out.bins_count = hist_ptr.counts.items.len;
+    out.bins_capacity = hist_ptr.counts.capacity;
+    out.delta = hist_ptr.delta;
+    out._internal = hist_ptr;
+
+    return true;
+}
+
+export fn hist_free(h: *CHistogram) void {
+    const allocator = std.heap.c_allocator;
+
+    if (h._internal) |internal| {
+        const hist_ptr: *hist.Histogram = @ptrCast(@alignCast(internal));
+        hist_ptr.deinit();
+        allocator.destroy(hist_ptr);
+    }
+
+    // Reset the structure
+    h.* = std.mem.zeroes(CHistogram);
+}
+
+export fn hist_str(h: CHistogram, buf: [*]u8, len: usize) usize {
+    if (h._internal) |internal| {
+        const hist_ptr: *const hist.Histogram = @ptrCast(@alignCast(internal));
+        var fbs = std.io.fixedBufferStream(buf[0..len]);
+        std.fmt.format(fbs.writer(), "{}", .{hist_ptr.*}) catch return 0;
+        return fbs.pos;
+    }
+    return 0;
 }

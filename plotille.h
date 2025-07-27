@@ -93,6 +93,19 @@ typedef struct {
     ColorMode suggested_color_mode; /* Detected optimal color mode for terminal */
 } TermInfo;
 
+/**
+ * C-compatible Histogram structure
+ * Represents a histogram with raw pointer arrays instead of ArrayList
+ */
+typedef struct {
+    uint32_t *counts;       /* Array of count values for each bin (nullable) */
+    double *bins;           /* Array of bin boundaries (bins_count + 1 elements, nullable) */
+    size_t bins_count;      /* Number of bins */
+    size_t bins_capacity;   /* Capacity of the arrays */
+    double delta;           /* Range of the histogram (max - min) */
+    void *_internal;        /* Internal pointer for memory management (do not modify) */
+} Histogram;
+
 // ============================================================================
 // Exported Functions
 // ============================================================================
@@ -193,7 +206,32 @@ bool get_terminfo(TermInfo *out);
  * @param options Color options for foreground/background
  * @return Number of bytes written to buffer, or 0 if buffer too small
  */
-size_t color_print(uint8_t *buf, size_t len, const char *text, ColorOptions options);
+size_t color_str(uint8_t *buf, size_t len, const char *text, ColorOptions options);
+
+/**
+ * Initialize a histogram from an array of values
+ * @param values Array of input values to create histogram from
+ * @param values_len Number of values in the input array
+ * @param bins Number of bins to divide the data into
+ * @param out Pointer to Histogram structure to initialize
+ * @return true if initialization succeeded, false on error
+ */
+bool hist_init(const double *values, size_t values_len, size_t bins, Histogram *out);
+
+/**
+ * Free memory allocated for a histogram
+ * @param h Pointer to the Histogram structure to free
+ */
+void hist_free(Histogram *h);
+
+/**
+ * Convert histogram to string representation
+ * @param h Histogram structure to convert
+ * @param buf Buffer to write the string representation to
+ * @param len Length of the buffer
+ * @return Number of bytes written to buffer, or 0 if buffer too small
+ */
+size_t hist_str(Histogram h, uint8_t *buf, size_t len);
 
 // ============================================================================
 // Helper Functions and Constants

@@ -11,14 +11,16 @@ int main(int argc, char const *argv[])
     opts.bg = color_by_name(COLOR_BLUE);
 
     TermInfo ti;
-    if (!get_terminfo(&ti)) {
+    if (!get_terminfo(&ti))
+    {
         printf("Cannot get the terminfo");
         return 1;
     }
 
-    size_t bytes_written = color_print(buffer, sizeof(buffer), "Hello, World!", opts);
+    size_t bytes_written = color_str(buffer, sizeof(buffer), "Hello, World!", opts);
     if (bytes_written > 0)
     {
-        printf("%s\n", buffer);         // Print the colored text
+        buffer[bytes_written] = '\0';
+        printf("%s\n", buffer); // Print the colored text
     }
 }
