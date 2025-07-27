@@ -37,7 +37,7 @@ const YCoord = struct {
     }
 };
 
-const Point = struct {
+pub const Point = extern struct {
     x: f64,
     y: f64,
 };

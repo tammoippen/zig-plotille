@@ -106,6 +106,42 @@ typedef struct {
     void *_internal;        /* Internal pointer for memory management (do not modify) */
 } Histogram;
 
+/**
+ * Coordinate structures matching Zig extern structs
+ */
+
+/**
+ * Point structure for 2D coordinates
+ */
+typedef struct {
+    double x;
+    double y;
+} Point;
+
+/**
+ * Point distance structure for coordinate differences
+ */
+typedef struct {
+    intptr_t x;
+    intptr_t y;
+} PointDistance;
+
+/**
+ * C-compatible Canvas structure for 2D plotting
+ * Maintains both character-based dimensions and reference coordinate system
+ */
+typedef struct {
+    uint16_t width;          /* Width in characters */
+    uint16_t height;         /* Height in characters */
+    double xmin, ymin;       /* Lower left corner of reference system */
+    double xmax, ymax;       /* Upper right corner of reference system */
+    double x_delta_pt;       /* X value between dots */
+    double y_delta_pt;       /* Y value between dots */
+    Color bg;                /* Background color */
+    Dots *canvas;            /* Array of Dots (width * height elements) */
+    void *_internal;         /* Internal pointer for memory management (do not modify) */
+} Canvas;
+
 // ============================================================================
 // Exported Functions
 // ============================================================================
@@ -232,6 +268,81 @@ void hist_free(Histogram *h);
  * @return Number of bytes written to buffer, or 0 if buffer too small
  */
 size_t hist_str(Histogram h, uint8_t *buf, size_t len);
+
+/**
+ * Initialize a canvas with specified dimensions and background color
+ * @param width Width in characters
+ * @param height Height in characters
+ * @param bg Background color
+ * @param out Pointer to Canvas structure to initialize
+ * @return true if initialization succeeded, false on error
+ */
+bool canvas_init(uint16_t width, uint16_t height, Color bg, Canvas *out);
+
+/**
+ * Free memory allocated for a canvas
+ * @param canvas Pointer to the Canvas structure to free
+ */
+void canvas_free(Canvas *canvas);
+
+/**
+ * Set the reference coordinate system for the canvas
+ * @param canvas Pointer to the Canvas structure
+ * @param xmin Minimum x coordinate
+ * @param ymin Minimum y coordinate
+ * @param xmax Maximum x coordinate
+ * @param ymax Maximum y coordinate
+ */
+void canvas_set_reference_system(Canvas *canvas, double xmin, double ymin, double xmax, double ymax);
+
+/**
+ * Plot a single point on the canvas
+ * @param canvas Pointer to the Canvas structure
+ * @param p Point coordinates in reference system
+ * @param fg_color Foreground color (pass color_no_color() for default)
+ * @param char_override Character to display instead of braille dot (0 for braille)
+ */
+void canvas_point(Canvas *canvas, Point p, Color fg_color, uint8_t char_override);
+
+/**
+ * Draw a line between two points on the canvas
+ * @param canvas Pointer to the Canvas structure
+ * @param p0 Starting point in reference system
+ * @param p1 Ending point in reference system
+ * @param fg_color Foreground color (pass color_no_color() for default)
+ * @param char_override Character for line endpoints (0 for braille)
+ * @return true if successful, false on error
+ */
+bool canvas_line(Canvas *canvas, Point p0, Point p1, Color fg_color, uint8_t char_override);
+
+/**
+ * Draw a rectangle on the canvas
+ * @param canvas Pointer to the Canvas structure
+ * @param bottom_left Bottom-left corner in reference system
+ * @param top_right Top-right corner in reference system
+ * @param fg_color Foreground color (pass color_no_color() for default)
+ * @param char_override Character for rectangle corners (0 for braille)
+ * @return true if successful, false on error
+ */
+bool canvas_rect(Canvas *canvas, Point bottom_left, Point top_right, Color fg_color, uint8_t char_override);
+
+/**
+ * Add text to the canvas at specified position
+ * @param canvas Pointer to the Canvas structure
+ * @param p Position in reference system
+ * @param text Null-terminated text string
+ * @param fg_color Foreground color (pass color_no_color() for default)
+ */
+void canvas_text(Canvas *canvas, Point p, const char *text, Color fg_color);
+
+/**
+ * Convert canvas to string representation
+ * @param canvas Canvas structure to convert
+ * @param buf Buffer to write the string representation to
+ * @param len Length of the buffer
+ * @return Number of bytes written to buffer, or 0 if buffer too small
+ */
+size_t canvas_str(Canvas canvas, uint8_t *buf, size_t len);
 
 // ============================================================================
 // Helper Functions and Constants
