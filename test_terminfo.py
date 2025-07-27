@@ -41,7 +41,7 @@ class TestTermInfoOutput(unittest.TestCase):
             {
                 "stdout_tty": False,  # subprocess has no tty
                 "no_color": False,
-                "force_color": None,
+                "force_color": "none",
                 "suggested_color_mode": "none",
             },
         )
@@ -55,7 +55,7 @@ class TestTermInfoOutput(unittest.TestCase):
                     {
                         "stdout_tty": False,  # subprocess has no tty
                         "no_color": True,
-                        "force_color": None,
+                        "force_color": "none",
                         "suggested_color_mode": "none",
                     },
                 )
@@ -69,12 +69,12 @@ class TestTermInfoOutput(unittest.TestCase):
                     {
                         "stdout_tty": False,  # subprocess has no tty
                         "no_color": False,
-                        "force_color": False,
+                        "force_color": "no",
                         "suggested_color_mode": "none",
                     },
                 )
 
-    def test_force_color_no(self):
+    def test_force_color_on(self):
         for val in ["", "1", "2", "3", "TRUE", "xxx"]:
             with self.subTest(msg="Check FORCE_COLOR=val", val=val):
                 self.run_subprocess(
@@ -83,7 +83,7 @@ class TestTermInfoOutput(unittest.TestCase):
                     {
                         "stdout_tty": False,  # subprocess has no tty
                         "no_color": False,
-                        "force_color": True,
+                        "force_color": "yes",
                         "suggested_color_mode": "none",
                     },
                 )
@@ -97,7 +97,7 @@ class TestTermInfoOutput(unittest.TestCase):
                     {
                         "stdout_tty": False,  # subprocess has no tty
                         "no_color": False,
-                        "force_color": None,
+                        "force_color": "none",
                         "suggested_color_mode": "rgb",
                     },
                 )
@@ -118,7 +118,7 @@ class TestTermInfoOutput(unittest.TestCase):
                     {
                         "stdout_tty": False,  # subprocess has no tty
                         "no_color": False,
-                        "force_color": None,
+                        "force_color": "none",
                         "suggested_color_mode": "rgb",
                     },
                 )
@@ -139,7 +139,7 @@ class TestTermInfoOutput(unittest.TestCase):
                     {
                         "stdout_tty": False,  # subprocess has no tty
                         "no_color": False,
-                        "force_color": None,
+                        "force_color": "none",
                         "suggested_color_mode": "rgb",
                     },
                 )
@@ -153,7 +153,7 @@ class TestTermInfoOutput(unittest.TestCase):
                     {
                         "stdout_tty": False,  # subprocess has no tty
                         "no_color": False,
-                        "force_color": None,
+                        "force_color": "none",
                         "suggested_color_mode": "rgb",
                     },
                 )
@@ -167,7 +167,7 @@ class TestTermInfoOutput(unittest.TestCase):
                     {
                         "stdout_tty": False,  # subprocess has no tty
                         "no_color": False,
-                        "force_color": None,
+                        "force_color": "none",
                         "suggested_color_mode": "rgb",
                     },
                 )
@@ -181,7 +181,7 @@ class TestTermInfoOutput(unittest.TestCase):
                     {
                         "stdout_tty": False,  # subprocess has no tty
                         "no_color": False,
-                        "force_color": None,
+                        "force_color": "none",
                         "suggested_color_mode": "lookup",
                     },
                 )
@@ -195,7 +195,7 @@ class TestTermInfoOutput(unittest.TestCase):
                     {
                         "stdout_tty": False,  # subprocess has no tty
                         "no_color": False,
-                        "force_color": None,
+                        "force_color": "none",
                         "suggested_color_mode": "lookup",
                     },
                 )
@@ -214,7 +214,7 @@ class TestTermInfoOutput(unittest.TestCase):
                         {
                             "stdout_tty": False,  # subprocess has no tty
                             "no_color": False,
-                            "force_color": None,
+                            "force_color": "none",
                             "suggested_color_mode": "rgb",
                         },
                     )
@@ -228,7 +228,7 @@ class TestTermInfoOutput(unittest.TestCase):
                     {
                         "stdout_tty": False,  # subprocess has no tty
                         "no_color": False,
-                        "force_color": None,
+                        "force_color": "none",
                         "suggested_color_mode": "rgb",
                     },
                 )
@@ -242,7 +242,7 @@ class TestTermInfoOutput(unittest.TestCase):
                     {
                         "stdout_tty": False,  # subprocess has no tty
                         "no_color": False,
-                        "force_color": None,
+                        "force_color": "none",
                         "suggested_color_mode": "lookup",
                     },
                 )
@@ -256,7 +256,7 @@ class TestTermInfoOutput(unittest.TestCase):
                     {
                         "stdout_tty": False,  # subprocess has no tty
                         "no_color": False,
-                        "force_color": None,
+                        "force_color": "none",
                         "suggested_color_mode": "rgb",
                     },
                 )
@@ -270,7 +270,7 @@ class TestTermInfoOutput(unittest.TestCase):
                     {
                         "stdout_tty": False,  # subprocess has no tty
                         "no_color": False,
-                        "force_color": None,
+                        "force_color": "none",
                         "suggested_color_mode": "lookup",
                     },
                 )
@@ -294,7 +294,7 @@ class TestTermInfoOutput(unittest.TestCase):
                     {
                         "stdout_tty": False,  # subprocess has no tty
                         "no_color": False,
-                        "force_color": None,
+                        "force_color": "none",
                         "suggested_color_mode": "names",
                     },
                 )
@@ -306,7 +306,7 @@ class TestTermInfoOutput(unittest.TestCase):
             {
                 "stdout_tty": False,  # subprocess has no tty
                 "no_color": False,
-                "force_color": None,
+                "force_color": "none",
                 "suggested_color_mode": "none",
             },
         )

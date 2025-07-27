@@ -335,13 +335,13 @@ pub fn colorPrint(writer: anytype, comptime fmt: []const u8, args: anytype, opti
     const info = terminfo.TermInfo.get();
 
     // no color on no_color, NO_COLOR, FORCE_COLOR=0|false|none
-    if (info.no_color or (info.force_color != null and !info.force_color.?)) {
+    if (info.no_color or info.force_color == terminfo.ForceColor.no) {
         try writer.print(fmt, args);
         return;
     }
 
     // no color on not stdout tty (except FORCE_COLOR as something valid set)
-    if (!(info.stdout_tty or (info.force_color != null and info.force_color.?))) {
+    if (!(info.stdout_tty or info.force_color == terminfo.ForceColor.yes)) {
         try writer.print(fmt, args);
         return;
     }

@@ -16,7 +16,17 @@ const lookup_term = [_][]const u8{
     "cygwin"};
 const names_term = [_][]const u8{ "xterm", "vt100", "vt220", "screen", "color", "linux", "ansi", "rxvt", "konsole" };
 
-pub const TermInfo = struct {
+pub const ForceColor = enum(c_uint) {
+    none,
+    yes,
+    no,
+
+    pub fn jsonStringify(self: ForceColor, out_stream: anytype) !void {
+        try out_stream.print("\"{s}\"", .{@tagName(self)});
+    }
+};
+
+pub const TermInfo = extern struct {
     // whether stdout is a tty / is interactive
     // if is false, then we probably pipe or
     // redirect into a file
@@ -26,12 +36,15 @@ pub const TermInfo = struct {
     // respect FORCE_COLOR env var somewhat: https://nodejs.org/api/tty.html#tty_writestream_getcolordepth_env
     // if set and 0, false or none, same effect as NO_COLOR
     // on all other values force color on (but not the respective kind)
-    force_color: ?bool,
+    force_color: ForceColor,
     suggested_color_mode: color.ColorMode,
 
     /// Get the 'cached' TermInfo. Set via `set(...)` or `detect(...)` beforehand.
     pub fn get() TermInfo {
         return info orelse @panic("You have to initialize the TermInfo with either `set(...)` or `detect(...)`");
+    }
+    pub fn is_set() bool {
+        return info != null;
     }
 
     /// Set your own TermInfo for testing, forcing color on / off.
@@ -43,7 +56,7 @@ pub const TermInfo = struct {
     pub fn testing() void {
         info = TermInfo{
             .no_color = false,
-            .force_color = true,
+            .force_color = ForceColor.yes,
             .stdout_tty = true,
             .suggested_color_mode = .rgb,
         };
@@ -52,7 +65,7 @@ pub const TermInfo = struct {
     pub fn disable_color() void {
         info = TermInfo{
             .no_color = true,
-            .force_color = false,
+            .force_color = ForceColor.no,
             .stdout_tty = false,
             .suggested_color_mode = .none,
         };
@@ -80,15 +93,19 @@ pub const TermInfo = struct {
         return std.process.hasEnvVar(allocator, "NO_COLOR") catch unreachable;
     }
     /// free on its own
-    fn forceColors(allocator: std.mem.Allocator) !?bool {
+    fn forceColors(allocator: std.mem.Allocator) !ForceColor {
         // https://nodejs.org/api/tty.html#tty_writestream_getcolordepth_env
-        var force_color: ?bool = null;
+        var force_color: ForceColor = ForceColor.none;
 
         // on issues, ignore force_color
         const opt_force_color_str = try getEnvVar(allocator, "FORCE_COLOR");
         if (opt_force_color_str) |force_color_str| {
             defer allocator.free(force_color_str);
-            force_color = !(std.mem.eql(u8, force_color_str, "0") or std.mem.eql(u8, force_color_str, "false") or std.mem.eql(u8, force_color_str, "none"));
+            if (std.ascii.eqlIgnoreCase(force_color_str, "0") or std.ascii.eqlIgnoreCase(force_color_str, "false") or std.ascii.eqlIgnoreCase(force_color_str, "none")) {
+                force_color = ForceColor.no;
+            } else {
+                force_color = ForceColor.yes;
+            }
         }
         return force_color;
     }
@@ -131,7 +148,7 @@ pub const TermInfo = struct {
         if (opt_term) |term| {
             defer allocator.free(term);
 
-            var iter = std.mem.splitSequence(u8, term, "-");
+            var iter = std.mem.splitScalar(u8, term, '-');
             const opt_term_part = iter.next();
             const opt_level_part = if (opt_term_part != null) iter.next() else null;
 
@@ -201,7 +218,7 @@ pub const TermInfo = struct {
         if (opt_version) |version| {
             defer allocator.free(version);
             // get major version
-            var iter = std.mem.splitSequence(u8, version, ".");
+            var iter = std.mem.splitScalar(u8, version, '.');
             const first = iter.next();
             if (first) |major_str| {
                 const major = try std.fmt.parseUnsigned(u8, major_str, 10);
