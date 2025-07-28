@@ -12,7 +12,6 @@ pub fn build(b: *std.Build) !void {
     const mode = b.standardOptimizeOption(.{});
 
     const strip = b.option(bool, "strip", "Omit debug symbols") orelse false;
-    const dynamic = b.option(bool, "dynamic", "Force output to be dynamically linked") orelse false;
     // const emit_h = b.option(bool, "emit-h", "Generate a C header file (.h)") orelse false;
     const filter = b.option([]const u8, "test-filter", "Skip tests that do not match filter");
 
@@ -26,25 +25,25 @@ pub fn build(b: *std.Build) !void {
         .strip = strip,
     });
 
-    if (!dynamic) {
-        const lib = b.addStaticLibrary(.{
-            .name = name,
-            .root_module = module,
-            .version = version,
-        });
-        const installed_lib = b.addInstallArtifact(lib, .{});
-        // installed_lib.emitted_h = lib.getEmittedH();
-        b.getInstallStep().dependOn(&installed_lib.step);
-    } else {
-        const lib = b.addSharedLibrary(.{
-            .name = name,
-            .root_module = module,
-            .version = version,
-        });
-        const installed_lib = b.addInstallArtifact(lib, .{});
-        // installed_lib.emitted_h = lib.getEmittedH();
-        b.getInstallStep().dependOn(&installed_lib.step);
-    }
+    // Build static library by default
+    const static_lib = b.addStaticLibrary(.{
+        .name = name,
+        .root_module = module,
+        .version = version,
+        .strip = strip,
+    });
+    const installed_static_lib = b.addInstallArtifact(static_lib, .{});
+    b.getInstallStep().dependOn(&installed_static_lib.step);
+
+    // Build dynamic library by default (unless static-only is requested)
+    const shared_lib = b.addSharedLibrary(.{
+        .name = name,
+        .root_module = module,
+        .version = version,
+        .strip = strip,
+    });
+    const installed_shared_lib = b.addInstallArtifact(shared_lib, .{});
+    b.getInstallStep().dependOn(&installed_shared_lib.step);
 
     const test_step = b.step("test", "Run library tests");
     const tests = b.addTest(.{

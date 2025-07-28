@@ -6,7 +6,7 @@ const color = @import("./color.zig");
 
 var info: ?TermInfo = null;
 
-const rgb_termprogs = [_][]const u8{ "hyper", "wezterm", "vscode" };
+const rgb_termprogs = [_][]const u8{ "hyper", "wezterm", "vscode", "ghostty" };
 const lookup_termprogs = [_][]const u8{"apple_terminal"};
 const rgb_level = [_][]const u8{ "24bit", "24bits", "direct", "truecolor" };
 const lookup_level = [_][]const u8{ "256", "256color", "256colors" };

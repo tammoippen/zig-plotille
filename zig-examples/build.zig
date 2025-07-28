@@ -4,12 +4,14 @@ pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const mode = b.standardOptimizeOption(.{});
 
+    const strip = b.option(bool, "strip", "Omit debug symbols") orelse false;
+
     const plotille = b.dependency("plotille", .{
         .target = target,
         .optimize = mode,
     });
 
-    const example_names = [_][]const u8{ "names", "lookup", "hsl", "terminfo", "hist", "house" };
+    const example_names = [_][]const u8{ "names", "lookup", "hsl", "terminfo", "hist", "house", "sine" };
     const run_step = b.step("run", "Run exe.");
     inline for (example_names) |example| {
         const exe = b.addExecutable(.{
@@ -18,6 +20,7 @@ pub fn build(b: *std.Build) !void {
             .target = target,
             .optimize = mode,
             .version = try std.SemanticVersion.parse("1.0.0"),
+            .strip = strip,
         });
         exe.root_module.addImport("plotille", plotille.module("plotille"));
         b.installArtifact(exe);

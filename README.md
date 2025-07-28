@@ -1,4 +1,4 @@
-![example workflow](https://github.com/tammoippen/zig-plotille/actions/workflows/main.yml/badge.svg)
+![CI](https://github.com/tammoippen/zig-plotille/actions/workflows/main.yml/badge.svg)
 
 # zig-plotille
 
@@ -25,18 +25,49 @@ Re-implementation of the Python [plotille](https://github.com/tammoippen/plotill
 ### Building
 
 ```bash
-# Build the library
+# Build the library (creates both static and dynamic libraries)
 zig build
+
+# Build optimized release libraries
+zig build -Doptimize=ReleaseFast
+zig build -Doptimize=ReleaseSmall
+zig build -Doptimize=ReleaseSafe
+
+# Build with debug symbols stripped
+zig build -Dstrip=true
+
+# Build for specific target
+zig build -Dtarget=x86_64-linux-gnu
+zig build -Dtarget=aarch64-macos
+
+# Build release library for distribution
+zig build -Doptimize=ReleaseFast -Dstrip=true
 
 # Run tests
 zig build test
 
-# Run examples
-cd zig-example
-zig build examples run
+# Output will be in:
+# - zig-out/lib/libplotille.a (static library)
+# - zig-out/lib/libplotille.so (dynamic library, Linux)
+# - zig-out/lib/libplotille.dylib (dynamic library, macOS)
 ```
 
 ## Examples
+
+In `zig-examples`, there are several examples demonstrating the library's capabilities. To build and run these examples, navigate to the `zig-examples` directory and execute the following commands:
+
+```bash
+# Build all examples and run all examples
+zig build run
+
+# Output will be in:
+# - zig-out/bin/hist (executable)
+# - zig-out/bin/house (executable)
+# - zig-out/bin/hsl (executable)
+# - zig-out/bin/lookup (executable)
+# - zig-out/bin/names (executable)
+# - zig-out/bin/terminfo (executable)
+```
 
 ### Color Showcase
 
@@ -48,6 +79,8 @@ Display all available named colors in a grid:
 const plt = @import("plotille");
 
 // Detect terminal capabilities
+// ALWAYS required, before printing with color support
+// (either set or detect)
 try plt.terminfo.TermInfo.detect(allocator);
 
 // Display color grid
@@ -59,6 +92,8 @@ for (std.enums.values(plt.color.ColorName)) |bg_value| {
     }
 }
 ```
+
+(see [names.zig](zig-examples/names.zig) for more details and edge cases)
 
 ### HSL Color Space
 
@@ -78,8 +113,11 @@ for (0..20) |row| {
         const color = plt.color.Color.by_hsl(hue, saturation, lightness);
         try plt.color.colorPrint(writer, " ", .{}, .{ .bg = color });
     }
+    try writer.print("\n  ", .{});
 }
 ```
+
+(see [hsl.zig](zig-examples/hsl.zig) for more details)
 
 ### Canvas Drawing
 
@@ -105,13 +143,13 @@ try canvas.line(.{ .x = 0.8, .y = 0.6 }, .{ .x = 0.45, .y = 0.8 }, plt.color.Col
 try writer.print("{}\n", .{canvas});
 ```
 
+(see [house.zig](zig-examples/house.zig) for more details)
+
 ### Scientific Plotting
 
-Create *publication-ready* plots with the Figure API:
+Create _publication-ready_ (if you plan to publish in terminal 😇) plots with the Figure API:
 
 ```zig
-const plt = @import("plotille");
-
 var fig = try plt.figure.Figure.init(allocator, 60, 20, null);
 defer fig.deinit();
 
@@ -130,27 +168,22 @@ for (0..100) |i| {
 }
 
 // Add plots
-try fig.plot(&x_data, &y_data, .{
-    .lc = plt.color.Color.by_name(.blue),
-    .label = "sin(x)"
-});
+try fig.plot(&x_data, &y_data, .{ .lc = plt.color.Color.by_name(.blue), .label = "sin(x)" });
 
 // Add scatter points
 const points_x = [_]f64{ 1, 3, 5, 7, 9 };
 const points_y = [_]f64{ 0.8, -0.5, 0.2, -0.9, 0.1 };
-try fig.scatter(&points_x, &points_y, .{
-    .lc = plt.color.Color.by_name(.red),
-    .label = "data",
-    .marker = 'o'
-});
+try fig.scatter(&points_x, &points_y, .{ .lc = plt.color.Color.by_name(.red), .label = "data", .marker = 'o' });
 
 // Add annotations
 try fig.text(5, 1.5, "Peak", plt.color.Color.by_name(.green));
-try fig.axvline(π, .{ .lc = plt.color.Color.by_name(.yellow) });
+try fig.axhline(0.8, .{ .lc = plt.color.Color.by_name(.yellow) });
 
 try fig.prepare();
 try writer.print("{}\n", .{fig});
 ```
+
+(see [sine.zig](zig-examples/sine.zig) for more details)
 
 ### Histograms
 
@@ -167,6 +200,8 @@ defer hist.deinit();
 
 try writer.print("{}\n", .{hist});
 ```
+
+(see [hist.zig](zig-examples/hist.zig) for more details)
 
 ### Individual Braille Dots
 
@@ -187,12 +222,12 @@ try writer.print("Dot pattern: {}\n", .{dot});
 
 ### Core Modules
 
-- **`plt.canvas`**: Low-level canvas for drawing points, lines, rectangles
-- **`plt.figure`**: High-level plotting interface with legends and axes
-- **`plt.hist`**: Histogram generation and rendering
-- **`plt.dots`**: Individual braille character manipulation
-- **`plt.color`**: Comprehensive color support (names, RGB, HSL, 8-bit)
-- **`plt.terminfo`**: Terminal capability detection
+- **`plotille.canvas`**: Low-level canvas for drawing points, lines, rectangles
+- **`plotille.figure`**: High-level plotting interface with legends and axes
+- **`plotille.hist`**: Histogram generation and rendering
+- **`plotille.dots`**: Individual braille character manipulation
+- **`plotille.color`**: Comprehensive color support (names, RGB, HSL, 8-bit)
+- **`plotille.terminfo`**: Terminal capability detection
 
 ### Canvas API
 
@@ -225,8 +260,11 @@ try fig.histogram(data, bins, color);
 
 // Add annotations
 try fig.text(x, y, "Note", color);
+// all ax* methods take relative coordinates for x and y
 try fig.axvline(x_pos, .{ .lc = color });
 try fig.axhline(y_pos, .{ .lc = color });
+try fig.axvspan(x_min, x_max, .{ .lc = color });
+try fig.axhspan(y_min, y_max, .{ .lc = color });
 
 // Render
 try fig.prepare();
@@ -248,12 +286,12 @@ const hsl = plt.color.Color.by_hsl(240, 1.0, 0.5);
 const indexed = plt.color.Color.by_lookup(196);
 
 // Print with color
-try plt.color.colorPrint(writer, "Colored text", .{}, .{ .fg = red });
+try plt.color.colorPrint(writer, "Colored text", .{}, .{ .fg = red, .bg = indexed });
 ```
 
 ## C API
 
-For C/C++ integration, include `plotille.h` and link against `libplotille.a`:
+For C/C++ integration, include `plotille.h` and link against `libplotille.a` / `libplotille.so` / `libplotille.dylib`:
 
 ```c
 #include "plotille.h"
@@ -273,7 +311,7 @@ printf("%.*s\n", (int)len, buffer);
 canvas_free(&canvas);
 ```
 
-See `plotille.h` for the complete C API documentation and the `examples/` directory for usage examples.
+See `plotille.h` for the complete C API documentation and the `c-examples/` directory for usage examples.
 
 ## Coordinate System
 
@@ -306,23 +344,23 @@ zig fetch --save git+https://github.com/tammoippen/zig-plotille
 ### As a C Library
 
 ```bash
+# Build libraries (both static and dynamic)
 zig build
-# Links against zig-out/lib/libplotille.a
-# Include plotille.h in your project
+
+# Build optimized release libraries for distribution
+zig build -Doptimize=ReleaseFast -Dstrip=true
+
+# Output libraries:
+# - zig-out/lib/libplotille.a (static library)
+# - zig-out/lib/libplotille.so/.dylib (dynamic library)
+
+# Include plotille.h in your C/C++ project
 ```
 
 ## Examples and Tests
 
 - **`src/*.zig`**: Unit tests demonstrating all features
-- **`zig-examples/`**: Complete zig example programs
-- **`c-examples/*.c`**: C API usage example
+- **`zig-examples/`**: Complete Zig example programs
+- **`examples/dots.c`**: C API usage example
 
 Run all examples: `make test`
-
-## License
-
-See the license file for details.
-
-## Contributing
-
-Contributions welcome! This library aims to provide both a high-performance Zig plotting API and a complete C-compatible interface for maximum interoperability.
