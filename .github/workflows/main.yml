@@ -18,12 +18,12 @@ jobs:
       - uses: goto-bus-stop/setup-zig@v1
         with:
           version: 0.14.1
-      - run: zig build test examples run install
       - name: Install uv
         uses: astral-sh/setup-uv@v6
         with:
           version: "0.8.1"
-      - run: ./examples/test_terminfo.py -v
+      - run: make tests
+      - run: CC='zig cc' make c
 
   lint:
     runs-on: ubuntu-latest
