@@ -6,7 +6,7 @@ Terminal plotting library for Zig with full C API support.
 
 **Draw beautiful plots, histograms, and visualizations directly in your terminal using Unicode braille characters.**
 
-![House Example](img/house.png)
+![Sine](img/sine.png)
 
 ## Features
 
@@ -61,19 +61,19 @@ In `zig-examples`, there are several examples demonstrating the library's capabi
 zig build run
 
 # Output will be in:
+# - zig-out/bin/dots (executable)
 # - zig-out/bin/hist (executable)
 # - zig-out/bin/house (executable)
 # - zig-out/bin/hsl (executable)
 # - zig-out/bin/lookup (executable)
 # - zig-out/bin/names (executable)
+# - zig-out/bin/sine (executable)
 # - zig-out/bin/terminfo (executable)
 ```
 
 ### Color Showcase
 
 Display all available named colors in a grid:
-
-![Color Names](img/names.png)
 
 ```zig
 const plt = @import("plotille");
@@ -93,13 +93,13 @@ for (std.enums.values(plt.color.ColorName)) |bg_value| {
 }
 ```
 
+![Color Names](img/names.png)
+
 (see [names.zig](zig-examples/names.zig) for more details and edge cases)
 
 ### HSL Color Space
 
 Explore HSL color gradients:
-
-![HSL Colors](img/hsl.png)
 
 ```zig
 const plt = @import("plotille");
@@ -117,13 +117,13 @@ for (0..20) |row| {
 }
 ```
 
+![HSL Colors](img/hsl.png)
+
 (see [hsl.zig](zig-examples/hsl.zig) for more details)
 
 ### Canvas Drawing
 
 Create custom graphics with the canvas API:
-
-![House Drawing](img/house.png)
 
 ```zig
 const plt = @import("plotille");
@@ -142,6 +142,8 @@ try canvas.line(.{ .x = 0.8, .y = 0.6 }, .{ .x = 0.45, .y = 0.8 }, plt.color.Col
 
 try writer.print("{}\n", .{canvas});
 ```
+
+![House Drawing](img/house.png)
 
 (see [house.zig](zig-examples/house.zig) for more details)
 
@@ -183,13 +185,13 @@ try fig.prepare();
 try writer.print("{}\n", .{fig});
 ```
 
+![Sine](img/sine.png)
+
 (see [sine.zig](zig-examples/sine.zig) for more details)
 
 ### Histograms
 
-Visualize data distributions:
-
-![Histogram](img/hist.png)
+Visualize data distributions. Either using Histogram directly:
 
 ```zig
 const plt = @import("plotille");
@@ -201,7 +203,34 @@ defer hist.deinit();
 try writer.print("{}\n", .{hist});
 ```
 
+![Histogram](img/hist.png)
+
 (see [hist.zig](zig-examples/hist.zig) for more details)
+
+OR using a Figure with a histogram:
+
+```zig
+const plt = @import("plotille");
+
+const data = [_]f64{ 1.2, 2.3, 1.8, 2.1, 1.9, 2.4, 1.7, 2.0, 1.6, 2.2 };
+
+var fig = try plt.figure.Figure.init(allocator, 80, 20, null);
+defer fig.deinit();
+
+// Configure the plot
+fig.xmin, fig.xmax = std.mem.minMax(f64, values.items);
+fig.ymin = 0;
+fig.ymax = 12;
+
+try fig.histogram(values.items, 10, null);
+
+try fig.prepare();
+try writer.print("{}\n", .{fig});
+```
+
+![Histogram](img/histogram.png)
+
+(see [histogram.zig](zig-examples/histogram.zig) for more details)
 
 ### Individual Braille Dots
 
@@ -217,6 +246,10 @@ dot.color.fg = plt.color.Color.by_name(.red);
 
 try writer.print("Dot pattern: {}\n", .{dot});
 ```
+
+![Dots](img/dots.png)
+
+(see [dots.zig](zig-examples/dots.zig) for more details)
 
 ## API Overview
 
@@ -341,6 +374,15 @@ Add to your `build.zig.zon`:
 zig fetch --save git+https://github.com/tammoippen/zig-plotille
 ```
 
+Then add the module to your `build.zig`:
+
+```zig
+const plotille = b.dependency("plotille", .{
+    .target = target,
+    .optimize = mode,
+});
+```
+
 ### As a C Library
 
 ```bash
@@ -355,6 +397,8 @@ zig build -Doptimize=ReleaseFast -Dstrip=true
 # - zig-out/lib/libplotille.so/.dylib (dynamic library)
 
 # Include plotille.h in your C/C++ project
+#
+# See Makefile for build instructions
 ```
 
 ## Examples and Tests

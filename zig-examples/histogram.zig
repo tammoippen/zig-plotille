@@ -6,7 +6,7 @@ const TermInfo = plt.terminfo.TermInfo;
 fn usage() void {
     std.debug.print(
         \\Use like:
-        \\> hist [-] [VALUES ...]
+        \\> histogram [-] [VALUES ...]
         \\
         \\Please make sure the VALUES are parseable as float.
         \\
@@ -75,8 +75,16 @@ pub fn main() !void {
         }
     }
 
-    var h = try plt.hist.Histogram.init(allocator, values.items, 10);
-    defer h.deinit();
+    var fig = try plt.figure.Figure.init(allocator, 80, 20, null);
+    defer fig.deinit();
+    // Configure the plot
+    fig.xmin, fig.xmax = std.mem.minMax(f64, values.items);
 
-    try writer.print("{}\n\n", .{h});
+    try fig.histogram(values.items, 10, null);
+
+    fig.ymin = 0;
+    fig.ymax = @floatFromInt(std.mem.min(u32, fig._histograms.items[0].histogram.counts.items) + 10);
+
+    try fig.prepare();
+    try writer.print("{}\n", .{fig});
 }

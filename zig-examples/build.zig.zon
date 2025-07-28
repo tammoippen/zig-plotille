@@ -5,7 +5,7 @@
     .dependencies = .{
         .plotille = .{
             .url = "..",
-            .hash = "plotille-0.0.1-i2W1aH9nAgAkg1b9nOQt338uRCSpxzlFuzZXuRgRlYcc",
+            .hash = "plotille-0.0.1-i2W1aJpnAgA21eYToN0VeLX5dWX958LtvKwUw3XDT8pP",
         },
     },
     .paths = .{""},

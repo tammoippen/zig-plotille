@@ -9,9 +9,10 @@ pub fn build(b: *std.Build) !void {
     const plotille = b.dependency("plotille", .{
         .target = target,
         .optimize = mode,
+        .strip = strip,
     });
 
-    const example_names = [_][]const u8{ "names", "lookup", "hsl", "terminfo", "hist", "house", "sine" };
+    const example_names = [_][]const u8{ "names", "lookup", "hsl", "terminfo", "hist", "histogram", "house", "sine", "dots" };
     const run_step = b.step("run", "Run exe.");
     inline for (example_names) |example| {
         const exe = b.addExecutable(.{
@@ -39,7 +40,7 @@ pub fn build(b: *std.Build) !void {
             run_step.dependOn(&short.step);
         }
 
-        if (std.ascii.eqlIgnoreCase(example, "hist")) {
+        if (std.ascii.eqlIgnoreCase(example, "hist") or std.ascii.eqlIgnoreCase(example, "histogram")) {
             const ranges = b.addRunArtifact(exe);
             const ranges_args = [_][]const u8{ "10.4", "100", "200" };
             ranges.addArgs(&ranges_args);
