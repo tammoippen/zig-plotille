@@ -8,6 +8,7 @@
 # ///
 
 import json
+import os
 import subprocess
 import unittest
 
@@ -31,6 +32,9 @@ class TestTermInfoOutput(unittest.TestCase):
         self.assertEqual(out, result, res.stderr)
 
     def test_tty(self):
+        if os.name == "nt":
+            # windows does not support tty
+            return
         resp = pexpect.run(terminfo, timeout=5)
 
         out = json.loads(resp)
