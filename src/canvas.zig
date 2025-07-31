@@ -3,12 +3,12 @@ const approxEqAbs = std.math.approxEqAbs;
 const signbit = std.math.signbit;
 const assert = std.debug.assert;
 const expectEqual = std.testing.expectEqual;
-const expectEqualStrings = std.testing.expectEqualStrings;
 
 const color = @import("./color.zig");
 const dots = @import("./dots.zig");
 const terminfo = @import("./terminfo.zig");
 const utils = @import("./utils.zig");
+const expectEqualStringsNormalized = utils.expectEqualStringsNormalized;
 
 const XCoord = struct {
     braille_idx: i32,
@@ -500,7 +500,7 @@ test "simple format canvas" {
 
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 309), list.items.len); // 3 chars per unicode + 9 linebreaks
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\⠁⠀⠀⠀⠀⠁⠀⠀⠀⠀
         \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
         \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
@@ -534,7 +534,7 @@ test "points with chars in canvas" {
 
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 293), list.items.len); // 3 chars per unicode + 9 linebreaks - 8 * 2 chars
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\z⠀⠀⠀⠀u⠀⠀⠀⠀
         \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
         \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
@@ -575,7 +575,7 @@ test "format canvas with color" {
     + 7 * 3 // 7 x fg color by name
     + 9), // 1 x fg color by lookup
         list.items.len);
-    try expectEqualStrings("\x1b[30;103m⠁\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[30;103m⠁\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m" ++ utils.line_separator ++
+    try expectEqualStringsNormalized("\x1b[30;103m⠁\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[30;103m⠁\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m" ++ utils.line_separator ++
         "\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m" ++ utils.line_separator ++
         "\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m" ++ utils.line_separator ++
         "\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m" ++ utils.line_separator ++
@@ -599,7 +599,7 @@ test "fill char in canvas" {
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
 
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\⠀⠀⠀
         \\⠀⣿⠀
         \\⠀⠀⠀
@@ -618,7 +618,7 @@ test "line in canvas" {
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
 
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\⠀⠀⡜
         \\⠀⡜⠀
         \\⡜⠀⠀
@@ -637,7 +637,7 @@ test "line in canvas with chars" {
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 25), list.items.len); // 3 chars per unicode, 2 linebreaks, - 4 unicode u8
 
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\⠀⠀X
         \\⠀⡜⠀
         \\X⠀⠀
@@ -656,7 +656,7 @@ test "line in one point in canvas" {
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
 
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\⠀⠀⠀
         \\⠀⠐⠀
         \\⠀⠀⠀
@@ -683,7 +683,7 @@ test "point out of canvas" {
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
 
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\⠀⠀⠀
         \\⠀⠀⠀
         \\⠀⠀⠀
@@ -702,7 +702,7 @@ test "horizontal line out of canvas" {
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
 
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\⠀⠀⠀
         \\⠒⠒⠒
         \\⠀⠀⠀
@@ -721,7 +721,7 @@ test "vertical line out of canvas" {
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
 
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\⠀⢸⠀
         \\⠀⢸⠀
         \\⠀⢸⠀
@@ -740,7 +740,7 @@ test "line out of canvas reversed" {
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
 
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\⠀⠀⠀
         \\⠒⠒⠒
         \\⠀⠀⠀
@@ -759,7 +759,7 @@ test "vertical line out of canvas reversed" {
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
 
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\⠀⢸⠀
         \\⠀⢸⠀
         \\⠀⢸⠀
@@ -778,7 +778,7 @@ test "line in canvas small y" {
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
 
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\⠀⠀⠀
         \\⠀⠐⠂
         \\⠀⠀⠀
@@ -797,7 +797,7 @@ test "line in canvas small x" {
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
 
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\⠀⠀⠀
         \\⠀⠘⠀
         \\⠀⠀⠀
@@ -816,7 +816,7 @@ test "line completly out of canvas" {
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
 
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\⠀⠀⠀
         \\⠀⠀⠀
         \\⠀⠀⠀
@@ -835,7 +835,7 @@ test "line flat out of canvas" {
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
 
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\⠀⠀⠀
         \\⠀⠀⠀
         \\⡠⠔⠉
@@ -854,7 +854,7 @@ test "line vertical outside canvas" {
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
 
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\⠀⠀⠀
         \\⠀⠀⠀
         \\⠀⠀⠀
@@ -873,7 +873,7 @@ test "simple rect in canvas" {
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
 
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\⢀⣀⡀
         \\⢸⠀⡇
         \\⠘⠒⠃
@@ -892,7 +892,7 @@ test "simple rect in canvas with chars" {
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 21), list.items.len); // 3 chars per unicode, 2 linebreaks - 8 unicode u8
 
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\O⣀O
         \\⢸⠀⡇
         \\O⠒O
@@ -911,7 +911,7 @@ test "rect through canvas horizontally" {
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
 
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\⠤⠤⠤
         \\⠀⠀⠀
         \\⠒⠒⠒
@@ -930,7 +930,7 @@ test "rect through canvas vertically" {
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
 
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\⢸⠀⡇
         \\⢸⠀⡇
         \\⢸⠀⡇
@@ -949,7 +949,7 @@ test "rect outside canvas" {
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
 
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\⠀⠀⠀
         \\⠀⠀⠀
         \\⠀⠀⠀
@@ -980,7 +980,7 @@ test "text inside canvas" {
 
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 82), list.items.len); // 3 chars per unicode, 2 linebreaks, -10 unicode u8
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
         \\⠀Hello⠀⠀⠀⠀
         \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
@@ -998,7 +998,7 @@ test "text inside canvas too large" {
 
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 74), list.items.len); // 3 chars per unicode, 2 linebreaks, -18 unicode u8
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
         \\⠀Hello Wor
         \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
@@ -1017,7 +1017,7 @@ test "text inside canvas move out left" {
 
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 72), list.items.len); // 3 chars per unicode, 2 linebreaks, -20 unicode u8
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
         \\ World, ho
         \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
@@ -1036,7 +1036,7 @@ test "text below canvas" {
 
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 92), list.items.len); // 3 chars per unicode, 2 linebreaks
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
         \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
         \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
@@ -1055,7 +1055,7 @@ test "text above canvas" {
 
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 92), list.items.len); // 3 chars per unicode, 2 linebreaks
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
         \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
         \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
@@ -1074,7 +1074,7 @@ test "points with very large coordinates" {
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
 
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\⠀⠀⠀
         \\⠀⠀⠀
         \\⠀⠀⠀
@@ -1092,7 +1092,7 @@ test "points with very small coordinates" {
     try list.writer().print("{}", .{c});
     try expectEqual(@as(usize, 29), list.items.len); // 3 chars per unicode, 2 linebreaks
 
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\⠀⠀⠀
         \\⠀⠀⠀
         \\⠀⠀⠀

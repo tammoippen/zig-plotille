@@ -7,7 +7,7 @@ const Allocator = std.mem.Allocator;
 const testing = std.testing;
 const expectEqual = testing.expectEqual;
 const expectEqualSlices = testing.expectEqualSlices;
-const expectEqualStrings = testing.expectEqualStrings;
+const expectEqualStringsNormalized = utils.expectEqualStringsNormalized;
 
 const utils = @import("./utils.zig");
 
@@ -231,7 +231,7 @@ test "write simple Histogram" {
 
     try list.writer().print("{:60}", .{h});
 
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\        bucket       | ____________________________________________________________ Total Counts
         \\[0.000   , 1.000   ) | ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀ 1
         \\[1.000   , 2.000   ) | ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀ 1
@@ -265,7 +265,7 @@ test "write random Histogram" {
 
     try list.writer().print("{:40}", .{h});
 
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\        bucket       | ________________________________________ Total Counts
         \\[-2.810  , -2.234  ) | ⣿⣿⠆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀ 12
         \\[-2.234  , -1.658  ) | ⣿⣿⣿⣿⣿⡿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀ 31
@@ -297,7 +297,7 @@ test "write large random Histogram" {
 
     try list.writer().print("{e<8.1}", .{h});
 
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\        bucket       | ________________________________________________________________________________ Total Counts
         \\[-2.8e6  , -2.2e6  ) | ⣿⣿⣿⣿⠆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀ 13
         \\[-2.2e6  , -1.6e6  ) | ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀ 39
@@ -329,7 +329,7 @@ test "write small random Histogram" {
 
     try list.writer().print("{}", .{h});
 
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\        bucket       | ________________________________________________________________________________ Total Counts
         \\[2.2e-9  , 1.0e-7  ) | ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀ 95
         \\[1.0e-7  , 2.0e-7  ) | ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀ 97

@@ -1,13 +1,13 @@
 const std = @import("std");
 const assert = std.debug.assert;
 const mem = std.mem;
-const expectEqualStrings = std.testing.expectEqualStrings;
 
 const color = @import("./color.zig");
 const canvas = @import("./canvas.zig");
 const hist = @import("./hist.zig");
 const terminfo = @import("./terminfo.zig");
 const utils = @import("./utils.zig");
+const expectEqualStringsNormalized = utils.expectEqualStringsNormalized;
 
 pub const Figure = struct {
     /// The number of characters for the width (columns) of the canvas.
@@ -508,7 +508,7 @@ test "working test" {
     defer list.deinit();
 
     try list.writer().print("{}", .{fig});
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\    Y      ^
         \\3.000      | 
         \\2.700      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
@@ -543,7 +543,7 @@ test "figure with axvline center" {
     defer list.deinit();
 
     try list.writer().print("{}", .{fig});
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\    Y      ^
         \\1.000      | 
         \\0.900      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
@@ -574,7 +574,7 @@ test "figure with axvline center center" {
     defer list.deinit();
 
     try list.writer().print("{}", .{fig});
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\    Y      ^
         \\1.000      | 
         \\0.900      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
@@ -605,7 +605,7 @@ test "figure with axvline left" {
     defer list.deinit();
 
     try list.writer().print("{}", .{fig});
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\    Y      ^
         \\1.000      | 
         \\0.900      | ⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
@@ -636,7 +636,7 @@ test "figure with axvline right" {
     defer list.deinit();
 
     try list.writer().print("{}", .{fig});
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\    Y      ^
         \\1.000      | 
         \\0.900      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸
@@ -667,7 +667,7 @@ test "figure with axvspan border" {
     defer list.deinit();
 
     try list.writer().print("{}", .{fig});
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\    Y      ^
         \\1.000      | 
         \\0.900      | ⡏⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⢹
@@ -698,7 +698,7 @@ test "figure with axvspan center" {
     defer list.deinit();
 
     try list.writer().print("{}", .{fig});
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\    Y      ^
         \\1.000      | 
         \\0.900      | ⠀⠀⠀⠀⠀⠀⠀⡏⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⡇⠀⠀⠀⠀⠀⠀⠀
@@ -729,7 +729,7 @@ test "figure with axvspan center center" {
     defer list.deinit();
 
     try list.writer().print("{}", .{fig});
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\    Y      ^
         \\1.000      | 
         \\0.900      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
@@ -760,7 +760,7 @@ test "figure with axhline center" {
     defer list.deinit();
 
     try list.writer().print("{}", .{fig});
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\    Y      ^
         \\1.000      | 
         \\0.900      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
@@ -791,7 +791,7 @@ test "figure with axhline center center" {
     defer list.deinit();
 
     try list.writer().print("{}", .{fig});
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\    Y      ^
         \\1.000      | 
         \\0.900      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
@@ -822,7 +822,7 @@ test "figure with axhline bottom" {
     defer list.deinit();
 
     try list.writer().print("{}", .{fig});
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\    Y      ^
         \\1.000      | 
         \\0.900      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
@@ -853,7 +853,7 @@ test "figure with axhline top" {
     defer list.deinit();
 
     try list.writer().print("{}", .{fig});
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\    Y      ^
         \\1.000      | 
         \\0.900      | ⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉
@@ -884,7 +884,7 @@ test "figure with axhspan border" {
     defer list.deinit();
 
     try list.writer().print("{}", .{fig});
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\    Y      ^
         \\1.000      | 
         \\0.900      | ⡏⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⢹
@@ -915,7 +915,7 @@ test "figure with axhspan center" {
     defer list.deinit();
 
     try list.writer().print("{}", .{fig});
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\    Y      ^
         \\1.000      | 
         \\0.900      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
@@ -946,7 +946,7 @@ test "figure with axhspan center center" {
     defer list.deinit();
 
     try list.writer().print("{}", .{fig});
-    try expectEqualStrings(
+    try expectEqualStringsNormalized(
         \\    Y      ^
         \\1.000      | 
         \\0.900      | ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
