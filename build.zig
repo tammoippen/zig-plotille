@@ -26,22 +26,29 @@ pub fn build(b: *std.Build) !void {
     });
 
     // Build static library by default
+    const c_entry = b.path("src/c-api.zig");
     const static_lib = b.addStaticLibrary(.{
         .name = name,
-        .root_module = module,
+        .root_source_file = c_entry,
+        .target = target,
+        .optimize = mode,
         .version = version,
         .strip = strip,
     });
+    static_lib.linkLibC();
     const installed_static_lib = b.addInstallArtifact(static_lib, .{});
     b.getInstallStep().dependOn(&installed_static_lib.step);
 
     // Build dynamic library by default (unless static-only is requested)
     const shared_lib = b.addSharedLibrary(.{
         .name = name,
-        .root_module = module,
+        .root_source_file = c_entry,
+        .target = target,
+        .optimize = mode,
         .version = version,
         .strip = strip,
     });
+    shared_lib.linkLibC();
     const installed_shared_lib = b.addInstallArtifact(shared_lib, .{});
     b.getInstallStep().dependOn(&installed_shared_lib.step);
 
