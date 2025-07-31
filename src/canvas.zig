@@ -3,6 +3,7 @@ const approxEqAbs = std.math.approxEqAbs;
 const signbit = std.math.signbit;
 const assert = std.debug.assert;
 const expectEqual = std.testing.expectEqual;
+const expectEqualStrings = std.testing.expectEqualStrings;
 
 const color = @import("./color.zig");
 const dots = @import("./dots.zig");
@@ -568,7 +569,7 @@ test "format canvas with color" {
     c.point(.{ .x = 0.5, .y = 0.5 }, color.Color.by_name(.blue), null);
 
     try list.writer().print("{}", .{c});
-    try expectEqualStringsNormalized("\x1b[30;103m⠁\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[30;103m⠁\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m" ++ utils.line_separator ++
+    try expectEqualStrings("\x1b[30;103m⠁\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[30;103m⠁\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m" ++ utils.line_separator ++
         "\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m" ++ utils.line_separator ++
         "\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m" ++ utils.line_separator ++
         "\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m" ++ utils.line_separator ++
@@ -921,8 +922,8 @@ test "rect in large Canvas" {
     try c.rect(.{ .x = -0.2, .y = -0.2 }, .{ .x = 1.2, .y = 1.2 }, null, null);
 
     try list.writer().print("{}", .{c});
-    const extra = if (@import("builtin").target.os.tag == .windows) 2 else 0;
-    try expectEqual(@as(usize, 195329 + extra), list.items.len); // 3 chars per unicode, 2 linebreaks
+    const extra = if (@import("builtin").target.os.tag == .windows) 254 else 0;
+    try expectEqual(@as(usize, 195329 + extra), list.items.len); // 3 chars per unicode, 254 linebreaks
 }
 
 test "text inside canvas" {
