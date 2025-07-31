@@ -22,7 +22,9 @@ jobs:
         with:
           version: "0.8.1"
       - run: make tests
-      - run: CC='zig cc' make c
+      - run: make c
+        env:
+          CC: zig cc
 
   lint:
     runs-on: ubuntu-latest
