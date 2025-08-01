@@ -23,6 +23,7 @@ jobs:
           version: "0.8.1"
       - run: make tests
       - run: make c
+        shell: bash
         env:
           CC: zig cc
 
