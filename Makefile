@@ -1,4 +1,4 @@
-.PHONY: clean fmt tests c
+.PHONY: clean fmt tests c build run-c
 
 fmt:
 	zig fmt .
@@ -19,12 +19,19 @@ OBJS=$(SRCS:.c=.exe)
 
 c: $(OBJS)
 
-c-examples/%.exe: c-examples/%.c plotille.h $(PWD)/zig-out/lib/libplotille.a
-	$(CC) $(PWD)/zig-out/lib/libplotille.a \
+zig-out/lib/libplotille.a: build
+
+c-examples/%.exe: c-examples/%.c plotille.h zig-out/lib/libplotille.a
+	$(CC) $(CURDIR)/zig-out/lib/libplotille.a \
 		$< \
-		-I$(PWD) \
+		-I$(CURDIR) \
 		-o $@
-	./$@
+
+run-c: c
+	@for exe in $(OBJS); do \
+		echo "Running $$exe..."; \
+		./$$exe || echo "Failed to run $$exe"; \
+	done
 
 clean:
 	rm -rf .zig-cache zig-out zig-examples/.zig-cache zig-examples/zig-out c-examples/*.exe
