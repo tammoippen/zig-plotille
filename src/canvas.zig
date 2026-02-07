@@ -333,13 +333,8 @@ pub const Canvas = struct {
     /// Output the canvas to a writer.
     pub fn format(
         self: Canvas,
-        comptime fmt: []const u8,
-        options: std.fmt.FormatOptions,
         writer: anytype,
     ) !void {
-        // ignored options -> conform to signature
-        _ = options;
-        _ = fmt;
         var h_idx: i18 = self.height - 1;
         while (h_idx >= 0) : (h_idx -= 1) {
             try self.printRow(h_idx, writer);
@@ -353,7 +348,7 @@ pub const Canvas = struct {
             const idx: usize = @as(usize, @intCast(row)) * @as(usize, self.width) + w_idx;
             var d = self.canvas[idx];
             d.color.bg = self.bg;
-            try writer.print("{any}", .{d});
+            try writer.print("{f}", .{d});
         }
         if (row > 0) {
             try writer.writeAll(utils.line_separator);
@@ -499,7 +494,7 @@ test "simple format canvas" {
     c.point(.{ .x = 0.5, .y = 0 }, null, null);
     c.point(.{ .x = 0.5, .y = 0.5 }, null, null);
 
-    try list.writer(std.testing.allocator).print("{any}", .{c});
+    try list.writer(std.testing.allocator).print("{f}", .{c});
     try expectEqualStringsNormalized(
         \\⠁⠀⠀⠀⠀⠁⠀⠀⠀⠀
         \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
@@ -532,7 +527,7 @@ test "points with chars in canvas" {
     c.point(.{ .x = 0.5, .y = 0 }, null, 'v');
     c.point(.{ .x = 0.5, .y = 0.5 }, null, 'b');
 
-    try list.writer(std.testing.allocator).print("{any}", .{c});
+    try list.writer(std.testing.allocator).print("{f}", .{c});
     try expectEqualStringsNormalized(
         \\z⠀⠀⠀⠀u⠀⠀⠀⠀
         \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
@@ -568,7 +563,7 @@ test "format canvas with color" {
     c.point(.{ .x = 0.5, .y = 0 }, color.Color.by_name(.black), null);
     c.point(.{ .x = 0.5, .y = 0.5 }, color.Color.by_name(.blue), null);
 
-    try list.writer(std.testing.allocator).print("{any}", .{c});
+    try list.writer(std.testing.allocator).print("{f}", .{c});
     try expectEqualStrings("\x1b[30;103m⠁\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[30;103m⠁\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m" ++ utils.line_separator ++
         "\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m" ++ utils.line_separator ++
         "\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m\x1b[103m⠀\x1b[39;49m" ++ utils.line_separator ++
@@ -590,7 +585,7 @@ test "fill char in canvas" {
 
     c.fillChar(.{ .x = 0.5, .y = 0.5 });
 
-    try list.writer(std.testing.allocator).print("{any}", .{c});
+    try list.writer(std.testing.allocator).print("{f}", .{c});
     try expectEqualStringsNormalized(
         \\⠀⠀⠀
         \\⠀⣿⠀
@@ -607,7 +602,7 @@ test "line in canvas" {
 
     try c.line(.{ .x = 0, .y = 0 }, .{ .x = 0.99, .y = 0.99 }, null, null);
 
-    try list.writer(std.testing.allocator).print("{any}", .{c});
+    try list.writer(std.testing.allocator).print("{f}", .{c});
     try expectEqualStringsNormalized(
         \\⠀⠀⡜
         \\⠀⡜⠀
@@ -624,7 +619,7 @@ test "line in canvas with chars" {
 
     try c.line(.{ .x = 0, .y = 0 }, .{ .x = 0.99, .y = 0.99 }, null, 'X');
 
-    try list.writer(std.testing.allocator).print("{any}", .{c});
+    try list.writer(std.testing.allocator).print("{f}", .{c});
     try expectEqualStringsNormalized(
         \\⠀⠀X
         \\⠀⡜⠀
@@ -641,7 +636,7 @@ test "line in one point in canvas" {
 
     try c.line(.{ .x = 0.5, .y = 0.5 }, .{ .x = 0.6, .y = 0.55 }, null, null);
 
-    try list.writer(std.testing.allocator).print("{any}", .{c});
+    try list.writer(std.testing.allocator).print("{f}", .{c});
     try expectEqualStringsNormalized(
         \\⠀⠀⠀
         \\⠀⠐⠀
@@ -666,7 +661,7 @@ test "point out of canvas" {
     c.point(.{ .x = -0.1, .y = -0.02 }, null, null);
     c.point(.{ .x = 1, .y = 1 }, null, null);
 
-    try list.writer(std.testing.allocator).print("{any}", .{c});
+    try list.writer(std.testing.allocator).print("{f}", .{c});
     try expectEqualStringsNormalized(
         \\⠀⠀⠀
         \\⠀⠀⠀
@@ -683,7 +678,7 @@ test "horizontal line out of canvas" {
 
     try c.line(.{ .x = -0.99, .y = 0.5 }, .{ .x = 2, .y = 0.5 }, null, null);
 
-    try list.writer(std.testing.allocator).print("{any}", .{c});
+    try list.writer(std.testing.allocator).print("{f}", .{c});
     try expectEqualStringsNormalized(
         \\⠀⠀⠀
         \\⠒⠒⠒
@@ -700,7 +695,7 @@ test "vertical line out of canvas" {
 
     try c.line(.{ .x = 0.5, .y = -0.99 }, .{ .x = 0.5, .y = 2 }, null, null);
 
-    try list.writer(std.testing.allocator).print("{any}", .{c});
+    try list.writer(std.testing.allocator).print("{f}", .{c});
     try expectEqualStringsNormalized(
         \\⠀⢸⠀
         \\⠀⢸⠀
@@ -717,7 +712,7 @@ test "line out of canvas reversed" {
 
     try c.line(.{ .x = 2, .y = 0.5 }, .{ .x = -0.99, .y = 0.5 }, null, null);
 
-    try list.writer(std.testing.allocator).print("{any}", .{c});
+    try list.writer(std.testing.allocator).print("{f}", .{c});
     try expectEqualStringsNormalized(
         \\⠀⠀⠀
         \\⠒⠒⠒
@@ -734,7 +729,7 @@ test "vertical line out of canvas reversed" {
 
     try c.line(.{ .x = 0.5, .y = 2 }, .{ .x = 0.5, .y = -0.99 }, null, null);
 
-    try list.writer(std.testing.allocator).print("{any}", .{c});
+    try list.writer(std.testing.allocator).print("{f}", .{c});
     try expectEqualStringsNormalized(
         \\⠀⢸⠀
         \\⠀⢸⠀
@@ -751,7 +746,7 @@ test "line in canvas small y" {
 
     try c.line(.{ .x = 0.5, .y = 0.5 }, .{ .x = 0.7, .y = 0.55 }, null, null);
 
-    try list.writer(std.testing.allocator).print("{any}", .{c});
+    try list.writer(std.testing.allocator).print("{f}", .{c});
     try expectEqualStringsNormalized(
         \\⠀⠀⠀
         \\⠀⠐⠂
@@ -768,7 +763,7 @@ test "line in canvas small x" {
 
     try c.line(.{ .x = 0.5, .y = 0.5 }, .{ .x = 0.55, .y = 0.6 }, null, null);
 
-    try list.writer(std.testing.allocator).print("{any}", .{c});
+    try list.writer(std.testing.allocator).print("{f}", .{c});
     try expectEqualStringsNormalized(
         \\⠀⠀⠀
         \\⠀⠘⠀
@@ -785,7 +780,7 @@ test "line completly out of canvas" {
 
     try c.line(.{ .x = -0.5, .y = -0.99 }, .{ .x = -0.6, .y = 2 }, null, null);
 
-    try list.writer(std.testing.allocator).print("{any}", .{c});
+    try list.writer(std.testing.allocator).print("{f}", .{c});
     try expectEqualStringsNormalized(
         \\⠀⠀⠀
         \\⠀⠀⠀
@@ -802,7 +797,7 @@ test "line flat out of canvas" {
 
     try c.line(.{ .x = -3, .y = -1 }, .{ .x = 3, .y = 1 }, null, null);
 
-    try list.writer(std.testing.allocator).print("{any}", .{c});
+    try list.writer(std.testing.allocator).print("{f}", .{c});
     try expectEqualStringsNormalized(
         \\⠀⠀⠀
         \\⠀⠀⠀
@@ -819,7 +814,7 @@ test "line vertical outside canvas" {
 
     try c.line(.{ .x = -0.2, .y = -0.2 }, .{ .x = -0.2, .y = 1.2 }, null, null);
 
-    try list.writer(std.testing.allocator).print("{any}", .{c});
+    try list.writer(std.testing.allocator).print("{f}", .{c});
     try expectEqualStringsNormalized(
         \\⠀⠀⠀
         \\⠀⠀⠀
@@ -836,7 +831,7 @@ test "simple rect in canvas" {
 
     try c.rect(.{ .x = 0.2, .y = 0.2 }, .{ .x = 0.7, .y = 0.7 }, null, null);
 
-    try list.writer(std.testing.allocator).print("{any}", .{c});
+    try list.writer(std.testing.allocator).print("{f}", .{c});
     try expectEqualStringsNormalized(
         \\⢀⣀⡀
         \\⢸⠀⡇
@@ -853,7 +848,7 @@ test "simple rect in canvas with chars" {
 
     try c.rect(.{ .x = 0.2, .y = 0.2 }, .{ .x = 0.7, .y = 0.7 }, null, 'O');
 
-    try list.writer(std.testing.allocator).print("{any}", .{c});
+    try list.writer(std.testing.allocator).print("{f}", .{c});
     try expectEqualStringsNormalized(
         \\O⣀O
         \\⢸⠀⡇
@@ -870,7 +865,7 @@ test "rect through canvas horizontally" {
 
     try c.rect(.{ .x = -0.2, .y = 0.2 }, .{ .x = 1.2, .y = 0.8 }, null, null);
 
-    try list.writer(std.testing.allocator).print("{any}", .{c});
+    try list.writer(std.testing.allocator).print("{f}", .{c});
     try expectEqualStringsNormalized(
         \\⠤⠤⠤
         \\⠀⠀⠀
@@ -887,7 +882,7 @@ test "rect through canvas vertically" {
 
     try c.rect(.{ .x = 0.2, .y = -0.2 }, .{ .x = 0.8, .y = 1.2 }, null, null);
 
-    try list.writer(std.testing.allocator).print("{any}", .{c});
+    try list.writer(std.testing.allocator).print("{f}", .{c});
     try expectEqualStringsNormalized(
         \\⢸⠀⡇
         \\⢸⠀⡇
@@ -904,7 +899,7 @@ test "rect outside canvas" {
 
     try c.rect(.{ .x = -0.2, .y = -0.2 }, .{ .x = 1.2, .y = 1.2 }, null, null);
 
-    try list.writer(std.testing.allocator).print("{any}", .{c});
+    try list.writer(std.testing.allocator).print("{f}", .{c});
     try expectEqualStringsNormalized(
         \\⠀⠀⠀
         \\⠀⠀⠀
@@ -921,7 +916,7 @@ test "rect in large Canvas" {
 
     try c.rect(.{ .x = -0.2, .y = -0.2 }, .{ .x = 1.2, .y = 1.2 }, null, null);
 
-    try list.writer(std.testing.allocator).print("{any}", .{c});
+    try list.writer(std.testing.allocator).print("{f}", .{c});
     const extra = if (@import("builtin").target.os.tag == .windows) 254 else 0;
     try expectEqual(@as(usize, 195329 + extra), list.items.len); // 3 chars per unicode, 254 linebreaks
 }
@@ -935,7 +930,7 @@ test "text inside canvas" {
 
     c.text(.{ .x = 0.1, .y = 0.5 }, "Hello", null);
 
-    try list.writer(std.testing.allocator).print("{any}", .{c});
+    try list.writer(std.testing.allocator).print("{f}", .{c});
     try expectEqualStringsNormalized(
         \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
         \\⠀Hello⠀⠀⠀⠀
@@ -952,7 +947,7 @@ test "text inside canvas too large" {
 
     c.text(.{ .x = 0.1, .y = 0.5 }, "Hello World, how are you?", null);
 
-    try list.writer(std.testing.allocator).print("{any}", .{c});
+    try list.writer(std.testing.allocator).print("{f}", .{c});
     try expectEqualStringsNormalized(
         \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
         \\⠀Hello Wor
@@ -970,7 +965,7 @@ test "text inside canvas move out left" {
     // 5 chars back
     c.text(.{ .x = -0.5, .y = 0.5 }, "Hello World, how are you?", null);
 
-    try list.writer(std.testing.allocator).print("{any}", .{c});
+    try list.writer(std.testing.allocator).print("{f}", .{c});
     try expectEqualStringsNormalized(
         \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
         \\ World, ho
@@ -988,7 +983,7 @@ test "text below canvas" {
     // 5 chars back
     c.text(.{ .x = 0.1, .y = -0.5 }, "Hello", null);
 
-    try list.writer(std.testing.allocator).print("{any}", .{c});
+    try list.writer(std.testing.allocator).print("{f}", .{c});
     try expectEqualStringsNormalized(
         \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
         \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
@@ -1006,7 +1001,7 @@ test "text above canvas" {
     // 5 chars back
     c.text(.{ .x = 0.1, .y = 1.5 }, "Hello", null);
 
-    try list.writer(std.testing.allocator).print("{any}", .{c});
+    try list.writer(std.testing.allocator).print("{f}", .{c});
     try expectEqualStringsNormalized(
         \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
         \\⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
@@ -1023,7 +1018,7 @@ test "points with very large coordinates" {
 
     c.point(.{ .x = 1e200, .y = 1e200 }, null, null);
 
-    try list.writer(std.testing.allocator).print("{any}", .{c});
+    try list.writer(std.testing.allocator).print("{f}", .{c});
     try expectEqualStringsNormalized(
         \\⠀⠀⠀
         \\⠀⠀⠀
@@ -1039,7 +1034,7 @@ test "points with very small coordinates" {
 
     c.point(.{ .x = -1e200, .y = -1e200 }, null, null);
 
-    try list.writer(std.testing.allocator).print("{any}", .{c});
+    try list.writer(std.testing.allocator).print("{f}", .{c});
     try expectEqualStringsNormalized(
         \\⠀⠀⠀
         \\⠀⠀⠀
@@ -1056,7 +1051,7 @@ test "canvas with large height" {
 
     try c.line(.{ .x = 0, .y = 0 }, .{ .x = 1, .y = 1 }, null, null);
 
-    try list.writer(std.testing.allocator).print("{any}", .{c});
+    try list.writer(std.testing.allocator).print("{f}", .{c});
     const extra = if (@import("builtin").target.os.tag == .windows) 65534 else 0;
     try expectEqual(@as(usize, 25_230_974 + extra), list.items.len); // 3 chars per unicode, 65534 linebreaks
 }
@@ -1070,7 +1065,7 @@ test "canvas with large width" {
 
     try c.line(.{ .x = 0, .y = 0 }, .{ .x = 1, .y = 1 }, null, null);
 
-    try list.writer(std.testing.allocator).print("{any}", .{c});
+    try list.writer(std.testing.allocator).print("{f}", .{c});
     const extra = if (@import("builtin").target.os.tag == .windows) 127 else 0;
     try expectEqual(@as(usize, 25_165_567 + extra), list.items.len); // 3 chars per unicode, 127 linebreaks
 }

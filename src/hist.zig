@@ -11,6 +11,18 @@ const expectEqualStringsNormalized = utils.expectEqualStringsNormalized;
 
 const utils = @import("./utils.zig");
 
+pub const HistogramFormatter = struct {
+    hist: Histogram,
+    width: usize,
+
+    pub fn format(
+        self: HistogramFormatter,
+        writer: anytype,
+    ) !void {
+        return self.hist.formatWithWidth(writer, self.width);
+    }
+};
+
 pub const Histogram = struct {
     counts: ArrayList(u32),
     bins: ArrayList(f64),
@@ -54,14 +66,24 @@ pub const Histogram = struct {
         self.counts.deinit(allocator);
     }
 
+    /// Create a formatter with a custom width
+    pub fn withWidth(self: Histogram, width: usize) HistogramFormatter {
+        return HistogramFormatter{ .hist = self, .width = width };
+    }
+
     /// Output the Histogram to a writer.
     pub fn format(
         self: Histogram,
-        comptime fmt: []const u8,
-        options: std.fmt.FormatOptions,
         writer: anytype,
     ) !void {
-        const width = options.width orelse 80;
+        return self.formatWithWidth(writer, 80);
+    }
+
+    fn formatWithWidth(
+        self: Histogram,
+        writer: anytype,
+        width: usize,
+    ) !void {
         const h_max = lbl: {
             var count: u32 = 1;
             for (self.counts.items) |item| {
@@ -75,20 +97,15 @@ pub const Histogram = struct {
         const lasts = [_][]const u8{ "", "⠂", "⠆", "⠇", "⡇", "⡗", "⡷", "⡿" };
 
         try writer.writeAll("        bucket       | ");
-        try writer.writeByteNTimes('_', width);
+        try writer.splatByteAll('_', width);
         try writer.writeAll(" Total Counts" ++ utils.line_separator);
 
         var widx: usize = 0;
         for (self.counts.items, 0..) |count, idx| {
-            if (fmt.len != 0) {
-                const fmt_with_colon = comptime fmt[0..1] ++ ":" ++ fmt[1..];
-                try writer.print("[{" ++ fmt_with_colon ++ "}, {" ++ fmt_with_colon ++ "}) | ", .{ self.bins.items[idx], self.bins.items[idx + 1] });
+            if (self.delta < 1 or self.delta > 1000) {
+                try writer.print("[{e:<8.1}, {e:<8.1}) | ", .{ self.bins.items[idx], self.bins.items[idx + 1] });
             } else {
-                if (self.delta < 1 or self.delta > 1000) {
-                    try writer.print("[{e:<8.1}, {e:<8.1}) | ", .{ self.bins.items[idx], self.bins.items[idx + 1] });
-                } else {
-                    try writer.print("[{d:<8.3}, {d:<8.3}) | ", .{ self.bins.items[idx], self.bins.items[idx + 1] });
-                }
+                try writer.print("[{d:<8.3}, {d:<8.3}) | ", .{ self.bins.items[idx], self.bins.items[idx + 1] });
             }
             const height = width * 8 * count / h_max;
             widx = 0;
@@ -229,7 +246,7 @@ test "write simple Histogram" {
     var list: std.ArrayList(u8) = .{};
     defer list.deinit(std.testing.allocator);
 
-    try list.writer(std.testing.allocator).print("{any:60}", .{h});
+    try list.writer(std.testing.allocator).print("{f}", .{h.withWidth(60)});
 
     try expectEqualStringsNormalized(
         \\        bucket       | ____________________________________________________________ Total Counts
@@ -263,7 +280,7 @@ test "write random Histogram" {
     var list: std.ArrayList(u8) = .{};
     defer list.deinit(std.testing.allocator);
 
-    try list.writer(std.testing.allocator).print("{any:40}", .{h});
+    try list.writer(std.testing.allocator).print("{f}", .{h.withWidth(40)});
 
     try expectEqualStringsNormalized(
         \\        bucket       | ________________________________________ Total Counts
@@ -295,7 +312,7 @@ test "write large random Histogram" {
     var list: std.ArrayList(u8) = .{};
     defer list.deinit(std.testing.allocator);
 
-    try list.writer(std.testing.allocator).print("{any:e<8.1}", .{h});
+    try list.writer(std.testing.allocator).print("{f}", .{h});
 
     try expectEqualStringsNormalized(
         \\        bucket       | ________________________________________________________________________________ Total Counts
@@ -327,7 +344,7 @@ test "write small random Histogram" {
     var list: std.ArrayList(u8) = .{};
     defer list.deinit(std.testing.allocator);
 
-    try list.writer(std.testing.allocator).print("{any}", .{h});
+    try list.writer(std.testing.allocator).print("{f}", .{h});
 
     try expectEqualStringsNormalized(
         \\        bucket       | ________________________________________________________________________________ Total Counts

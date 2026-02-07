@@ -232,12 +232,8 @@ pub const Figure = struct {
     /// Output the figure to a writer.
     pub fn format(
         self: Figure,
-        comptime fmt: []const u8,
-        options: std.fmt.FormatOptions,
         writer: anytype,
     ) !void {
-        _ = fmt;
-        _ = options;
         // You need to prepare the canvas before writing the figure.
         assert(self._canvas != null);
         assert(self._canvas.?.width == self.width);
@@ -279,18 +275,18 @@ pub const Figure = struct {
         assert(self.xmin < self.xmax);
         const x_delta = @abs(self.xmax - self.xmin) / @as(f64, @floatFromInt(self.width));
 
-        try writer.writeByteNTimes('-', 11);
+        try writer.splatByteAll('-', 11);
         try writer.writeAll("|-");
         var col: usize = 0;
         while (col < self.width / 10) : (col += 1) {
             try writer.writeAll("|---------");
         }
         try writer.writeAll("|");
-        try writer.writeByteNTimes('-', self.width % 10);
+        try writer.splatByteAll('-', self.width % 10);
 
         try writer.print("-> ({s})" ++ utils.line_separator, .{self.x_label});
 
-        try writer.writeByteNTimes(' ', 11);
+        try writer.splatByteAll(' ', 11);
         try writer.writeAll("| ");
         col = 0;
         while (col < self.width / 10 + 1) : (col += 1) {
@@ -507,7 +503,7 @@ test "working test" {
     var list: std.ArrayList(u8) = .{};
     defer list.deinit(std.testing.allocator);
 
-    try list.writer(std.testing.allocator).print("{any}", .{fig});
+    try list.writer(std.testing.allocator).print("{f}", .{fig});
     try expectEqualStringsNormalized(
         \\    Y      ^
         \\3.000      | 
@@ -527,7 +523,7 @@ test "working test" {
 
     // force colors
     terminfo.TermInfo.testing();
-    std.debug.print("\n{any}\n", .{fig});
+    std.debug.print("\n{f}\n", .{fig});
 }
 
 test "figure with axvline center" {
@@ -542,7 +538,7 @@ test "figure with axvline center" {
     var list: std.ArrayList(u8) = .{};
     defer list.deinit(std.testing.allocator);
 
-    try list.writer(std.testing.allocator).print("{any}", .{fig});
+    try list.writer(std.testing.allocator).print("{f}", .{fig});
     try expectEqualStringsNormalized(
         \\    Y      ^
         \\1.000      | 
@@ -573,7 +569,7 @@ test "figure with axvline center center" {
     var list: std.ArrayList(u8) = .{};
     defer list.deinit(std.testing.allocator);
 
-    try list.writer(std.testing.allocator).print("{any}", .{fig});
+    try list.writer(std.testing.allocator).print("{f}", .{fig});
     try expectEqualStringsNormalized(
         \\    Y      ^
         \\1.000      | 
@@ -604,7 +600,7 @@ test "figure with axvline left" {
     var list: std.ArrayList(u8) = .{};
     defer list.deinit(std.testing.allocator);
 
-    try list.writer(std.testing.allocator).print("{any}", .{fig});
+    try list.writer(std.testing.allocator).print("{f}", .{fig});
     try expectEqualStringsNormalized(
         \\    Y      ^
         \\1.000      | 
@@ -635,7 +631,7 @@ test "figure with axvline right" {
     var list: std.ArrayList(u8) = .{};
     defer list.deinit(std.testing.allocator);
 
-    try list.writer(std.testing.allocator).print("{any}", .{fig});
+    try list.writer(std.testing.allocator).print("{f}", .{fig});
     try expectEqualStringsNormalized(
         \\    Y      ^
         \\1.000      | 
@@ -666,7 +662,7 @@ test "figure with axvspan border" {
     var list: std.ArrayList(u8) = .{};
     defer list.deinit(std.testing.allocator);
 
-    try list.writer(std.testing.allocator).print("{any}", .{fig});
+    try list.writer(std.testing.allocator).print("{f}", .{fig});
     try expectEqualStringsNormalized(
         \\    Y      ^
         \\1.000      | 
@@ -697,7 +693,7 @@ test "figure with axvspan center" {
     var list: std.ArrayList(u8) = .{};
     defer list.deinit(std.testing.allocator);
 
-    try list.writer(std.testing.allocator).print("{any}", .{fig});
+    try list.writer(std.testing.allocator).print("{f}", .{fig});
     try expectEqualStringsNormalized(
         \\    Y      ^
         \\1.000      | 
@@ -728,7 +724,7 @@ test "figure with axvspan center center" {
     var list: std.ArrayList(u8) = .{};
     defer list.deinit(std.testing.allocator);
 
-    try list.writer(std.testing.allocator).print("{any}", .{fig});
+    try list.writer(std.testing.allocator).print("{f}", .{fig});
     try expectEqualStringsNormalized(
         \\    Y      ^
         \\1.000      | 
@@ -759,7 +755,7 @@ test "figure with axhline center" {
     var list: std.ArrayList(u8) = .{};
     defer list.deinit(std.testing.allocator);
 
-    try list.writer(std.testing.allocator).print("{any}", .{fig});
+    try list.writer(std.testing.allocator).print("{f}", .{fig});
     try expectEqualStringsNormalized(
         \\    Y      ^
         \\1.000      | 
@@ -790,7 +786,7 @@ test "figure with axhline center center" {
     var list: std.ArrayList(u8) = .{};
     defer list.deinit(std.testing.allocator);
 
-    try list.writer(std.testing.allocator).print("{any}", .{fig});
+    try list.writer(std.testing.allocator).print("{f}", .{fig});
     try expectEqualStringsNormalized(
         \\    Y      ^
         \\1.000      | 
@@ -821,7 +817,7 @@ test "figure with axhline bottom" {
     var list: std.ArrayList(u8) = .{};
     defer list.deinit(std.testing.allocator);
 
-    try list.writer(std.testing.allocator).print("{any}", .{fig});
+    try list.writer(std.testing.allocator).print("{f}", .{fig});
     try expectEqualStringsNormalized(
         \\    Y      ^
         \\1.000      | 
@@ -852,7 +848,7 @@ test "figure with axhline top" {
     var list: std.ArrayList(u8) = .{};
     defer list.deinit(std.testing.allocator);
 
-    try list.writer(std.testing.allocator).print("{any}", .{fig});
+    try list.writer(std.testing.allocator).print("{f}", .{fig});
     try expectEqualStringsNormalized(
         \\    Y      ^
         \\1.000      | 
@@ -883,7 +879,7 @@ test "figure with axhspan border" {
     var list: std.ArrayList(u8) = .{};
     defer list.deinit(std.testing.allocator);
 
-    try list.writer(std.testing.allocator).print("{any}", .{fig});
+    try list.writer(std.testing.allocator).print("{f}", .{fig});
     try expectEqualStringsNormalized(
         \\    Y      ^
         \\1.000      | 
@@ -914,7 +910,7 @@ test "figure with axhspan center" {
     var list: std.ArrayList(u8) = .{};
     defer list.deinit(std.testing.allocator);
 
-    try list.writer(std.testing.allocator).print("{any}", .{fig});
+    try list.writer(std.testing.allocator).print("{f}", .{fig});
     try expectEqualStringsNormalized(
         \\    Y      ^
         \\1.000      | 
@@ -945,7 +941,7 @@ test "figure with axhspan center center" {
     var list: std.ArrayList(u8) = .{};
     defer list.deinit(std.testing.allocator);
 
-    try list.writer(std.testing.allocator).print("{any}", .{fig});
+    try list.writer(std.testing.allocator).print("{f}", .{fig});
     try expectEqualStringsNormalized(
         \\    Y      ^
         \\1.000      | 
