@@ -55,10 +55,10 @@ pub const Figure = struct {
             .x_label = try allocator.dupe(u8, "X"),
             .y_label = try allocator.dupe(u8, "Y"),
             ._canvas = null,
-            ._plots = std.ArrayList(Plot).init(allocator),
-            ._histograms = std.ArrayList(Histogram).init(allocator),
-            ._texts = std.ArrayList(Text).init(allocator),
-            ._spans = std.ArrayList(Span).init(allocator),
+            ._plots = .{},
+            ._histograms = .{},
+            ._texts = .{},
+            ._spans = .{},
             .allocator = allocator,
         };
     }
@@ -69,19 +69,19 @@ pub const Figure = struct {
         for (self._plots.items) |*p| {
             p.deinit(self.allocator);
         }
-        self._plots.deinit();
+        self._plots.deinit(self.allocator);
         for (self._histograms.items) |*h| {
-            h.deinit();
+            h.deinit(self.allocator);
         }
-        self._histograms.deinit();
+        self._histograms.deinit(self.allocator);
         for (self._texts.items) |*t| {
             t.deinit(self.allocator);
         }
-        self._texts.deinit();
+        self._texts.deinit(self.allocator);
         if (self._canvas) |cvs| {
             cvs.deinit(self.allocator);
         }
-        self._spans.deinit();
+        self._spans.deinit(self.allocator);
     }
 
     pub fn plot(self: *Figure, xs: []const f64, ys: []const f64, opts: struct {
@@ -92,7 +92,7 @@ pub const Figure = struct {
         var p = try Plot.init(self.allocator, xs, ys, opts.lc, true, opts.label, opts.marker);
         errdefer p.deinit(self.allocator);
 
-        try self._plots.append(p);
+        try self._plots.append(self.allocator, p);
     }
 
     pub fn scatter(self: *Figure, xs: []const f64, ys: []const f64, opts: struct {
@@ -103,7 +103,7 @@ pub const Figure = struct {
         var p = try Plot.init(self.allocator, xs, ys, opts.lc, false, opts.label, opts.marker);
         errdefer p.deinit(self.allocator);
 
-        try self._plots.append(p);
+        try self._plots.append(self.allocator, p);
     }
 
     pub fn histogram(self: *Figure, xs: []const f64, bins: usize, lc: ?color.Color) !void {
@@ -113,9 +113,9 @@ pub const Figure = struct {
             bins,
             if (lc) |c| c else color.Color.no_color(),
         );
-        errdefer h.deinit();
+        errdefer h.deinit(self.allocator);
 
-        try self._histograms.append(h);
+        try self._histograms.append(self.allocator, h);
     }
 
     pub fn text(self: *Figure, x: f64, y: f64, str: []const u8, lc: ?color.Color) !void {
@@ -128,7 +128,7 @@ pub const Figure = struct {
         );
         errdefer t.deinit(self.allocator);
 
-        try self._texts.append(t);
+        try self._texts.append(self.allocator, t);
     }
 
     pub fn axvline(self: *Figure, x: f64, opts: struct {
@@ -140,7 +140,7 @@ pub const Figure = struct {
         assert(0 <= opts.ymin and opts.ymin <= 1);
         assert(0 <= opts.ymax and opts.ymax <= 1);
         assert(opts.ymin <= opts.ymax);
-        try self._spans.append(Span{
+        try self._spans.append(self.allocator, Span{
             .xmin = x,
             .xmax = x,
             .ymin = opts.ymin,
@@ -160,7 +160,7 @@ pub const Figure = struct {
         assert(0 <= opts.ymax and opts.ymax <= 1);
         assert(xmin <= xmax);
         assert(opts.ymin <= opts.ymax);
-        try self._spans.append(Span{
+        try self._spans.append(self.allocator, Span{
             .xmin = xmin,
             .xmax = xmax,
             .ymin = opts.ymin,
@@ -178,7 +178,7 @@ pub const Figure = struct {
         assert(0 <= opts.xmin and opts.xmin <= 1);
         assert(0 <= opts.xmax and opts.xmax <= 1);
         assert(opts.xmin <= opts.xmax);
-        try self._spans.append(Span{
+        try self._spans.append(self.allocator, Span{
             .xmin = opts.xmin,
             .xmax = opts.xmax,
             .ymin = y,
@@ -198,7 +198,7 @@ pub const Figure = struct {
         assert(0 <= opts.xmax and opts.xmax <= 1);
         assert(ymin <= ymax);
         assert(opts.xmin <= opts.xmax);
-        try self._spans.append(Span{
+        try self._spans.append(self.allocator, Span{
             .xmin = opts.xmin,
             .xmax = opts.xmax,
             .ymin = ymin,
@@ -376,8 +376,8 @@ pub const Figure = struct {
             };
         }
 
-        fn deinit(self: *Histogram) void {
-            self.histogram.deinit();
+        fn deinit(self: *Histogram, allocator: mem.Allocator) void {
+            self.histogram.deinit(allocator);
         }
 
         fn write(self: Histogram, cvs: *canvas.Canvas) !void {
@@ -504,10 +504,10 @@ test "working test" {
 
     try fig.prepare();
 
-    var list = std.ArrayList(u8).init(std.testing.allocator);
-    defer list.deinit();
+    var list: std.ArrayList(u8) = .{};
+    defer list.deinit(std.testing.allocator);
 
-    try list.writer().print("{}", .{fig});
+    try list.writer(std.testing.allocator).print("{any}", .{fig});
     try expectEqualStringsNormalized(
         \\    Y      ^
         \\3.000      | 
@@ -527,7 +527,7 @@ test "working test" {
 
     // force colors
     terminfo.TermInfo.testing();
-    std.debug.print("\n{}\n", .{fig});
+    std.debug.print("\n{any}\n", .{fig});
 }
 
 test "figure with axvline center" {
@@ -539,10 +539,10 @@ test "figure with axvline center" {
 
     try fig.prepare();
 
-    var list = std.ArrayList(u8).init(std.testing.allocator);
-    defer list.deinit();
+    var list: std.ArrayList(u8) = .{};
+    defer list.deinit(std.testing.allocator);
 
-    try list.writer().print("{}", .{fig});
+    try list.writer(std.testing.allocator).print("{any}", .{fig});
     try expectEqualStringsNormalized(
         \\    Y      ^
         \\1.000      | 
@@ -570,10 +570,10 @@ test "figure with axvline center center" {
 
     try fig.prepare();
 
-    var list = std.ArrayList(u8).init(std.testing.allocator);
-    defer list.deinit();
+    var list: std.ArrayList(u8) = .{};
+    defer list.deinit(std.testing.allocator);
 
-    try list.writer().print("{}", .{fig});
+    try list.writer(std.testing.allocator).print("{any}", .{fig});
     try expectEqualStringsNormalized(
         \\    Y      ^
         \\1.000      | 
@@ -601,10 +601,10 @@ test "figure with axvline left" {
 
     try fig.prepare();
 
-    var list = std.ArrayList(u8).init(std.testing.allocator);
-    defer list.deinit();
+    var list: std.ArrayList(u8) = .{};
+    defer list.deinit(std.testing.allocator);
 
-    try list.writer().print("{}", .{fig});
+    try list.writer(std.testing.allocator).print("{any}", .{fig});
     try expectEqualStringsNormalized(
         \\    Y      ^
         \\1.000      | 
@@ -632,10 +632,10 @@ test "figure with axvline right" {
 
     try fig.prepare();
 
-    var list = std.ArrayList(u8).init(std.testing.allocator);
-    defer list.deinit();
+    var list: std.ArrayList(u8) = .{};
+    defer list.deinit(std.testing.allocator);
 
-    try list.writer().print("{}", .{fig});
+    try list.writer(std.testing.allocator).print("{any}", .{fig});
     try expectEqualStringsNormalized(
         \\    Y      ^
         \\1.000      | 
@@ -663,10 +663,10 @@ test "figure with axvspan border" {
 
     try fig.prepare();
 
-    var list = std.ArrayList(u8).init(std.testing.allocator);
-    defer list.deinit();
+    var list: std.ArrayList(u8) = .{};
+    defer list.deinit(std.testing.allocator);
 
-    try list.writer().print("{}", .{fig});
+    try list.writer(std.testing.allocator).print("{any}", .{fig});
     try expectEqualStringsNormalized(
         \\    Y      ^
         \\1.000      | 
@@ -694,10 +694,10 @@ test "figure with axvspan center" {
 
     try fig.prepare();
 
-    var list = std.ArrayList(u8).init(std.testing.allocator);
-    defer list.deinit();
+    var list: std.ArrayList(u8) = .{};
+    defer list.deinit(std.testing.allocator);
 
-    try list.writer().print("{}", .{fig});
+    try list.writer(std.testing.allocator).print("{any}", .{fig});
     try expectEqualStringsNormalized(
         \\    Y      ^
         \\1.000      | 
@@ -725,10 +725,10 @@ test "figure with axvspan center center" {
 
     try fig.prepare();
 
-    var list = std.ArrayList(u8).init(std.testing.allocator);
-    defer list.deinit();
+    var list: std.ArrayList(u8) = .{};
+    defer list.deinit(std.testing.allocator);
 
-    try list.writer().print("{}", .{fig});
+    try list.writer(std.testing.allocator).print("{any}", .{fig});
     try expectEqualStringsNormalized(
         \\    Y      ^
         \\1.000      | 
@@ -756,10 +756,10 @@ test "figure with axhline center" {
 
     try fig.prepare();
 
-    var list = std.ArrayList(u8).init(std.testing.allocator);
-    defer list.deinit();
+    var list: std.ArrayList(u8) = .{};
+    defer list.deinit(std.testing.allocator);
 
-    try list.writer().print("{}", .{fig});
+    try list.writer(std.testing.allocator).print("{any}", .{fig});
     try expectEqualStringsNormalized(
         \\    Y      ^
         \\1.000      | 
@@ -787,10 +787,10 @@ test "figure with axhline center center" {
 
     try fig.prepare();
 
-    var list = std.ArrayList(u8).init(std.testing.allocator);
-    defer list.deinit();
+    var list: std.ArrayList(u8) = .{};
+    defer list.deinit(std.testing.allocator);
 
-    try list.writer().print("{}", .{fig});
+    try list.writer(std.testing.allocator).print("{any}", .{fig});
     try expectEqualStringsNormalized(
         \\    Y      ^
         \\1.000      | 
@@ -818,10 +818,10 @@ test "figure with axhline bottom" {
 
     try fig.prepare();
 
-    var list = std.ArrayList(u8).init(std.testing.allocator);
-    defer list.deinit();
+    var list: std.ArrayList(u8) = .{};
+    defer list.deinit(std.testing.allocator);
 
-    try list.writer().print("{}", .{fig});
+    try list.writer(std.testing.allocator).print("{any}", .{fig});
     try expectEqualStringsNormalized(
         \\    Y      ^
         \\1.000      | 
@@ -849,10 +849,10 @@ test "figure with axhline top" {
 
     try fig.prepare();
 
-    var list = std.ArrayList(u8).init(std.testing.allocator);
-    defer list.deinit();
+    var list: std.ArrayList(u8) = .{};
+    defer list.deinit(std.testing.allocator);
 
-    try list.writer().print("{}", .{fig});
+    try list.writer(std.testing.allocator).print("{any}", .{fig});
     try expectEqualStringsNormalized(
         \\    Y      ^
         \\1.000      | 
@@ -880,10 +880,10 @@ test "figure with axhspan border" {
 
     try fig.prepare();
 
-    var list = std.ArrayList(u8).init(std.testing.allocator);
-    defer list.deinit();
+    var list: std.ArrayList(u8) = .{};
+    defer list.deinit(std.testing.allocator);
 
-    try list.writer().print("{}", .{fig});
+    try list.writer(std.testing.allocator).print("{any}", .{fig});
     try expectEqualStringsNormalized(
         \\    Y      ^
         \\1.000      | 
@@ -911,10 +911,10 @@ test "figure with axhspan center" {
 
     try fig.prepare();
 
-    var list = std.ArrayList(u8).init(std.testing.allocator);
-    defer list.deinit();
+    var list: std.ArrayList(u8) = .{};
+    defer list.deinit(std.testing.allocator);
 
-    try list.writer().print("{}", .{fig});
+    try list.writer(std.testing.allocator).print("{any}", .{fig});
     try expectEqualStringsNormalized(
         \\    Y      ^
         \\1.000      | 
@@ -942,10 +942,10 @@ test "figure with axhspan center center" {
 
     try fig.prepare();
 
-    var list = std.ArrayList(u8).init(std.testing.allocator);
-    defer list.deinit();
+    var list: std.ArrayList(u8) = .{};
+    defer list.deinit(std.testing.allocator);
 
-    try list.writer().print("{}", .{fig});
+    try list.writer(std.testing.allocator).print("{any}", .{fig});
     try expectEqualStringsNormalized(
         \\    Y      ^
         \\1.000      | 

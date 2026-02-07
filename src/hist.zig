@@ -28,11 +28,11 @@ pub const Histogram = struct {
             .bins = try ArrayList(f64).initCapacity(allocator, bins + 1),
             .delta = delta,
         };
-        errdefer h.counts.deinit();
-        errdefer h.bins.deinit();
+        errdefer h.counts.deinit(allocator);
+        errdefer h.bins.deinit(allocator);
 
         // count values into bins
-        try h.counts.appendNTimes(0, bins);
+        try h.counts.appendNTimes(allocator, 0, bins);
         for (values) |value| {
             const val_delta = value - x.min;
             const val_idx = @min(bins - 1, @as(usize, @intFromFloat(val_delta / xwidth)));
@@ -40,7 +40,7 @@ pub const Histogram = struct {
         }
 
         // values for bins
-        try h.bins.appendNTimes(0, bins + 1);
+        try h.bins.appendNTimes(allocator, 0, bins + 1);
         var idx: usize = 0;
         while (idx < bins + 1) : (idx += 1) {
             h.bins.items[idx] = @as(f64, @floatFromInt(idx)) * xwidth + x.min;
@@ -49,9 +49,9 @@ pub const Histogram = struct {
         return h;
     }
 
-    pub fn deinit(self: *Histogram) void {
-        self.bins.deinit();
-        self.counts.deinit();
+    pub fn deinit(self: *Histogram, allocator: Allocator) void {
+        self.bins.deinit(allocator);
+        self.counts.deinit(allocator);
     }
 
     /// Output the Histogram to a writer.
@@ -170,7 +170,7 @@ test "Extrema of multiple similar values" {
 test "Histogram of empty list" {
     const values = [_]f64{};
     var h = try Histogram.init(testing.allocator, &values, 2);
-    defer h.deinit();
+    defer h.deinit(testing.allocator);
 
     try expectEqualSlices(f64, h.bins.items, &([_]f64{ 0, 0.5, 1 }));
     try expectEqualSlices(u32, h.counts.items, &([_]u32{ 0, 0 }));
@@ -179,7 +179,7 @@ test "Histogram of empty list" {
 test "Histogram of list of one" {
     const values = [_]f64{42};
     var h = try Histogram.init(testing.allocator, &values, 2);
-    defer h.deinit();
+    defer h.deinit(testing.allocator);
 
     try expectEqualSlices(f64, h.bins.items, &([_]f64{ 41.5, 42, 42.5 }));
     try expectEqualSlices(u32, h.counts.items, &([_]u32{ 0, 1 }));
@@ -188,7 +188,7 @@ test "Histogram of list of one" {
 test "Histogram of list of two" {
     const values = [_]f64{ 42, -42 };
     var h = try Histogram.init(testing.allocator, &values, 2);
-    defer h.deinit();
+    defer h.deinit(testing.allocator);
 
     try expectEqualSlices(f64, h.bins.items, &([_]f64{ -42, 0, 42 }));
     try expectEqualSlices(u32, h.counts.items, &([_]u32{ 1, 1 }));
@@ -197,7 +197,7 @@ test "Histogram of list of two" {
 test "Histogram of list of many" {
     const values = [_]f64{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12 };
     var h = try Histogram.init(testing.allocator, &values, 2);
-    defer h.deinit();
+    defer h.deinit(testing.allocator);
 
     try expectEqualSlices(f64, h.bins.items, &([_]f64{ 1, 6.5, 12 }));
     try expectEqualSlices(u32, h.counts.items, &([_]u32{ 6, 5 }));
@@ -206,7 +206,7 @@ test "Histogram of list of many" {
 test "Histogram of list of many with one bin for each" {
     const values = [_]f64{ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12 };
     var h = try Histogram.init(testing.allocator, &values, 12);
-    defer h.deinit();
+    defer h.deinit(testing.allocator);
 
     try expectEqualSlices(f64, h.bins.items, &([_]f64{ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 }));
     try expectEqualSlices(u32, h.counts.items, &([_]u32{ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }));
@@ -215,7 +215,7 @@ test "Histogram of list of many with one bin for each" {
 test "Histogram of list of many with one bin for each negative" {
     const values = [_]f64{ 0, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -12 };
     var h = try Histogram.init(testing.allocator, &values, 12);
-    defer h.deinit();
+    defer h.deinit(testing.allocator);
 
     try expectEqualSlices(f64, h.bins.items, &([_]f64{ -12, -11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0 }));
     try expectEqualSlices(u32, h.counts.items, &([_]u32{ 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2 }));
@@ -224,12 +224,12 @@ test "Histogram of list of many with one bin for each negative" {
 test "write simple Histogram" {
     const values = [_]f64{ 0, 1, 2, 3, 4, 5, 5, 5, 8, 9, 10, 12 };
     var h = try Histogram.init(testing.allocator, &values, 12);
-    defer h.deinit();
+    defer h.deinit(testing.allocator);
 
-    var list = std.ArrayList(u8).init(std.testing.allocator);
-    defer list.deinit();
+    var list: std.ArrayList(u8) = .{};
+    defer list.deinit(std.testing.allocator);
 
-    try list.writer().print("{:60}", .{h});
+    try list.writer(std.testing.allocator).print("{any:60}", .{h});
 
     try expectEqualStringsNormalized(
         \\        bucket       | ____________________________________________________________ Total Counts
@@ -258,12 +258,12 @@ test "write random Histogram" {
         values[i] = random.floatNorm(f64);
     }
     var h = try Histogram.init(testing.allocator, &values, 10);
-    defer h.deinit();
+    defer h.deinit(testing.allocator);
 
-    var list = std.ArrayList(u8).init(std.testing.allocator);
-    defer list.deinit();
+    var list: std.ArrayList(u8) = .{};
+    defer list.deinit(std.testing.allocator);
 
-    try list.writer().print("{:40}", .{h});
+    try list.writer(std.testing.allocator).print("{any:40}", .{h});
 
     try expectEqualStringsNormalized(
         \\        bucket       | ________________________________________ Total Counts
@@ -290,12 +290,12 @@ test "write large random Histogram" {
         values[i] = 1_000_000 * random.floatNorm(f64);
     }
     var h = try Histogram.init(testing.allocator, &values, 10);
-    defer h.deinit();
+    defer h.deinit(testing.allocator);
 
-    var list = std.ArrayList(u8).init(std.testing.allocator);
-    defer list.deinit();
+    var list: std.ArrayList(u8) = .{};
+    defer list.deinit(std.testing.allocator);
 
-    try list.writer().print("{e<8.1}", .{h});
+    try list.writer(std.testing.allocator).print("{any:e<8.1}", .{h});
 
     try expectEqualStringsNormalized(
         \\        bucket       | ________________________________________________________________________________ Total Counts
@@ -322,12 +322,12 @@ test "write small random Histogram" {
         values[i] = random.float(f64) / 1_000_000;
     }
     var h = try Histogram.init(testing.allocator, &values, 10);
-    defer h.deinit();
+    defer h.deinit(testing.allocator);
 
-    var list = std.ArrayList(u8).init(std.testing.allocator);
-    defer list.deinit();
+    var list: std.ArrayList(u8) = .{};
+    defer list.deinit(std.testing.allocator);
 
-    try list.writer().print("{}", .{h});
+    try list.writer(std.testing.allocator).print("{any}", .{h});
 
     try expectEqualStringsNormalized(
         \\        bucket       | ________________________________________________________________________________ Total Counts
