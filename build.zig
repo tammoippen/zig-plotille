@@ -27,26 +27,28 @@ pub fn build(b: *std.Build) !void {
 
     // Build static library by default
     const c_entry = b.path("src/c-api.zig");
-    const static_lib = b.addStaticLibrary(.{
-        .name = name,
+    const c_module = b.addModule("plotille-c", .{
         .root_source_file = c_entry,
         .target = target,
         .optimize = mode,
-        .version = version,
         .strip = strip,
+    });
+    const static_lib = b.addLibrary(.{
+        .name = name,
+        .root_module = c_module,
+        .version = version,
+        .linkage = .static,
     });
     static_lib.linkLibC();
     const installed_static_lib = b.addInstallArtifact(static_lib, .{});
     b.getInstallStep().dependOn(&installed_static_lib.step);
 
     // Build dynamic library by default (unless static-only is requested)
-    const shared_lib = b.addSharedLibrary(.{
+    const shared_lib = b.addLibrary(.{
         .name = name,
-        .root_source_file = c_entry,
-        .target = target,
-        .optimize = mode,
+        .root_module = c_module,
         .version = version,
-        .strip = strip,
+        .linkage = .dynamic,
     });
     shared_lib.linkLibC();
     const installed_shared_lib = b.addInstallArtifact(shared_lib, .{});
@@ -56,8 +58,10 @@ pub fn build(b: *std.Build) !void {
     const tests = b.addTest(.{
         .name = name,
         .root_module = module,
-        .filter = filter,
     });
+    if (filter) |f| {
+        tests.filters = &.{f};
+    }
     const run_tests = b.addRunArtifact(tests);
     test_step.dependOn(&run_tests.step);
 }
