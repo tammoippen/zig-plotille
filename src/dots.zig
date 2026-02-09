@@ -46,7 +46,6 @@ pub const Dots = extern struct {
         self: Dots,
         writer: anytype,
     ) !void {
-
         var buff: [3]u8 = undefined;
         var v: u21 = 0x2800;
         v += self.dots;
