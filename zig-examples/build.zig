@@ -6,7 +6,7 @@ pub fn build(b: *std.Build) !void {
 
     const strip = b.option(bool, "strip", "Omit debug symbols") orelse false;
 
-    const plotille = b.dependency("plotille", .{
+    const plotille_dep = b.dependency("plotille", .{
         .target = target,
         .optimize = mode,
         .strip = strip,
@@ -15,15 +15,19 @@ pub fn build(b: *std.Build) !void {
     const example_names = [_][]const u8{ "names", "lookup", "hsl", "terminfo", "hist", "histogram", "house", "sine", "dots" };
     const run_step = b.step("run", "Run exe.");
     inline for (example_names) |example| {
-        const exe = b.addExecutable(.{
-            .name = example,
+        const example_module = b.addModule(example, .{
             .root_source_file = b.path(example ++ ".zig"),
             .target = target,
             .optimize = mode,
-            .version = try std.SemanticVersion.parse("1.0.0"),
             .strip = strip,
         });
-        exe.root_module.addImport("plotille", plotille.module("plotille"));
+        example_module.addImport("plotille", plotille_dep.module("plotille"));
+
+        const exe = b.addExecutable(.{
+            .name = example,
+            .root_module = example_module,
+            .version = try std.SemanticVersion.parse("1.0.0"),
+        });
         b.installArtifact(exe);
         const exe_run = b.addRunArtifact(exe);
         run_step.dependOn(&exe_run.step);
