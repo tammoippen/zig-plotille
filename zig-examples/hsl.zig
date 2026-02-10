@@ -34,7 +34,8 @@ pub fn main() !void {
     // detect terminal information
     try plt.terminfo.TermInfo.detect(allocator);
 
-    const writer = std.io.getStdOut().writer();
+    var stdout_writer = std.fs.File.stdout().writer(&.{});
+    const writer = &stdout_writer.interface;
 
     const args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);

@@ -9,7 +9,8 @@ pub fn main() !void {
     const allocator = arena.allocator();
 
     try TermInfo.detect(allocator);
-    const writer = std.io.getStdOut().writer();
+    var stdout_writer = std.fs.File.stdout().writer(&.{});
+    const writer = &stdout_writer.interface;
 
     var canvas = try plt.canvas.Canvas.init(allocator, 40, 20, plt.color.Color.by_name(.white));
     defer canvas.deinit(allocator);
@@ -21,5 +22,5 @@ pub fn main() !void {
     try canvas.line(.{ .x = 0.1, .y = 0.6 }, .{ .x = 0.45, .y = 0.8 }, plt.color.Color.by_name(.red), null);
     try canvas.line(.{ .x = 0.8, .y = 0.6 }, .{ .x = 0.45, .y = 0.8 }, plt.color.Color.by_name(.red), null);
 
-    try writer.print("{}\n", .{canvas});
+    try writer.print("{f}\n", .{canvas});
 }

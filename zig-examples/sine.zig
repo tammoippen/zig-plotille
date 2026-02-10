@@ -12,7 +12,8 @@ pub fn main() !void {
     // detect terminal information
     try plt.terminfo.TermInfo.detect(allocator);
 
-    const writer = std.io.getStdOut().writer();
+    var stdout_writer = std.fs.File.stdout().writer(&.{});
+    const writer = &stdout_writer.interface;
 
     var fig = try plt.figure.Figure.init(allocator, 60, 20, null);
     defer fig.deinit();
@@ -44,5 +45,5 @@ pub fn main() !void {
     try fig.axhline(0.8, .{ .lc = plt.color.Color.by_name(.yellow) });
 
     try fig.prepare();
-    try writer.print("{}\n", .{fig});
+    try writer.print("{f}\n", .{fig});
 }
