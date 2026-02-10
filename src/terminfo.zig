@@ -73,7 +73,7 @@ pub const TermInfo = extern struct {
 
     /// Read out environment variables, hence the allocator.
     pub fn detect(allocator: std.mem.Allocator) !void {
-        const stdout_tty = std.posix.isatty(std.posix.STDOUT_FILENO);
+        const stdout_tty = std.posix.isatty(std.fs.File.stdout().handle);
         const no_color = isNoColorSet(allocator);
         const force_color = try forceColors(allocator);
         const color_mode = try getColorMode(allocator);
