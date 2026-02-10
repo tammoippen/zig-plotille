@@ -53,10 +53,10 @@ pub fn main() !void {
         const int_str = try std.fmt.bufPrint(int_buff[0..], "{:4}", .{idx});
         if ((idx - 16) % 36 >= 18) {
             var color_writer = std.fs.File.stdout().writer(&.{});
-        try plt.color.colorPrint(&color_writer.interface, "{s}", .{int_str}, .{ .fg = fg_black, .bg = bg });
+            try plt.color.colorPrint(&color_writer.interface, "{s}", .{int_str}, .{ .fg = fg_black, .bg = bg });
         } else {
             var color_writer = std.fs.File.stdout().writer(&.{});
-        try plt.color.colorPrint(&color_writer.interface, "{s}", .{int_str}, .{ .fg = fg_white, .bg = bg });
+            try plt.color.colorPrint(&color_writer.interface, "{s}", .{int_str}, .{ .fg = fg_white, .bg = bg });
         }
     }
     try writer.print("\n", .{});
@@ -67,10 +67,10 @@ pub fn main() !void {
         const int_str = try std.fmt.bufPrint(int_buff[0..], "{:4}", .{idx});
         if (idx < 244) {
             var color_writer = std.fs.File.stdout().writer(&.{});
-        try plt.color.colorPrint(&color_writer.interface, "{s}", .{int_str}, .{ .fg = fg_white, .bg = bg });
+            try plt.color.colorPrint(&color_writer.interface, "{s}", .{int_str}, .{ .fg = fg_white, .bg = bg });
         } else {
             var color_writer = std.fs.File.stdout().writer(&.{});
-        try plt.color.colorPrint(&color_writer.interface, "{s}", .{int_str}, .{ .fg = fg_black, .bg = bg });
+            try plt.color.colorPrint(&color_writer.interface, "{s}", .{int_str}, .{ .fg = fg_black, .bg = bg });
         }
     }
     try writer.print("\n", .{});
