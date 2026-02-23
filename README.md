@@ -1,4 +1,5 @@
 ![CI](https://github.com/tammoippen/zig-plotille/actions/workflows/main.yml/badge.svg)
+[![Zig 0.15.2](https://img.shields.io/badge/Zig-0.15.2-f7a41d?logo=zig&logoColor=white)](https://ziglang.org/download/0.15.2/release-notes.html)
 
 # zig-plotille
 
@@ -47,9 +48,11 @@ zig build -Doptimize=ReleaseFast -Dstrip=true
 zig build test
 
 # Output will be in:
-# - zig-out/lib/libplotille.a (static library)
+# - zig-out/lib/libplotille.a (static library, Linux/macOS)
+# - zig-out/lib/plotille.lib  (static library, Windows)
 # - zig-out/lib/libplotille.so (dynamic library, Linux)
 # - zig-out/lib/libplotille.dylib (dynamic library, macOS)
+# - zig-out/lib/plotille.dll  (dynamic library, Windows)
 ```
 
 ## Examples
@@ -140,7 +143,7 @@ try canvas.line(.{ .x = 0.8, .y = 0.1 }, .{ .x = 0.1, .y = 0.6 }, plt.color.Colo
 try canvas.line(.{ .x = 0.1, .y = 0.6 }, .{ .x = 0.45, .y = 0.8 }, plt.color.Color.by_name(.red), null);
 try canvas.line(.{ .x = 0.8, .y = 0.6 }, .{ .x = 0.45, .y = 0.8 }, plt.color.Color.by_name(.red), null);
 
-try writer.print("{}\n", .{canvas});
+try writer.print("{f}\n", .{canvas});
 ```
 
 ![House Drawing](img/house.png)
@@ -182,7 +185,7 @@ try fig.text(5, 1.5, "Peak", plt.color.Color.by_name(.green));
 try fig.axhline(0.8, .{ .lc = plt.color.Color.by_name(.yellow) });
 
 try fig.prepare();
-try writer.print("{}\n", .{fig});
+try writer.print("{f}\n", .{fig});
 ```
 
 ![Sine](img/sine.png)
@@ -198,9 +201,9 @@ const plt = @import("plotille");
 
 const data = [_]f64{ 1.2, 2.3, 1.8, 2.1, 1.9, 2.4, 1.7, 2.0, 1.6, 2.2 };
 var hist = try plt.hist.Histogram.init(allocator, &data, 5);
-defer hist.deinit();
+defer hist.deinit(allocator);
 
-try writer.print("{}\n", .{hist});
+try writer.print("{f}\n", .{hist});
 ```
 
 ![Histogram](img/hist.png)
@@ -225,7 +228,7 @@ fig.ymax = 12;
 try fig.histogram(values.items, 10, null);
 
 try fig.prepare();
-try writer.print("{}\n", .{fig});
+try writer.print("{f}\n", .{fig});
 ```
 
 ![Histogram](img/histogram.png)
@@ -244,7 +247,7 @@ dot.set(0, 0); // Top-left
 dot.set(1, 3); // Bottom-right
 dot.color.fg = plt.color.Color.by_name(.red);
 
-try writer.print("Dot pattern: {}\n", .{dot});
+try writer.print("Dot pattern: {f}\n", .{dot});
 ```
 
 ![Dots](img/dots.png)
@@ -324,7 +327,7 @@ try plt.color.colorPrint(writer, "Colored text", .{}, .{ .fg = red, .bg = indexe
 
 ## C API
 
-For C/C++ integration, include `plotille.h` and link against `libplotille.a` / `libplotille.so` / `libplotille.dylib`:
+For C/C++ integration, include `plotille.h` and link against the appropriate library for your platform (`libplotille.a` / `plotille.lib` for static, `libplotille.so` / `libplotille.dylib` / `plotille.dll` for dynamic):
 
 ```c
 #include "plotille.h"
@@ -393,8 +396,8 @@ zig build
 zig build -Doptimize=ReleaseFast -Dstrip=true
 
 # Output libraries:
-# - zig-out/lib/libplotille.a (static library)
-# - zig-out/lib/libplotille.so/.dylib (dynamic library)
+# - zig-out/lib/libplotille.a / plotille.lib (static library)
+# - zig-out/lib/libplotille.so/.dylib / plotille.dll (dynamic library)
 
 # Include plotille.h in your C/C++ project
 #
