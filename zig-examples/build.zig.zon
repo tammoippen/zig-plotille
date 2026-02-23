@@ -4,10 +4,9 @@
     .minimum_zig_version = "0.14.1",
     .dependencies = .{
         .plotille = .{
-            .url = "git+https://github.com/tammoippen/zig-plotille#305a5060434d353b241ab18f123ea64f26b95fbc",
-            .hash = "plotille-0.0.1-i2W1aOppAgBR_U7dqj0FlcTBLGi1LgamRLV8bAa93NP4",
+            .path = "..",
         },
     },
     .paths = .{""},
-    .fingerprint = 0x67d5399d6c3b1b69,
+    .fingerprint = 0x67d5399d644449e9,
 }

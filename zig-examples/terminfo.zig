@@ -12,7 +12,7 @@ pub fn main() !void {
     try TermInfo.detect(allocator);
     const info = TermInfo.get();
 
-    const writer = std.io.getStdOut().writer();
-    try json.stringify(info, .{}, writer);
-    try writer.writeByte('\n');
+    var stdout_writer = std.fs.File.stdout().writer(&.{});
+    const writer = &stdout_writer.interface;
+    try writer.print("{f}\n", .{json.fmt(info, .{})});
 }

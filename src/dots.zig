@@ -44,14 +44,8 @@ pub const Dots = extern struct {
 
     pub fn format(
         self: Dots,
-        comptime fmt: []const u8,
-        options: std.fmt.FormatOptions,
         writer: anytype,
     ) !void {
-        // ignored options -> conform to signature
-        _ = options;
-        _ = fmt;
-
         var buff: [3]u8 = undefined;
         var v: u21 = 0x2800;
         v += self.dots;
@@ -95,17 +89,17 @@ test "test clear and full char" {
 
     var d = Dots{};
 
-    try std.fmt.format(fbs.writer(), "{s}", .{d});
+    try std.fmt.format(fbs.writer(), "{f}", .{d});
     try expectEqualStrings("⠀", fbs.getWritten());
     fbs.reset();
 
     d.fill();
-    try std.fmt.format(fbs.writer(), "{s}", .{d});
+    try std.fmt.format(fbs.writer(), "{f}", .{d});
     try expectEqualStrings("⣿", fbs.getWritten());
     fbs.reset();
 
     d.clear();
-    try std.fmt.format(fbs.writer(), "{s}", .{d});
+    try std.fmt.format(fbs.writer(), "{f}", .{d});
     try expectEqualStrings("⠀", fbs.getWritten());
     fbs.reset();
 }
@@ -116,79 +110,79 @@ test "set and unset individual vals" {
 
     var d = Dots{};
 
-    try std.fmt.format(fbs.writer(), "{s}", .{d});
+    try std.fmt.format(fbs.writer(), "{f}", .{d});
     try expectEqualStrings("⠀", fbs.getWritten());
     fbs.reset();
 
     d.set(0, 0);
-    try std.fmt.format(fbs.writer(), "{s}", .{d});
+    try std.fmt.format(fbs.writer(), "{f}", .{d});
     try expectEqualStrings("⡀", fbs.getWritten());
     fbs.reset();
     d.unset(0, 0);
-    try std.fmt.format(fbs.writer(), "{s}", .{d});
+    try std.fmt.format(fbs.writer(), "{f}", .{d});
     try expectEqualStrings("⠀", fbs.getWritten());
     fbs.reset();
 
     d.set(0, 1);
-    try std.fmt.format(fbs.writer(), "{s}", .{d});
+    try std.fmt.format(fbs.writer(), "{f}", .{d});
     try expectEqualStrings("⠄", fbs.getWritten());
     fbs.reset();
     d.unset(0, 1);
-    try std.fmt.format(fbs.writer(), "{s}", .{d});
+    try std.fmt.format(fbs.writer(), "{f}", .{d});
     try expectEqualStrings("⠀", fbs.getWritten());
     fbs.reset();
 
     d.set(0, 2);
-    try std.fmt.format(fbs.writer(), "{s}", .{d});
+    try std.fmt.format(fbs.writer(), "{f}", .{d});
     try expectEqualStrings("⠂", fbs.getWritten());
     fbs.reset();
     d.unset(0, 2);
-    try std.fmt.format(fbs.writer(), "{s}", .{d});
+    try std.fmt.format(fbs.writer(), "{f}", .{d});
     try expectEqualStrings("⠀", fbs.getWritten());
     fbs.reset();
 
     d.set(0, 3);
-    try std.fmt.format(fbs.writer(), "{s}", .{d});
+    try std.fmt.format(fbs.writer(), "{f}", .{d});
     try expectEqualStrings("⠁", fbs.getWritten());
     fbs.reset();
     d.unset(0, 3);
-    try std.fmt.format(fbs.writer(), "{s}", .{d});
+    try std.fmt.format(fbs.writer(), "{f}", .{d});
     try expectEqualStrings("⠀", fbs.getWritten());
     fbs.reset();
 
     d.set(1, 0);
-    try std.fmt.format(fbs.writer(), "{s}", .{d});
+    try std.fmt.format(fbs.writer(), "{f}", .{d});
     try expectEqualStrings("⢀", fbs.getWritten());
     fbs.reset();
     d.unset(1, 0);
-    try std.fmt.format(fbs.writer(), "{s}", .{d});
+    try std.fmt.format(fbs.writer(), "{f}", .{d});
     try expectEqualStrings("⠀", fbs.getWritten());
     fbs.reset();
 
     d.set(1, 1);
-    try std.fmt.format(fbs.writer(), "{s}", .{d});
+    try std.fmt.format(fbs.writer(), "{f}", .{d});
     try expectEqualStrings("⠠", fbs.getWritten());
     fbs.reset();
     d.unset(1, 1);
-    try std.fmt.format(fbs.writer(), "{s}", .{d});
+    try std.fmt.format(fbs.writer(), "{f}", .{d});
     try expectEqualStrings("⠀", fbs.getWritten());
     fbs.reset();
 
     d.set(1, 2);
-    try std.fmt.format(fbs.writer(), "{s}", .{d});
+    try std.fmt.format(fbs.writer(), "{f}", .{d});
     try expectEqualStrings("⠐", fbs.getWritten());
     fbs.reset();
     d.unset(1, 2);
-    try std.fmt.format(fbs.writer(), "{s}", .{d});
+    try std.fmt.format(fbs.writer(), "{f}", .{d});
     try expectEqualStrings("⠀", fbs.getWritten());
     fbs.reset();
 
     d.set(1, 3);
-    try std.fmt.format(fbs.writer(), "{s}", .{d});
+    try std.fmt.format(fbs.writer(), "{f}", .{d});
     try expectEqualStrings("⠈", fbs.getWritten());
     fbs.reset();
     d.unset(1, 3);
-    try std.fmt.format(fbs.writer(), "{s}", .{d});
+    try std.fmt.format(fbs.writer(), "{f}", .{d});
     try expectEqualStrings("⠀", fbs.getWritten());
     fbs.reset();
 }
@@ -201,24 +195,24 @@ test "colored dots" {
     var d = Dots{};
     d.set(0, 0);
 
-    try std.fmt.format(fbs.writer(), "{s}", .{d});
+    try std.fmt.format(fbs.writer(), "{f}", .{d});
     try expectEqualStrings("⡀", fbs.getWritten());
     fbs.reset();
 
     d.color.fg = color.Color.by_name(.red);
-    try std.fmt.format(fbs.writer(), "{s}", .{d});
+    try std.fmt.format(fbs.writer(), "{f}", .{d});
     try expectEqual(fbs.pos, 16);
     try expectEqualStrings("\x1b[31m⡀\x1b[39;49m", fbs.getWritten());
     fbs.reset();
 
     d.color.bg = color.Color.by_lookup(123);
-    try std.fmt.format(fbs.writer(), "{s}", .{d});
+    try std.fmt.format(fbs.writer(), "{f}", .{d});
     try expectEqual(fbs.pos, 25);
     try expectEqualStrings("\x1b[31;48;5;123m⡀\x1b[39;49m", fbs.getWritten());
     fbs.reset();
 
     d.color.fg = color.Color.by_rgb(1, 22, 133);
-    try std.fmt.format(fbs.writer(), "{s}", .{d});
+    try std.fmt.format(fbs.writer(), "{f}", .{d});
     try expectEqual(fbs.pos, 36);
     try expectEqualStrings("\x1b[38;2;1;22;133;48;5;123m⡀\x1b[39;49m", fbs.getWritten());
     fbs.reset();
@@ -231,12 +225,12 @@ test "set / unset char" {
     var d = Dots{};
     d.char = 'x';
 
-    try std.fmt.format(fbs.writer(), "{s}", .{d});
+    try std.fmt.format(fbs.writer(), "{f}", .{d});
     try expectEqualStrings("x", fbs.getWritten());
     fbs.reset();
 
     d.clear();
-    try std.fmt.format(fbs.writer(), "{s}", .{d});
+    try std.fmt.format(fbs.writer(), "{f}", .{d});
     try expectEqualStrings("⠀", fbs.getWritten());
     fbs.reset();
 }
@@ -250,7 +244,7 @@ test "color char" {
     d.char = 'x';
     d.color.fg = color.Color.by_rgb(111, 222, 255);
 
-    try std.fmt.format(fbs.writer(), "{s}", .{d});
+    try std.fmt.format(fbs.writer(), "{f}", .{d});
     try expectEqualStrings("\x1b[38;2;111;222;255mx\x1b[39;49m", fbs.getWritten());
     fbs.reset();
 }
@@ -262,22 +256,22 @@ test "set char and dots" {
     var d = Dots{};
     d.char = 'x';
 
-    try std.fmt.format(fbs.writer(), "{s}", .{d});
+    try std.fmt.format(fbs.writer(), "{f}", .{d});
     try expectEqualStrings("x", fbs.getWritten());
     fbs.reset();
 
     d.set(0, 1);
-    try std.fmt.format(fbs.writer(), "{s}", .{d});
+    try std.fmt.format(fbs.writer(), "{f}", .{d});
     try expectEqualStrings("x", fbs.getWritten());
     fbs.reset();
 
     d.char = 0;
-    try std.fmt.format(fbs.writer(), "{s}", .{d});
+    try std.fmt.format(fbs.writer(), "{f}", .{d});
     try expectEqualStrings("⠄", fbs.getWritten());
     fbs.reset();
 
     d.char = 'o';
-    try std.fmt.format(fbs.writer(), "{s}", .{d});
+    try std.fmt.format(fbs.writer(), "{f}", .{d});
     try expectEqualStrings("o", fbs.getWritten());
     fbs.reset();
 }

@@ -17,12 +17,18 @@ tests: build
 SRCS=$(wildcard c-examples/*.c)
 OBJS=$(SRCS:.c=.exe)
 
+ifeq ($(OS),Windows_NT)
+    STATIC_LIB = zig-out/lib/plotille.lib
+else
+    STATIC_LIB = zig-out/lib/libplotille.a
+endif
+
 c: $(OBJS)
 
-zig-out/lib/libplotille.a: build
+$(STATIC_LIB): build
 
-c-examples/%.exe: c-examples/%.c plotille.h zig-out/lib/libplotille.a
-	$(CC) $(CURDIR)/zig-out/lib/libplotille.a \
+c-examples/%.exe: c-examples/%.c plotille.h $(STATIC_LIB)
+	$(CC) $(CURDIR)/$(STATIC_LIB) \
 		$< \
 		-I$(CURDIR) \
 		-o $@

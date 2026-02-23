@@ -16,7 +16,7 @@ export fn dots_init() dots.Dots {
 }
 export fn dots_str(self: dots.Dots, buf: [*]u8, len: usize) usize {
     var fbs = std.io.fixedBufferStream(buf[0..len]);
-    std.fmt.format(fbs.writer(), "{s}", .{self}) catch |err| switch (err) {
+    std.fmt.format(fbs.writer(), "{f}", .{self}) catch |err| switch (err) {
         error.NoSpaceLeft => return 0,
     };
     return fbs.pos;
@@ -116,7 +116,7 @@ export fn hist_free(h: *CHistogram) void {
 
     if (h._internal) |internal| {
         const hist_ptr: *hist.Histogram = @ptrCast(@alignCast(internal));
-        hist_ptr.deinit();
+        hist_ptr.deinit(allocator);
         allocator.destroy(hist_ptr);
     }
 
@@ -128,7 +128,7 @@ export fn hist_str(h: CHistogram, buf: [*]u8, len: usize) usize {
     if (h._internal) |internal| {
         const hist_ptr: *const hist.Histogram = @ptrCast(@alignCast(internal));
         var fbs = std.io.fixedBufferStream(buf[0..len]);
-        std.fmt.format(fbs.writer(), "{}", .{hist_ptr.*}) catch return 0;
+        std.fmt.format(fbs.writer(), "{f}", .{hist_ptr.*}) catch return 0;
         return fbs.pos;
     }
     return 0;
@@ -247,7 +247,7 @@ export fn canvas_str(c: CCanvas, buf: [*]u8, len: usize) usize {
     if (c._internal) |internal| {
         const canvas_ptr: *const canvas.Canvas = @ptrCast(@alignCast(internal));
         var fbs = std.io.fixedBufferStream(buf[0..len]);
-        std.fmt.format(fbs.writer(), "{}", .{canvas_ptr.*}) catch return 0;
+        std.fmt.format(fbs.writer(), "{f}", .{canvas_ptr.*}) catch return 0;
         return fbs.pos;
     }
     return 0;
@@ -461,7 +461,7 @@ export fn figure_str(f: CFigure, buf: [*]u8, len: usize) usize {
     if (f._internal) |internal| {
         const figure_ptr: *const figure.Figure = @ptrCast(@alignCast(internal));
         var fbs = std.io.fixedBufferStream(buf[0..len]);
-        std.fmt.format(fbs.writer(), "{}", .{figure_ptr.*}) catch return 0;
+        std.fmt.format(fbs.writer(), "{f}", .{figure_ptr.*}) catch return 0;
         return fbs.pos;
     }
     return 0;

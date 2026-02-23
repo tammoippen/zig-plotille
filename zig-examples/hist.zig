@@ -29,7 +29,8 @@ pub fn main() !void {
     const allocator = arena.allocator();
 
     try TermInfo.detect(allocator);
-    const writer = std.io.getStdOut().writer();
+    var stdout_writer = std.fs.File.stdout().writer(&.{});
+    const writer = &stdout_writer.interface;
 
     const args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);
@@ -48,8 +49,8 @@ pub fn main() !void {
         use_stdin = true;
     }
 
-    var values = std.ArrayList(f64).init(allocator);
-    defer values.deinit();
+    var values: std.ArrayList(f64) = .{};
+    defer values.deinit(allocator);
 
     if (!use_stdin) {
         for (args[1..]) |arg| {
@@ -58,11 +59,11 @@ pub fn main() !void {
                 usage();
                 std.process.exit(1);
             };
-            try values.append(val);
+            try values.append(allocator, val);
         }
     } else {
-        const stdin = std.io.getStdIn().reader();
-        const in = try stdin.readAllAlloc(allocator, 1 << 20);
+        const stdin_file = std.fs.File.stdin();
+        const in = try stdin_file.readToEndAlloc(allocator, 1 << 20);
         defer allocator.free(in);
         var it = std.mem.tokenizeAny(u8, in, " \r\n\t");
         while (it.next()) |arg| {
@@ -71,12 +72,12 @@ pub fn main() !void {
                 usage();
                 std.process.exit(1);
             };
-            try values.append(val);
+            try values.append(allocator, val);
         }
     }
 
     var h = try plt.hist.Histogram.init(allocator, values.items, 10);
-    defer h.deinit();
+    defer h.deinit(allocator);
 
-    try writer.print("{}\n\n", .{h});
+    try writer.print("{f}\n\n", .{h});
 }
