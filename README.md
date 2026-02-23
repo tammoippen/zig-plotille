@@ -1,5 +1,5 @@
 ![CI](https://github.com/tammoippen/zig-plotille/actions/workflows/main.yml/badge.svg)
-[![Zig 0.15.2](https://img.shields.io/badge/Zig-0.15.2-f7a41d?logo=zig&logoColor=white)](https://ziglang.org/download/0.15.2/release-notes.html)
+[![zig 0.15.2](https://img.shields.io/badge/Zig-0.15.2-color?logo=zig&color=%23f3ab20)](https://ziglang.org/download/0.15.2/release-notes.html)
 
 # zig-plotille
 
