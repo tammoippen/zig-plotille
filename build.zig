@@ -32,6 +32,7 @@ pub fn build(b: *std.Build) !void {
         .target = target,
         .optimize = mode,
         .strip = strip,
+        .link_libc = true,
     });
     const static_lib = b.addLibrary(.{
         .name = name,
@@ -39,7 +40,6 @@ pub fn build(b: *std.Build) !void {
         .version = version,
         .linkage = .static,
     });
-    static_lib.linkLibC();
     const installed_static_lib = b.addInstallArtifact(static_lib, .{});
     b.getInstallStep().dependOn(&installed_static_lib.step);
 
@@ -50,7 +50,6 @@ pub fn build(b: *std.Build) !void {
         .version = version,
         .linkage = .dynamic,
     });
-    shared_lib.linkLibC();
     const installed_shared_lib = b.addInstallArtifact(shared_lib, .{});
     b.getInstallStep().dependOn(&installed_shared_lib.step);
 
