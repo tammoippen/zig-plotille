@@ -243,10 +243,10 @@ test "write simple Histogram" {
     var h = try Histogram.init(testing.allocator, &values, 12);
     defer h.deinit(testing.allocator);
 
-    var list: std.ArrayList(u8) = .{};
+    var list: std.ArrayList(u8) = .empty;
     defer list.deinit(std.testing.allocator);
 
-    try list.writer(std.testing.allocator).print("{f}", .{h.withWidth(60)});
+    try list.print(std.testing.allocator, "{f}", .{h.withWidth(60)});
 
     try expectEqualStringsNormalized(
         \\        bucket       | ____________________________________________________________ Total Counts
@@ -277,10 +277,10 @@ test "write random Histogram" {
     var h = try Histogram.init(testing.allocator, &values, 10);
     defer h.deinit(testing.allocator);
 
-    var list: std.ArrayList(u8) = .{};
+    var list: std.ArrayList(u8) = .empty;
     defer list.deinit(std.testing.allocator);
 
-    try list.writer(std.testing.allocator).print("{f}", .{h.withWidth(40)});
+    try list.print(std.testing.allocator, "{f}", .{h.withWidth(40)});
 
     try expectEqualStringsNormalized(
         \\        bucket       | ________________________________________ Total Counts
@@ -309,10 +309,10 @@ test "write large random Histogram" {
     var h = try Histogram.init(testing.allocator, &values, 10);
     defer h.deinit(testing.allocator);
 
-    var list: std.ArrayList(u8) = .{};
+    var list: std.ArrayList(u8) = .empty;
     defer list.deinit(std.testing.allocator);
 
-    try list.writer(std.testing.allocator).print("{f}", .{h});
+    try list.print(std.testing.allocator, "{f}", .{h});
 
     try expectEqualStringsNormalized(
         \\        bucket       | ________________________________________________________________________________ Total Counts
@@ -341,10 +341,10 @@ test "write small random Histogram" {
     var h = try Histogram.init(testing.allocator, &values, 10);
     defer h.deinit(testing.allocator);
 
-    var list: std.ArrayList(u8) = .{};
+    var list: std.ArrayList(u8) = .empty;
     defer list.deinit(std.testing.allocator);
 
-    try list.writer(std.testing.allocator).print("{f}", .{h});
+    try list.print(std.testing.allocator, "{f}", .{h});
 
     try expectEqualStringsNormalized(
         \\        bucket       | ________________________________________________________________________________ Total Counts

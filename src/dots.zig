@@ -85,193 +85,193 @@ pub const Dots = extern struct {
 
 test "test clear and full char" {
     var buff: [100]u8 = undefined;
-    var fbs = std.io.fixedBufferStream(&buff);
+    var w: std.Io.Writer = .fixed(&buff);
 
     var d = Dots{};
 
-    try std.fmt.format(fbs.writer(), "{f}", .{d});
-    try expectEqualStrings("⠀", fbs.getWritten());
-    fbs.reset();
+    try w.print("{f}", .{d});
+    try expectEqualStrings("⠀", w.buffered());
+    w.end = 0;
 
     d.fill();
-    try std.fmt.format(fbs.writer(), "{f}", .{d});
-    try expectEqualStrings("⣿", fbs.getWritten());
-    fbs.reset();
+    try w.print("{f}", .{d});
+    try expectEqualStrings("⣿", w.buffered());
+    w.end = 0;
 
     d.clear();
-    try std.fmt.format(fbs.writer(), "{f}", .{d});
-    try expectEqualStrings("⠀", fbs.getWritten());
-    fbs.reset();
+    try w.print("{f}", .{d});
+    try expectEqualStrings("⠀", w.buffered());
+    w.end = 0;
 }
 
 test "set and unset individual vals" {
     var buff: [100]u8 = undefined;
-    var fbs = std.io.fixedBufferStream(&buff);
+    var w: std.Io.Writer = .fixed(&buff);
 
     var d = Dots{};
 
-    try std.fmt.format(fbs.writer(), "{f}", .{d});
-    try expectEqualStrings("⠀", fbs.getWritten());
-    fbs.reset();
+    try w.print("{f}", .{d});
+    try expectEqualStrings("⠀", w.buffered());
+    w.end = 0;
 
     d.set(0, 0);
-    try std.fmt.format(fbs.writer(), "{f}", .{d});
-    try expectEqualStrings("⡀", fbs.getWritten());
-    fbs.reset();
+    try w.print("{f}", .{d});
+    try expectEqualStrings("⡀", w.buffered());
+    w.end = 0;
     d.unset(0, 0);
-    try std.fmt.format(fbs.writer(), "{f}", .{d});
-    try expectEqualStrings("⠀", fbs.getWritten());
-    fbs.reset();
+    try w.print("{f}", .{d});
+    try expectEqualStrings("⠀", w.buffered());
+    w.end = 0;
 
     d.set(0, 1);
-    try std.fmt.format(fbs.writer(), "{f}", .{d});
-    try expectEqualStrings("⠄", fbs.getWritten());
-    fbs.reset();
+    try w.print("{f}", .{d});
+    try expectEqualStrings("⠄", w.buffered());
+    w.end = 0;
     d.unset(0, 1);
-    try std.fmt.format(fbs.writer(), "{f}", .{d});
-    try expectEqualStrings("⠀", fbs.getWritten());
-    fbs.reset();
+    try w.print("{f}", .{d});
+    try expectEqualStrings("⠀", w.buffered());
+    w.end = 0;
 
     d.set(0, 2);
-    try std.fmt.format(fbs.writer(), "{f}", .{d});
-    try expectEqualStrings("⠂", fbs.getWritten());
-    fbs.reset();
+    try w.print("{f}", .{d});
+    try expectEqualStrings("⠂", w.buffered());
+    w.end = 0;
     d.unset(0, 2);
-    try std.fmt.format(fbs.writer(), "{f}", .{d});
-    try expectEqualStrings("⠀", fbs.getWritten());
-    fbs.reset();
+    try w.print("{f}", .{d});
+    try expectEqualStrings("⠀", w.buffered());
+    w.end = 0;
 
     d.set(0, 3);
-    try std.fmt.format(fbs.writer(), "{f}", .{d});
-    try expectEqualStrings("⠁", fbs.getWritten());
-    fbs.reset();
+    try w.print("{f}", .{d});
+    try expectEqualStrings("⠁", w.buffered());
+    w.end = 0;
     d.unset(0, 3);
-    try std.fmt.format(fbs.writer(), "{f}", .{d});
-    try expectEqualStrings("⠀", fbs.getWritten());
-    fbs.reset();
+    try w.print("{f}", .{d});
+    try expectEqualStrings("⠀", w.buffered());
+    w.end = 0;
 
     d.set(1, 0);
-    try std.fmt.format(fbs.writer(), "{f}", .{d});
-    try expectEqualStrings("⢀", fbs.getWritten());
-    fbs.reset();
+    try w.print("{f}", .{d});
+    try expectEqualStrings("⢀", w.buffered());
+    w.end = 0;
     d.unset(1, 0);
-    try std.fmt.format(fbs.writer(), "{f}", .{d});
-    try expectEqualStrings("⠀", fbs.getWritten());
-    fbs.reset();
+    try w.print("{f}", .{d});
+    try expectEqualStrings("⠀", w.buffered());
+    w.end = 0;
 
     d.set(1, 1);
-    try std.fmt.format(fbs.writer(), "{f}", .{d});
-    try expectEqualStrings("⠠", fbs.getWritten());
-    fbs.reset();
+    try w.print("{f}", .{d});
+    try expectEqualStrings("⠠", w.buffered());
+    w.end = 0;
     d.unset(1, 1);
-    try std.fmt.format(fbs.writer(), "{f}", .{d});
-    try expectEqualStrings("⠀", fbs.getWritten());
-    fbs.reset();
+    try w.print("{f}", .{d});
+    try expectEqualStrings("⠀", w.buffered());
+    w.end = 0;
 
     d.set(1, 2);
-    try std.fmt.format(fbs.writer(), "{f}", .{d});
-    try expectEqualStrings("⠐", fbs.getWritten());
-    fbs.reset();
+    try w.print("{f}", .{d});
+    try expectEqualStrings("⠐", w.buffered());
+    w.end = 0;
     d.unset(1, 2);
-    try std.fmt.format(fbs.writer(), "{f}", .{d});
-    try expectEqualStrings("⠀", fbs.getWritten());
-    fbs.reset();
+    try w.print("{f}", .{d});
+    try expectEqualStrings("⠀", w.buffered());
+    w.end = 0;
 
     d.set(1, 3);
-    try std.fmt.format(fbs.writer(), "{f}", .{d});
-    try expectEqualStrings("⠈", fbs.getWritten());
-    fbs.reset();
+    try w.print("{f}", .{d});
+    try expectEqualStrings("⠈", w.buffered());
+    w.end = 0;
     d.unset(1, 3);
-    try std.fmt.format(fbs.writer(), "{f}", .{d});
-    try expectEqualStrings("⠀", fbs.getWritten());
-    fbs.reset();
+    try w.print("{f}", .{d});
+    try expectEqualStrings("⠀", w.buffered());
+    w.end = 0;
 }
 
 test "colored dots" {
     terminfo.TermInfo.testing();
     var buff: [100]u8 = undefined;
-    var fbs = std.io.fixedBufferStream(&buff);
+    var w: std.Io.Writer = .fixed(&buff);
 
     var d = Dots{};
     d.set(0, 0);
 
-    try std.fmt.format(fbs.writer(), "{f}", .{d});
-    try expectEqualStrings("⡀", fbs.getWritten());
-    fbs.reset();
+    try w.print("{f}", .{d});
+    try expectEqualStrings("⡀", w.buffered());
+    w.end = 0;
 
     d.color.fg = color.Color.by_name(.red);
-    try std.fmt.format(fbs.writer(), "{f}", .{d});
-    try expectEqual(fbs.pos, 16);
-    try expectEqualStrings("\x1b[31m⡀\x1b[39;49m", fbs.getWritten());
-    fbs.reset();
+    try w.print("{f}", .{d});
+    try expectEqual(w.end, 16);
+    try expectEqualStrings("\x1b[31m⡀\x1b[39;49m", w.buffered());
+    w.end = 0;
 
     d.color.bg = color.Color.by_lookup(123);
-    try std.fmt.format(fbs.writer(), "{f}", .{d});
-    try expectEqual(fbs.pos, 25);
-    try expectEqualStrings("\x1b[31;48;5;123m⡀\x1b[39;49m", fbs.getWritten());
-    fbs.reset();
+    try w.print("{f}", .{d});
+    try expectEqual(w.end, 25);
+    try expectEqualStrings("\x1b[31;48;5;123m⡀\x1b[39;49m", w.buffered());
+    w.end = 0;
 
     d.color.fg = color.Color.by_rgb(1, 22, 133);
-    try std.fmt.format(fbs.writer(), "{f}", .{d});
-    try expectEqual(fbs.pos, 36);
-    try expectEqualStrings("\x1b[38;2;1;22;133;48;5;123m⡀\x1b[39;49m", fbs.getWritten());
-    fbs.reset();
+    try w.print("{f}", .{d});
+    try expectEqual(w.end, 36);
+    try expectEqualStrings("\x1b[38;2;1;22;133;48;5;123m⡀\x1b[39;49m", w.buffered());
+    w.end = 0;
 }
 
 test "set / unset char" {
     var buff: [100]u8 = undefined;
-    var fbs = std.io.fixedBufferStream(&buff);
+    var w: std.Io.Writer = .fixed(&buff);
 
     var d = Dots{};
     d.char = 'x';
 
-    try std.fmt.format(fbs.writer(), "{f}", .{d});
-    try expectEqualStrings("x", fbs.getWritten());
-    fbs.reset();
+    try w.print("{f}", .{d});
+    try expectEqualStrings("x", w.buffered());
+    w.end = 0;
 
     d.clear();
-    try std.fmt.format(fbs.writer(), "{f}", .{d});
-    try expectEqualStrings("⠀", fbs.getWritten());
-    fbs.reset();
+    try w.print("{f}", .{d});
+    try expectEqualStrings("⠀", w.buffered());
+    w.end = 0;
 }
 
 test "color char" {
     terminfo.TermInfo.testing();
     var buff: [100]u8 = undefined;
-    var fbs = std.io.fixedBufferStream(&buff);
+    var w: std.Io.Writer = .fixed(&buff);
 
     var d = Dots{};
     d.char = 'x';
     d.color.fg = color.Color.by_rgb(111, 222, 255);
 
-    try std.fmt.format(fbs.writer(), "{f}", .{d});
-    try expectEqualStrings("\x1b[38;2;111;222;255mx\x1b[39;49m", fbs.getWritten());
-    fbs.reset();
+    try w.print("{f}", .{d});
+    try expectEqualStrings("\x1b[38;2;111;222;255mx\x1b[39;49m", w.buffered());
+    w.end = 0;
 }
 
 test "set char and dots" {
     var buff: [100]u8 = undefined;
-    var fbs = std.io.fixedBufferStream(&buff);
+    var w: std.Io.Writer = .fixed(&buff);
 
     var d = Dots{};
     d.char = 'x';
 
-    try std.fmt.format(fbs.writer(), "{f}", .{d});
-    try expectEqualStrings("x", fbs.getWritten());
-    fbs.reset();
+    try w.print("{f}", .{d});
+    try expectEqualStrings("x", w.buffered());
+    w.end = 0;
 
     d.set(0, 1);
-    try std.fmt.format(fbs.writer(), "{f}", .{d});
-    try expectEqualStrings("x", fbs.getWritten());
-    fbs.reset();
+    try w.print("{f}", .{d});
+    try expectEqualStrings("x", w.buffered());
+    w.end = 0;
 
     d.char = 0;
-    try std.fmt.format(fbs.writer(), "{f}", .{d});
-    try expectEqualStrings("⠄", fbs.getWritten());
-    fbs.reset();
+    try w.print("{f}", .{d});
+    try expectEqualStrings("⠄", w.buffered());
+    w.end = 0;
 
     d.char = 'o';
-    try std.fmt.format(fbs.writer(), "{f}", .{d});
-    try expectEqualStrings("o", fbs.getWritten());
-    fbs.reset();
+    try w.print("{f}", .{d});
+    try expectEqualStrings("o", w.buffered());
+    w.end = 0;
 }

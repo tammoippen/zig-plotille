@@ -390,58 +390,58 @@ fn names(color_name: ColorName, is_fg: bool, writer: anytype) !void {
 
 test "names with optional fg, bg" {
     var buff: [100]u8 = undefined;
-    var fbs = std.io.fixedBufferStream(&buff);
+    var w: std.Io.Writer = .fixed(&buff);
 
-    try names(.red, true, fbs.writer());
-    try expectEqual(fbs.pos, 2);
-    try expectEqualStrings("31", fbs.getWritten());
-    fbs.reset();
+    try names(.red, true, &w);
+    try expectEqual(w.end, 2);
+    try expectEqualStrings("31", w.buffered());
+    w.end = 0;
 
-    try names(.red, false, fbs.writer());
-    try expectEqual(fbs.pos, 2);
-    try expectEqualStrings("41", fbs.getWritten());
-    fbs.reset();
+    try names(.red, false, &w);
+    try expectEqual(w.end, 2);
+    try expectEqualStrings("41", w.buffered());
+    w.end = 0;
 
-    try names(.bright_green, true, fbs.writer());
-    try expectEqual(fbs.pos, 2);
-    try expectEqualStrings("92", fbs.getWritten());
-    fbs.reset();
+    try names(.bright_green, true, &w);
+    try expectEqual(w.end, 2);
+    try expectEqualStrings("92", w.buffered());
+    w.end = 0;
 
-    try names(.bright_green, false, fbs.writer());
-    try expectEqual(fbs.pos, 3);
-    try expectEqualStrings("102", fbs.getWritten());
-    fbs.reset();
+    try names(.bright_green, false, &w);
+    try expectEqual(w.end, 3);
+    try expectEqualStrings("102", w.buffered());
+    w.end = 0;
 
-    try names(.bright_magenta_old, true, fbs.writer());
-    try expectEqual(fbs.pos, 4);
-    try expectEqualStrings("1;35", fbs.getWritten());
-    fbs.reset();
+    try names(.bright_magenta_old, true, &w);
+    try expectEqual(w.end, 4);
+    try expectEqualStrings("1;35", w.buffered());
+    w.end = 0;
 
-    try names(.bright_magenta_old, false, fbs.writer());
-    try expectEqual(fbs.pos, 4);
-    try expectEqualStrings("1;45", fbs.getWritten());
-    fbs.reset();
+    try names(.bright_magenta_old, false, &w);
+    try expectEqual(w.end, 4);
+    try expectEqualStrings("1;45", w.buffered());
+    w.end = 0;
 }
 
 test "color in names mode" {
     terminfo.TermInfo.testing();
     var buff: [100]u8 = undefined;
-    var fbs = std.io.fixedBufferStream(&buff);
+    var w: std.Io.Writer = .fixed(&buff);
 
-    try colorPrint(fbs.writer(), "Some text", .{}, .{ .fg = Color.by_name(.red) });
-    try expectEqual(fbs.pos, 22);
-    try expectEqualStrings("\x1b[31mSome text\x1b[39;49m", fbs.getWritten());
-    fbs.reset();
+    try colorPrint(&w, "Some text", .{}, .{ .fg = Color.by_name(.red) });
+    try expectEqual(w.end, 22);
+    try expectEqualStrings("\x1b[31mSome text\x1b[39;49m", w.buffered());
+    w.end = 0;
 
-    try colorPrint(fbs.writer(), "Some text", .{}, .{ .bg = Color.by_name(.red) });
-    try expectEqual(fbs.pos, 22);
-    try expectEqualStrings("\x1b[41mSome text\x1b[39;49m", fbs.getWritten());
-    fbs.reset();
+    try colorPrint(&w, "Some text", .{}, .{ .bg = Color.by_name(.red) });
+    try expectEqual(w.end, 22);
+    try expectEqualStrings("\x1b[41mSome text\x1b[39;49m", w.buffered());
+    w.end = 0;
 
-    try colorPrint(fbs.writer(), "Some text", .{}, .{ .fg = Color.by_name(.bright_magenta), .bg = Color.by_name(.red) });
-    try expectEqual(fbs.pos, 25);
-    try expectEqualStrings("\x1b[95;41mSome text\x1b[39;49m", fbs.getWritten());
-    fbs.reset();
+    try colorPrint(&w, "Some text", .{}, .{ .fg = Color.by_name(.bright_magenta), .bg = Color.by_name(.red) });
+    try expectEqual(w.end, 25);
+    try expectEqualStrings("\x1b[95;41mSome text\x1b[39;49m", w.buffered());
+    w.end = 0;
 }
 
 const FG_LOOKUP_NUM = "38;5;";
@@ -457,48 +457,48 @@ fn lookups(color_lookup: u8, is_fg: bool, writer: anytype) !void {
 
 test "lookups with optional fg, bg" {
     var buff: [100]u8 = undefined;
-    var fbs = std.io.fixedBufferStream(&buff);
+    var w: std.Io.Writer = .fixed(&buff);
 
-    try lookups(3, true, fbs.writer());
-    try expectEqual(fbs.pos, 6);
-    try expectEqualStrings("38;5;3", fbs.getWritten());
-    fbs.reset();
+    try lookups(3, true, &w);
+    try expectEqual(w.end, 6);
+    try expectEqualStrings("38;5;3", w.buffered());
+    w.end = 0;
 
-    try lookups(25, false, fbs.writer());
-    try expectEqual(fbs.pos, 7);
-    try expectEqualStrings("48;5;25", fbs.getWritten());
-    fbs.reset();
+    try lookups(25, false, &w);
+    try expectEqual(w.end, 7);
+    try expectEqualStrings("48;5;25", w.buffered());
+    w.end = 0;
 
-    try lookups(33, true, fbs.writer());
-    try expectEqual(fbs.pos, 7);
-    try expectEqualStrings("38;5;33", fbs.getWritten());
-    fbs.reset();
+    try lookups(33, true, &w);
+    try expectEqual(w.end, 7);
+    try expectEqualStrings("38;5;33", w.buffered());
+    w.end = 0;
 
-    try lookups(245, false, fbs.writer());
-    try expectEqual(fbs.pos, 8);
-    try expectEqualStrings("48;5;245", fbs.getWritten());
-    fbs.reset();
+    try lookups(245, false, &w);
+    try expectEqual(w.end, 8);
+    try expectEqualStrings("48;5;245", w.buffered());
+    w.end = 0;
 }
 
 test "color in lookup mode" {
     terminfo.TermInfo.testing();
     var buff: [100]u8 = undefined;
-    var fbs = std.io.fixedBufferStream(&buff);
+    var w: std.Io.Writer = .fixed(&buff);
 
-    try colorPrint(fbs.writer(), "Some text", .{}, .{ .fg = Color.by_lookup(44) });
-    try expectEqual(fbs.pos, 27);
-    try expectEqualStrings("\x1b[38;5;44mSome text\x1b[39;49m", fbs.getWritten());
-    fbs.reset();
+    try colorPrint(&w, "Some text", .{}, .{ .fg = Color.by_lookup(44) });
+    try expectEqual(w.end, 27);
+    try expectEqualStrings("\x1b[38;5;44mSome text\x1b[39;49m", w.buffered());
+    w.end = 0;
 
-    try colorPrint(fbs.writer(), "Some text", .{}, .{ .bg = Color.by_lookup(5) });
-    try expectEqual(fbs.pos, 26);
-    try expectEqualStrings("\x1b[48;5;5mSome text\x1b[39;49m", fbs.getWritten());
-    fbs.reset();
+    try colorPrint(&w, "Some text", .{}, .{ .bg = Color.by_lookup(5) });
+    try expectEqual(w.end, 26);
+    try expectEqualStrings("\x1b[48;5;5mSome text\x1b[39;49m", w.buffered());
+    w.end = 0;
 
-    try colorPrint(fbs.writer(), "Some text", .{}, .{ .fg = Color.by_lookup(123), .bg = Color.by_lookup(76) });
-    try expectEqual(fbs.pos, 36);
-    try expectEqualStrings("\x1b[38;5;123;48;5;76mSome text\x1b[39;49m", fbs.getWritten());
-    fbs.reset();
+    try colorPrint(&w, "Some text", .{}, .{ .fg = Color.by_lookup(123), .bg = Color.by_lookup(76) });
+    try expectEqual(w.end, 36);
+    try expectEqualStrings("\x1b[38;5;123;48;5;76mSome text\x1b[39;49m", w.buffered());
+    w.end = 0;
 }
 
 const FG_RGB_NUM = "38;2;";
@@ -514,67 +514,67 @@ fn rgbs(color_rgb: [3]u8, is_fg: bool, writer: anytype) !void {
 
 test "rgbs with optional fg, bg" {
     var buff: [100]u8 = undefined;
-    var fbs = std.io.fixedBufferStream(&buff);
+    var w: std.Io.Writer = .fixed(&buff);
 
-    var len = try rgbs([3]u8{ 255, 0, 0 }, true, fbs.writer());
-    try expectEqual(fbs.pos, 12);
-    try expectEqualStrings("38;2;255;0;0", fbs.getWritten());
-    fbs.reset();
+    var len = try rgbs([3]u8{ 255, 0, 0 }, true, &w);
+    try expectEqual(w.end, 12);
+    try expectEqualStrings("38;2;255;0;0", w.buffered());
+    w.end = 0;
 
-    len = try rgbs([_]u8{ 34, 25, 100 }, false, fbs.writer());
-    try expectEqual(fbs.pos, 14);
-    try expectEqualStrings("48;2;34;25;100", fbs.getWritten());
-    fbs.reset();
+    len = try rgbs([_]u8{ 34, 25, 100 }, false, &w);
+    try expectEqual(w.end, 14);
+    try expectEqualStrings("48;2;34;25;100", w.buffered());
+    w.end = 0;
 
-    len = try rgbs([_]u8{ 1, 2, 3 }, true, fbs.writer());
-    try expectEqual(fbs.pos, 10);
-    try expectEqualStrings("38;2;1;2;3", fbs.getWritten());
-    fbs.reset();
+    len = try rgbs([_]u8{ 1, 2, 3 }, true, &w);
+    try expectEqual(w.end, 10);
+    try expectEqualStrings("38;2;1;2;3", w.buffered());
+    w.end = 0;
 
-    len = try rgbs([_]u8{ 100, 200, 50 }, false, fbs.writer());
-    try expectEqual(fbs.pos, 15);
-    try expectEqualStrings("48;2;100;200;50", fbs.getWritten());
-    fbs.reset();
+    len = try rgbs([_]u8{ 100, 200, 50 }, false, &w);
+    try expectEqual(w.end, 15);
+    try expectEqualStrings("48;2;100;200;50", w.buffered());
+    w.end = 0;
 }
 
 test "color in rgb mode" {
     terminfo.TermInfo.testing();
     var buff: [100]u8 = undefined;
-    var fbs = std.io.fixedBufferStream(&buff);
+    var w: std.Io.Writer = .fixed(&buff);
 
-    try colorPrint(fbs.writer(), "Some text", .{}, .{ .fg = Color.by_rgb(44, 22, 11) });
-    try expectEqual(fbs.pos, 33);
-    try expectEqualStrings("\x1b[38;2;44;22;11mSome text\x1b[39;49m", fbs.getWritten());
-    fbs.reset();
+    try colorPrint(&w, "Some text", .{}, .{ .fg = Color.by_rgb(44, 22, 11) });
+    try expectEqual(w.end, 33);
+    try expectEqualStrings("\x1b[38;2;44;22;11mSome text\x1b[39;49m", w.buffered());
+    w.end = 0;
 
-    try colorPrint(fbs.writer(), "Some text", .{}, .{ .bg = Color.by_rgb(5, 66, 100) });
-    try expectEqual(fbs.pos, 33);
-    try expectEqualStrings("\x1b[48;2;5;66;100mSome text\x1b[39;49m", fbs.getWritten());
-    fbs.reset();
+    try colorPrint(&w, "Some text", .{}, .{ .bg = Color.by_rgb(5, 66, 100) });
+    try expectEqual(w.end, 33);
+    try expectEqualStrings("\x1b[48;2;5;66;100mSome text\x1b[39;49m", w.buffered());
+    w.end = 0;
 
-    try colorPrint(fbs.writer(), "Some text", .{}, .{ .fg = Color.by_hsl(123, 0.8, 0.5), .bg = Color.by_rgb(76, 89, 9) });
-    try expectEqual(fbs.pos, 47);
-    try expectEqualStrings("\x1b[38;2;25;229;35;48;2;76;89;9mSome text\x1b[39;49m", fbs.getWritten());
-    fbs.reset();
+    try colorPrint(&w, "Some text", .{}, .{ .fg = Color.by_hsl(123, 0.8, 0.5), .bg = Color.by_rgb(76, 89, 9) });
+    try expectEqual(w.end, 47);
+    try expectEqualStrings("\x1b[38;2;25;229;35;48;2;76;89;9mSome text\x1b[39;49m", w.buffered());
+    w.end = 0;
 }
 
 test "color in mixed modes" {
     terminfo.TermInfo.testing();
     var buff: [100]u8 = undefined;
-    var fbs = std.io.fixedBufferStream(&buff);
+    var w: std.Io.Writer = .fixed(&buff);
 
-    try colorPrint(fbs.writer(), "Some text", .{}, .{ .fg = Color.by_rgb(44, 22, 11), .bg = Color.by_name(.yellow) });
-    try expectEqual(fbs.pos, 36);
-    try expectEqualStrings("\x1b[38;2;44;22;11;43mSome text\x1b[39;49m", fbs.getWritten());
-    fbs.reset();
+    try colorPrint(&w, "Some text", .{}, .{ .fg = Color.by_rgb(44, 22, 11), .bg = Color.by_name(.yellow) });
+    try expectEqual(w.end, 36);
+    try expectEqualStrings("\x1b[38;2;44;22;11;43mSome text\x1b[39;49m", w.buffered());
+    w.end = 0;
 
-    try colorPrint(fbs.writer(), "Some text", .{}, .{ .fg = Color.by_lookup(155), .bg = Color.by_rgb(5, 66, 100) });
-    try expectEqual(fbs.pos, 42);
-    try expectEqualStrings("\x1b[38;5;155;48;2;5;66;100mSome text\x1b[39;49m", fbs.getWritten());
-    fbs.reset();
+    try colorPrint(&w, "Some text", .{}, .{ .fg = Color.by_lookup(155), .bg = Color.by_rgb(5, 66, 100) });
+    try expectEqual(w.end, 42);
+    try expectEqualStrings("\x1b[38;5;155;48;2;5;66;100mSome text\x1b[39;49m", w.buffered());
+    w.end = 0;
 
-    try colorPrint(fbs.writer(), "Some text", .{}, .{ .fg = Color.by_name(.bright_cyan_old), .bg = Color.by_lookup(254) });
-    try expectEqual(fbs.pos, 33);
-    try expectEqualStrings("\x1b[1;36;48;5;254mSome text\x1b[39;49m", fbs.getWritten());
-    fbs.reset();
+    try colorPrint(&w, "Some text", .{}, .{ .fg = Color.by_name(.bright_cyan_old), .bg = Color.by_lookup(254) });
+    try expectEqual(w.end, 33);
+    try expectEqualStrings("\x1b[1;36;48;5;254mSome text\x1b[39;49m", w.buffered());
+    w.end = 0;
 }
