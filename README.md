@@ -1,5 +1,5 @@
 ![CI](https://github.com/tammoippen/zig-plotille/actions/workflows/main.yml/badge.svg)
-[![zig 0.15.2](https://img.shields.io/badge/Zig-0.15.2-color?logo=zig&color=%23f3ab20)](https://ziglang.org/download/0.15.1/release-notes.html)
+[![zig 0.16.0](https://img.shields.io/badge/Zig-0.16.0-color?logo=zig&color=%23f3ab20)](https://ziglang.org/download/0.16.0/release-notes.html)
 
 # zig-plotille
 
@@ -81,10 +81,13 @@ Display all available named colors in a grid:
 ```zig
 const plt = @import("plotille");
 
+// Zig 0.16 hands I/O and the environment to `main` via `std.process.Init`:
+//   pub fn main(init: std.process.Init) !void { ... }
+
 // Detect terminal capabilities
 // ALWAYS required, before printing with color support
 // (either set or detect)
-try plt.terminfo.TermInfo.detect(allocator);
+try plt.terminfo.TermInfo.detect(init.io, init.minimal.environ, allocator);
 
 // Display color grid
 for (std.enums.values(plt.color.ColorName)) |bg_value| {
