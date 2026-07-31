@@ -15,11 +15,11 @@ export fn dots_init() dots.Dots {
     return dots.Dots{};
 }
 export fn dots_str(self: dots.Dots, buf: [*]u8, len: usize) usize {
-    var fbs = std.io.fixedBufferStream(buf[0..len]);
-    std.fmt.format(fbs.writer(), "{f}", .{self}) catch |err| switch (err) {
-        error.NoSpaceLeft => return 0,
+    var w: std.Io.Writer = .fixed(buf[0..len]);
+    w.print("{f}", .{self}) catch |err| switch (err) {
+        error.WriteFailed => return 0,
     };
-    return fbs.pos;
+    return w.end;
 }
 export fn dots_fill(self: *dots.Dots) void {
     return self.fill();
@@ -57,23 +57,33 @@ export fn color_by_hsl(h: f64, s: f64, l: f64) color.Color {
 }
 
 export fn color_str(buf: [*]u8, len: usize, text: [*:0]const u8, options: color.ColorOptions) usize {
-    var fbs = std.io.fixedBufferStream(buf[0..len]);
-    color.colorPrint(fbs.writer(), "{s}", .{text}, options) catch return 0;
-    return fbs.pos;
+    var w: std.Io.Writer = .fixed(buf[0..len]);
+    color.colorPrint(&w, "{s}", .{text}, options) catch return 0;
+    return w.end;
 }
 
 // terminfo
+
+/// The environment block of the process. A C caller does not hand us a
+/// `std.process.Init`, so pick it up from libc (which this library links).
+fn processEnviron() std.process.Environ {
+    if (@import("builtin").os.tag == .windows) return .{ .block = .global };
+    const c_environ = std.c.environ;
+    var count: usize = 0;
+    while (c_environ[count] != null) : (count += 1) {}
+    return .{ .block = .{ .slice = c_environ[0..count :null] } };
+}
 
 export fn get_terminfo(out: *terminfo.TermInfo) bool {
     if (terminfo.TermInfo.is_set()) {
         out.* = terminfo.TermInfo.get();
         return true;
     }
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
+    const allocator = std.heap.c_allocator;
+    // no `std.process.Init` available from C, so use the hardcoded instance
+    const io = std.Io.Threaded.global_single_threaded.io();
 
-    terminfo.TermInfo.detect(allocator) catch return false;
+    terminfo.TermInfo.detect(io, processEnviron(), allocator) catch return false;
     out.* = terminfo.TermInfo.get();
     return true;
 }
@@ -127,9 +137,9 @@ export fn hist_free(h: *CHistogram) void {
 export fn hist_str(h: CHistogram, buf: [*]u8, len: usize) usize {
     if (h._internal) |internal| {
         const hist_ptr: *const hist.Histogram = @ptrCast(@alignCast(internal));
-        var fbs = std.io.fixedBufferStream(buf[0..len]);
-        std.fmt.format(fbs.writer(), "{f}", .{hist_ptr.*}) catch return 0;
-        return fbs.pos;
+        var w: std.Io.Writer = .fixed(buf[0..len]);
+        w.print("{f}", .{hist_ptr.*}) catch return 0;
+        return w.end;
     }
     return 0;
 }
@@ -246,9 +256,9 @@ export fn canvas_text(c: *CCanvas, p: canvas.Point, text: [*:0]const u8, fg_colo
 export fn canvas_str(c: CCanvas, buf: [*]u8, len: usize) usize {
     if (c._internal) |internal| {
         const canvas_ptr: *const canvas.Canvas = @ptrCast(@alignCast(internal));
-        var fbs = std.io.fixedBufferStream(buf[0..len]);
-        std.fmt.format(fbs.writer(), "{f}", .{canvas_ptr.*}) catch return 0;
-        return fbs.pos;
+        var w: std.Io.Writer = .fixed(buf[0..len]);
+        w.print("{f}", .{canvas_ptr.*}) catch return 0;
+        return w.end;
     }
     return 0;
 }
@@ -460,9 +470,9 @@ export fn figure_prepare(f: *CFigure) bool {
 export fn figure_str(f: CFigure, buf: [*]u8, len: usize) usize {
     if (f._internal) |internal| {
         const figure_ptr: *const figure.Figure = @ptrCast(@alignCast(internal));
-        var fbs = std.io.fixedBufferStream(buf[0..len]);
-        std.fmt.format(fbs.writer(), "{f}", .{figure_ptr.*}) catch return 0;
-        return fbs.pos;
+        var w: std.Io.Writer = .fixed(buf[0..len]);
+        w.print("{f}", .{figure_ptr.*}) catch return 0;
+        return w.end;
     }
     return 0;
 }
