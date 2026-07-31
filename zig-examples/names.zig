@@ -2,16 +2,17 @@ const std = @import("std");
 
 const plt = @import("plotille");
 
-pub fn main() !void {
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    defer arena.deinit();
-    const allocator = arena.allocator();
+pub fn main(init: std.process.Init) !void {
+    const allocator = init.arena.allocator();
+    const io = init.io;
 
     // detect terminal information
-    try plt.terminfo.TermInfo.detect(allocator);
+    try plt.terminfo.TermInfo.detect(io, init.minimal.environ, allocator);
 
-    var stdout_writer = std.fs.File.stdout().writer(&.{});
+    var stdout_buffer: [4096]u8 = undefined;
+    var stdout_writer: std.Io.File.Writer = .init(.stdout(), io, &stdout_buffer);
     const writer = &stdout_writer.interface;
+    defer writer.flush() catch {};
 
     try writer.print("Colors by name:       ", .{});
     for (std.enums.values(plt.color.ColorName)) |color_value| {
