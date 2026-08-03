@@ -72,11 +72,13 @@ pub const TermInfo = extern struct {
     }
 
     /// Read out environment variables, hence the allocator.
-    pub fn detect(allocator: std.mem.Allocator) !void {
-        const stdout_tty = std.posix.isatty(std.fs.File.stdout().handle);
-        const no_color = isNoColorSet(allocator);
-        const force_color = try forceColors(allocator);
-        const color_mode = try getColorMode(allocator);
+    /// `io` is used to check whether stdout is a tty, `environ` provides the
+    /// environment variables of the process (see `std.process.Init`).
+    pub fn detect(io: std.Io, environ: std.process.Environ, allocator: std.mem.Allocator) !void {
+        const stdout_tty = try std.Io.File.stdout().isTty(io);
+        const no_color = isNoColorSet(environ, allocator);
+        const force_color = try forceColors(environ, allocator);
+        const color_mode = try getColorMode(environ, allocator);
 
         info = TermInfo{
             .stdout_tty = stdout_tty,
@@ -87,18 +89,18 @@ pub const TermInfo = extern struct {
     }
 
     /// free on its own
-    fn isNoColorSet(allocator: std.mem.Allocator) bool {
+    fn isNoColorSet(environ: std.process.Environ, allocator: std.mem.Allocator) bool {
         // on windows needs allocator to put key into utf16
         // https://no-color.org/
-        return std.process.hasEnvVar(allocator, "NO_COLOR") catch unreachable;
+        return environ.contains(allocator, "NO_COLOR") catch unreachable;
     }
     /// free on its own
-    fn forceColors(allocator: std.mem.Allocator) !ForceColor {
+    fn forceColors(environ: std.process.Environ, allocator: std.mem.Allocator) !ForceColor {
         // https://nodejs.org/api/tty.html#tty_writestream_getcolordepth_env
         var force_color: ForceColor = ForceColor.none;
 
         // on issues, ignore force_color
-        const opt_force_color_str = try getEnvVar(allocator, "FORCE_COLOR");
+        const opt_force_color_str = try getEnvVar(environ, allocator, "FORCE_COLOR");
         if (opt_force_color_str) |force_color_str| {
             defer allocator.free(force_color_str);
             if (std.ascii.eqlIgnoreCase(force_color_str, "0") or std.ascii.eqlIgnoreCase(force_color_str, "false") or std.ascii.eqlIgnoreCase(force_color_str, "none")) {
@@ -110,12 +112,12 @@ pub const TermInfo = extern struct {
         return force_color;
     }
     /// free on its own
-    fn getColorMode(allocator: std.mem.Allocator) !color.ColorMode {
-        if (isWindowsTerminal(allocator) or isDomTerm(allocator) or isKittyTerm(allocator)) {
+    fn getColorMode(environ: std.process.Environ, allocator: std.mem.Allocator) !color.ColorMode {
+        if (isWindowsTerminal(environ, allocator) or isDomTerm(environ, allocator) or isKittyTerm(environ, allocator)) {
             return .rgb;
         }
 
-        const opt_colorterm = try getEnvVar(allocator, "COLORTERM");
+        const opt_colorterm = try getEnvVar(environ, allocator, "COLORTERM");
         if (opt_colorterm) |colorterm| {
             defer allocator.free(colorterm);
             for (rgb_level) |rgb_lvl| {
@@ -125,7 +127,7 @@ pub const TermInfo = extern struct {
             }
         }
 
-        const opt_termprogram = try getEnvVar(allocator, "TERM_PROGRAM");
+        const opt_termprogram = try getEnvVar(environ, allocator, "TERM_PROGRAM");
         if (opt_termprogram) |termprogram| {
             defer allocator.free(termprogram);
             for (rgb_termprogs) |name| {
@@ -134,7 +136,7 @@ pub const TermInfo = extern struct {
                 }
             }
             if (std.mem.eql(u8, "iterm.app", termprogram)) {
-                return try checkiTerm(allocator);
+                return try checkiTerm(environ, allocator);
             }
             for (lookup_termprogs) |name| {
                 if (std.mem.eql(u8, name, termprogram)) {
@@ -144,7 +146,7 @@ pub const TermInfo = extern struct {
             // TODO: iterm => lookup , iterm >=3 => rgb via TERM_PROGRAM_VERSION
         }
 
-        const opt_term = try getEnvVar(allocator, "TERM");
+        const opt_term = try getEnvVar(environ, allocator, "TERM");
         if (opt_term) |term| {
             defer allocator.free(term);
 
@@ -187,34 +189,34 @@ pub const TermInfo = extern struct {
         return .none;
     }
     /// free on its own
-    fn isWindowsTerminal(allocator: std.mem.Allocator) bool {
+    fn isWindowsTerminal(environ: std.process.Environ, allocator: std.mem.Allocator) bool {
         // on windows needs allocator to put key into utf16
         // https://github.com/microsoft/terminal/issues/1040#issuecomment-496691842
-        if (std.process.getEnvVarOwned(allocator, "WT_SESSION")) |wt_session| {
+        if (environ.getAlloc(allocator, "WT_SESSION")) |wt_session| {
             defer allocator.free(wt_session);
             return wt_session.len > 0;
         } else |err| switch (err) {
-            error.EnvironmentVariableNotFound => return false,
+            error.EnvironmentVariableMissing => return false,
             // oom or utf8 errors, hence var is set and more than on char
             else => return true,
         }
     }
     /// free on its own
-    fn isDomTerm(allocator: std.mem.Allocator) bool {
+    fn isDomTerm(environ: std.process.Environ, allocator: std.mem.Allocator) bool {
         // on windows needs allocator to put key into utf16
         // https://domterm.org/Detecting-domterm-terminal.html
-        return std.process.hasEnvVar(allocator, "DOMTERM") catch unreachable;
+        return environ.contains(allocator, "DOMTERM") catch unreachable;
     }
     /// free on its own
-    fn isKittyTerm(allocator: std.mem.Allocator) bool {
+    fn isKittyTerm(environ: std.process.Environ, allocator: std.mem.Allocator) bool {
         // on windows needs allocator to put key into utf16
         // https://github.com/kovidgoyal/kitty/issues/957#issuecomment-420318828
-        return std.process.hasEnvVar(allocator, "KITTY_WINDOW_ID") catch unreachable;
+        return environ.contains(allocator, "KITTY_WINDOW_ID") catch unreachable;
     }
     /// free on its own
     /// assumes that TERM_PROGRAM lower == iterm.app
-    fn checkiTerm(allocator: std.mem.Allocator) !color.ColorMode {
-        const opt_version = try getEnvVar(allocator, "TERM_PROGRAM_VERSION");
+    fn checkiTerm(environ: std.process.Environ, allocator: std.mem.Allocator) !color.ColorMode {
+        const opt_version = try getEnvVar(environ, allocator, "TERM_PROGRAM_VERSION");
         if (opt_version) |version| {
             defer allocator.free(version);
             // get major version
@@ -231,27 +233,28 @@ pub const TermInfo = extern struct {
     }
     /// free returned string
     /// Get optional and lowercase string.
-    fn getEnvVar(allocator: std.mem.Allocator, name: []const u8) !?[]const u8 {
-        if (std.process.getEnvVarOwned(allocator, name)) |value| {
+    fn getEnvVar(environ: std.process.Environ, allocator: std.mem.Allocator, name: []const u8) !?[]const u8 {
+        if (environ.getAlloc(allocator, name)) |value| {
             defer allocator.free(value);
             return try std.ascii.allocLowerString(allocator, value);
         } else |err| switch (err) {
-            error.EnvironmentVariableNotFound => return null,
+            error.EnvironmentVariableMissing => return null,
             else => |e| return e,
         }
     }
 };
 
 test "detect frees memory" {
-    try TermInfo.detect(std.testing.allocator);
-    _ = TermInfo.isNoColorSet(std.testing.allocator);
-    _ = try TermInfo.forceColors(std.testing.allocator);
-    _ = try TermInfo.getColorMode(std.testing.allocator);
-    _ = TermInfo.isWindowsTerminal(std.testing.allocator);
-    _ = TermInfo.isDomTerm(std.testing.allocator);
-    _ = TermInfo.isKittyTerm(std.testing.allocator);
-    _ = try TermInfo.checkiTerm(std.testing.allocator);
-    const opt_term = try TermInfo.getEnvVar(std.testing.allocator, "TERM");
+    const environ = std.testing.environ;
+    try TermInfo.detect(std.testing.io, environ, std.testing.allocator);
+    _ = TermInfo.isNoColorSet(environ, std.testing.allocator);
+    _ = try TermInfo.forceColors(environ, std.testing.allocator);
+    _ = try TermInfo.getColorMode(environ, std.testing.allocator);
+    _ = TermInfo.isWindowsTerminal(environ, std.testing.allocator);
+    _ = TermInfo.isDomTerm(environ, std.testing.allocator);
+    _ = TermInfo.isKittyTerm(environ, std.testing.allocator);
+    _ = try TermInfo.checkiTerm(environ, std.testing.allocator);
+    const opt_term = try TermInfo.getEnvVar(environ, std.testing.allocator, "TERM");
     if (opt_term) |term| {
         defer std.testing.allocator.free(term);
     }

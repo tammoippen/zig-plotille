@@ -2,15 +2,16 @@ const std = @import("std");
 
 const plt = @import("plotille");
 
-pub fn main() !void {
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    defer arena.deinit();
-    const allocator = arena.allocator();
+pub fn main(init: std.process.Init) !void {
+    const allocator = init.arena.allocator();
+    const io = init.io;
 
     // detect terminal information
-    try plt.terminfo.TermInfo.detect(allocator);
-    var stdout_writer = std.fs.File.stdout().writer(&.{});
+    try plt.terminfo.TermInfo.detect(io, init.minimal.environ, allocator);
+    var stdout_buffer: [4096]u8 = undefined;
+    var stdout_writer: std.Io.File.Writer = .init(.stdout(), io, &stdout_buffer);
     const writer = &stdout_writer.interface;
+    defer writer.flush() catch {};
 
     var int_buff: [4]u8 = undefined;
     const fg_black = plt.color.Color.by_lookup(16);
@@ -23,8 +24,7 @@ pub fn main() !void {
     while (idx <= 7) : (idx += 1) {
         const bg = plt.color.Color.by_lookup(@truncate(idx));
         const int_str = try std.fmt.bufPrint(int_buff[0..], "{:4}", .{idx});
-        var color_writer = std.fs.File.stdout().writer(&.{});
-        try plt.color.colorPrint(&color_writer.interface, "{s}", .{int_str}, .{ .fg = fg_white, .bg = bg });
+        try plt.color.colorPrint(writer, "{s}", .{int_str}, .{ .fg = fg_white, .bg = bg });
     }
     try writer.print("\n", .{});
 
@@ -32,8 +32,7 @@ pub fn main() !void {
     while (idx <= 15) : (idx += 1) {
         const bg = plt.color.Color.by_lookup(@truncate(idx));
         const int_str = try std.fmt.bufPrint(int_buff[0..], "{:4}", .{idx});
-        var color_writer = std.fs.File.stdout().writer(&.{});
-        try plt.color.colorPrint(&color_writer.interface, "{s}", .{int_str}, .{ .fg = fg_black, .bg = bg });
+        try plt.color.colorPrint(writer, "{s}", .{int_str}, .{ .fg = fg_black, .bg = bg });
     }
     try writer.print("\n", .{});
 
@@ -52,11 +51,9 @@ pub fn main() !void {
         const bg = plt.color.Color.by_lookup(@truncate(idx));
         const int_str = try std.fmt.bufPrint(int_buff[0..], "{:4}", .{idx});
         if ((idx - 16) % 36 >= 18) {
-            var color_writer = std.fs.File.stdout().writer(&.{});
-            try plt.color.colorPrint(&color_writer.interface, "{s}", .{int_str}, .{ .fg = fg_black, .bg = bg });
+            try plt.color.colorPrint(writer, "{s}", .{int_str}, .{ .fg = fg_black, .bg = bg });
         } else {
-            var color_writer = std.fs.File.stdout().writer(&.{});
-            try plt.color.colorPrint(&color_writer.interface, "{s}", .{int_str}, .{ .fg = fg_white, .bg = bg });
+            try plt.color.colorPrint(writer, "{s}", .{int_str}, .{ .fg = fg_white, .bg = bg });
         }
     }
     try writer.print("\n", .{});
@@ -66,11 +63,9 @@ pub fn main() !void {
         const bg = plt.color.Color.by_lookup(@truncate(idx));
         const int_str = try std.fmt.bufPrint(int_buff[0..], "{:4}", .{idx});
         if (idx < 244) {
-            var color_writer = std.fs.File.stdout().writer(&.{});
-            try plt.color.colorPrint(&color_writer.interface, "{s}", .{int_str}, .{ .fg = fg_white, .bg = bg });
+            try plt.color.colorPrint(writer, "{s}", .{int_str}, .{ .fg = fg_white, .bg = bg });
         } else {
-            var color_writer = std.fs.File.stdout().writer(&.{});
-            try plt.color.colorPrint(&color_writer.interface, "{s}", .{int_str}, .{ .fg = fg_black, .bg = bg });
+            try plt.color.colorPrint(writer, "{s}", .{int_str}, .{ .fg = fg_black, .bg = bg });
         }
     }
     try writer.print("\n", .{});

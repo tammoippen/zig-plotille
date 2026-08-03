@@ -23,17 +23,17 @@ fn usage() void {
     , .{});
 }
 
-pub fn main() !void {
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    defer arena.deinit();
-    const allocator = arena.allocator();
+pub fn main(init: std.process.Init) !void {
+    const allocator = init.arena.allocator();
+    const io = init.io;
 
-    try TermInfo.detect(allocator);
-    var stdout_writer = std.fs.File.stdout().writer(&.{});
+    try TermInfo.detect(io, init.minimal.environ, allocator);
+    var stdout_buffer: [4096]u8 = undefined;
+    var stdout_writer: std.Io.File.Writer = .init(.stdout(), io, &stdout_buffer);
     const writer = &stdout_writer.interface;
+    defer writer.flush() catch {};
 
-    const args = try std.process.argsAlloc(allocator);
-    defer std.process.argsFree(allocator, args);
+    const args = try init.minimal.args.toSlice(allocator);
 
     if (args.len == 1) {
         usage();
@@ -49,7 +49,7 @@ pub fn main() !void {
         use_stdin = true;
     }
 
-    var values: std.ArrayList(f64) = .{};
+    var values: std.ArrayList(f64) = .empty;
     defer values.deinit(allocator);
 
     if (!use_stdin) {
@@ -62,8 +62,9 @@ pub fn main() !void {
             try values.append(allocator, val);
         }
     } else {
-        const stdin_file = std.fs.File.stdin();
-        const in = try stdin_file.readToEndAlloc(allocator, 1 << 20);
+        var stdin_buffer: [4096]u8 = undefined;
+        var stdin_reader = std.Io.File.stdin().readerStreaming(io, &stdin_buffer);
+        const in = try stdin_reader.interface.allocRemaining(allocator, .limited(1 << 20));
         defer allocator.free(in);
         var it = std.mem.tokenizeAny(u8, in, " \r\n\t");
         while (it.next()) |arg| {
